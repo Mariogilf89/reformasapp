@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { signOut } from "@/app/actions/auth";
@@ -21,6 +22,11 @@ export default async function DashboardPage() {
       <p className="text-zinc-600 dark:text-zinc-400">
         Cuenta de tipo: <span className="font-medium">{role}</span>
       </p>
+      {role === "profesional" && (
+        <Link href="/dashboard/perfil" className="font-medium underline">
+          Editar mi perfil profesional
+        </Link>
+      )}
       <form action={signOut}>
         <button
           type="submit"

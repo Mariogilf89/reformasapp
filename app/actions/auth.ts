@@ -1,0 +1,81 @@
+"use server";
+
+import { redirect } from "next/navigation";
+import { createServerSupabaseClient } from "@/lib/supabase";
+
+export type UserRole = "profesional" | "cliente";
+
+export type AuthFormState = {
+  error?: string;
+} | undefined;
+
+function isUserRole(value: FormDataEntryValue | null): value is UserRole {
+  return value === "profesional" || value === "cliente";
+}
+
+export async function signUp(
+  _prevState: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const name = formData.get("name")?.toString().trim();
+  const email = formData.get("email")?.toString().trim();
+  const password = formData.get("password")?.toString();
+  const role = formData.get("role");
+
+  if (!name || !email || !password) {
+    return { error: "Rellena todos los campos." };
+  }
+  if (password.length < 8) {
+    return { error: "La contraseña debe tener al menos 8 caracteres." };
+  }
+  if (!isUserRole(role)) {
+    return { error: "Selecciona un tipo de cuenta válido." };
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: name, role },
+    },
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  redirect("/login?registered=1");
+}
+
+export async function signIn(
+  _prevState: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const email = formData.get("email")?.toString().trim();
+  const password = formData.get("password")?.toString();
+
+  if (!email || !password) {
+    return { error: "Rellena todos los campos." };
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    return { error: "Email o contraseña incorrectos." };
+  }
+
+  redirect("/dashboard");
+}
+
+export async function signOut() {
+  const supabase = await createServerSupabaseClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}

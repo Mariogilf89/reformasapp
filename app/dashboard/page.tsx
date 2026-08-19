@@ -23,9 +23,14 @@ export default async function DashboardPage() {
         Cuenta de tipo: <span className="font-medium">{role}</span>
       </p>
       {role === "profesional" && (
-        <Link href="/dashboard/perfil" className="font-medium underline">
-          Editar mi perfil profesional
-        </Link>
+        <>
+          <Link href="/dashboard/perfil" className="font-medium underline">
+            Editar mi perfil profesional
+          </Link>
+          <Link href="/dashboard/solicitudes-disponibles" className="font-medium underline">
+            Solicitudes disponibles
+          </Link>
+        </>
       )}
       {role === "cliente" && (
         <Link href="/dashboard/solicitudes" className="font-medium underline">

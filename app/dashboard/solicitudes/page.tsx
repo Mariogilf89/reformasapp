@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
@@ -103,6 +104,13 @@ export default async function SolicitudesPage() {
                 {solicitud.estado}
               </span>
             </div>
+
+            <Link
+              href={`/dashboard/solicitudes/${solicitud.id}`}
+              className="mt-3 inline-block text-sm font-medium underline"
+            >
+              Ver detalle y mensajes
+            </Link>
 
             {solicitud.estado === "abierta" && (
               <div className="mt-4 flex flex-col gap-3 border-t border-black/10 pt-4 dark:border-white/15">

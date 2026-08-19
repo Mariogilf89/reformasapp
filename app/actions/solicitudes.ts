@@ -1,0 +1,49 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createServerSupabaseClient } from "@/lib/supabase";
+import { isCategoria } from "@/lib/profesionales";
+
+export type SolicitudFormState = { error?: string; success?: boolean } | undefined;
+
+export async function crearSolicitud(
+  _prevState: SolicitudFormState,
+  formData: FormData
+): Promise<SolicitudFormState> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.user_metadata?.role !== "cliente") {
+    return { error: "No autorizado." };
+  }
+
+  const categoria = formData.get("categoria")?.toString() ?? "";
+  const zona = formData.get("zona")?.toString().trim();
+  const descripcion = formData.get("descripcion")?.toString().trim();
+
+  if (!isCategoria(categoria)) {
+    return { error: "Selecciona una categoría válida." };
+  }
+  if (!zona) {
+    return { error: "Indica la zona." };
+  }
+  if (!descripcion) {
+    return { error: "Añade una descripción." };
+  }
+
+  const { error } = await supabase.from("solicitudes").insert({
+    cliente_id: user.id,
+    categoria,
+    zona,
+    descripcion,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard/solicitudes");
+  return { success: true };
+}

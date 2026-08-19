@@ -27,6 +27,11 @@ export default async function DashboardPage() {
           Editar mi perfil profesional
         </Link>
       )}
+      {role === "cliente" && (
+        <Link href="/dashboard/solicitudes" className="font-medium underline">
+          Mis solicitudes
+        </Link>
+      )}
       <form action={signOut}>
         <button
           type="submit"

@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
 import { MensajeForm } from "./mensaje-form";
+import { ValoracionForm } from "./valoracion-form";
 
 type Solicitud = {
   id: string;
@@ -18,6 +19,12 @@ type Mensaje = {
   remitente_id: string;
   texto: string;
   creado_en: string;
+};
+
+type ValoracionDetalle = {
+  puntuacion: number;
+  comentario: string | null;
+  profesionales: { nombre: string } | null;
 };
 
 export default async function SolicitudDetallePage(
@@ -61,9 +68,9 @@ export default async function SolicitudDetallePage(
   const { data: profesionalesRemitentes } = remitentesProfesional.length
     ? await supabase
         .from("profesionales")
-        .select("user_id, nombre")
+        .select("id, user_id, nombre")
         .in("user_id", remitentesProfesional)
-    : { data: [] as { user_id: string; nombre: string }[] };
+    : { data: [] as { id: string; user_id: string; nombre: string }[] };
 
   const nombresPorUserId = new Map(
     (profesionalesRemitentes ?? []).map((p) => [p.user_id, p.nombre])
@@ -74,6 +81,17 @@ export default async function SolicitudDetallePage(
     if (remitenteId === solicitud.cliente_id) return "Cliente";
     return nombresPorUserId.get(remitenteId) ?? "Profesional";
   };
+
+  const esClienteDueno = user.id === solicitud.cliente_id;
+
+  const { data: valoracion } =
+    esClienteDueno && solicitud.estado === "cerrada"
+      ? await supabase
+          .from("valoraciones")
+          .select("puntuacion, comentario, profesionales(nombre)")
+          .eq("solicitud_id", id)
+          .maybeSingle<ValoracionDetalle>()
+      : { data: null as ValoracionDetalle | null };
 
   return (
     <div className="flex flex-1 flex-col items-center gap-8 px-4 py-16">
@@ -128,6 +146,49 @@ export default async function SolicitudDetallePage(
 
         <MensajeForm solicitudId={solicitud.id} />
       </div>
+
+      {esClienteDueno && (
+        <div className="w-full max-w-lg flex flex-col gap-4">
+          <h2 className="text-xl font-semibold">
+            {solicitud.estado === "abierta"
+              ? "Marcar como completada y valorar"
+              : "Tu valoración"}
+          </h2>
+
+          {solicitud.estado === "abierta" ? (
+            (profesionalesRemitentes ?? []).length === 0 ? (
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Todavía no hay ningún profesional en el hilo para valorar.
+              </p>
+            ) : (
+              <ValoracionForm
+                solicitudId={solicitud.id}
+                profesionales={(profesionalesRemitentes ?? []).map((p) => ({
+                  id: p.id,
+                  nombre: p.nombre,
+                }))}
+              />
+            )
+          ) : valoracion ? (
+            <div className="rounded-xl border border-black/10 p-6 dark:border-white/15">
+              <p className="font-medium">
+                {valoracion.profesionales?.nombre ?? "Profesional"}
+                {" · "}
+                {valoracion.puntuacion} {valoracion.puntuacion === 1 ? "estrella" : "estrellas"}
+              </p>
+              {valoracion.comentario && (
+                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                  {valoracion.comentario}
+                </p>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              No dejaste ninguna valoración para esta solicitud.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

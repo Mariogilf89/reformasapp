@@ -37,6 +37,9 @@ export default async function DashboardPage() {
           Mis solicitudes
         </Link>
       )}
+      <Link href="/dashboard/citas" className="font-medium underline">
+        Mis citas
+      </Link>
       <form action={signOut}>
         <button
           type="submit"

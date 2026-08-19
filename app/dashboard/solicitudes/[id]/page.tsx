@@ -2,7 +2,9 @@ import { notFound, redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
 import { MensajeForm } from "./mensaje-form";
+import { ContactoCitaForm } from "./contacto-cita-form";
 import { ValoracionForm } from "./valoracion-form";
+import { ReservaCitaForm } from "./reserva-cita-form";
 
 type Solicitud = {
   id: string;
@@ -17,9 +19,12 @@ type Solicitud = {
 type Mensaje = {
   id: string;
   remitente_id: string;
+  destinatario_id: string | null;
   texto: string;
   creado_en: string;
 };
+
+type ProfesionalContacto = { id: string; user_id: string; nombre: string };
 
 type ValoracionDetalle = {
   puntuacion: number;
@@ -31,6 +36,8 @@ export default async function SolicitudDetallePage(
   props: PageProps<"/dashboard/solicitudes/[id]">
 ) {
   const { id } = await props.params;
+  const { contactar } = await props.searchParams;
+  const contactarId = typeof contactar === "string" ? contactar : undefined;
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -52,12 +59,12 @@ export default async function SolicitudDetallePage(
 
   const { data: mensajes } = await supabase
     .from("mensajes")
-    .select("id, remitente_id, texto, creado_en")
+    .select("id, remitente_id, destinatario_id, texto, creado_en")
     .eq("solicitud_id", id)
     .order("creado_en", { ascending: true })
     .returns<Mensaje[]>();
 
-  const remitentesProfesional = Array.from(
+  const remitentesProfesionalUserIds = Array.from(
     new Set(
       (mensajes ?? [])
         .map((mensaje) => mensaje.remitente_id)
@@ -65,15 +72,41 @@ export default async function SolicitudDetallePage(
     )
   );
 
-  const { data: profesionalesRemitentes } = remitentesProfesional.length
+  const destinatarioProfesionalIds = Array.from(
+    new Set(
+      (mensajes ?? [])
+        .map((mensaje) => mensaje.destinatario_id)
+        .filter((destinatarioId): destinatarioId is string => destinatarioId !== null)
+    )
+  );
+
+  const { data: profesionalesPorUserId } = remitentesProfesionalUserIds.length
     ? await supabase
         .from("profesionales")
         .select("id, user_id, nombre")
-        .in("user_id", remitentesProfesional)
-    : { data: [] as { id: string; user_id: string; nombre: string }[] };
+        .in("user_id", remitentesProfesionalUserIds)
+        .returns<ProfesionalContacto[]>()
+    : { data: [] as ProfesionalContacto[] };
+
+  const { data: profesionalesPorId } = destinatarioProfesionalIds.length
+    ? await supabase
+        .from("profesionales")
+        .select("id, user_id, nombre")
+        .in("id", destinatarioProfesionalIds)
+        .returns<ProfesionalContacto[]>()
+    : { data: [] as ProfesionalContacto[] };
+
+  const profesionalesContactadosPorId = new Map<string, ProfesionalContacto>();
+  for (const profesional of profesionalesPorUserId ?? []) {
+    profesionalesContactadosPorId.set(profesional.id, profesional);
+  }
+  for (const profesional of profesionalesPorId ?? []) {
+    profesionalesContactadosPorId.set(profesional.id, profesional);
+  }
+  const profesionalesContactados = Array.from(profesionalesContactadosPorId.values());
 
   const nombresPorUserId = new Map(
-    (profesionalesRemitentes ?? []).map((p) => [p.user_id, p.nombre])
+    profesionalesContactados.map((p) => [p.user_id, p.nombre])
   );
 
   const nombreRemitente = (remitenteId: string) => {
@@ -83,6 +116,18 @@ export default async function SolicitudDetallePage(
   };
 
   const esClienteDueno = user.id === solicitud.cliente_id;
+
+  const contactarYaEscribio = contactarId
+    ? (profesionalesPorUserId ?? []).some((p) => p.id === contactarId)
+    : false;
+
+  const { data: contactarProfesional } = contactarId
+    ? await supabase
+        .from("profesionales")
+        .select("nombre")
+        .eq("id", contactarId)
+        .maybeSingle<{ nombre: string }>()
+    : { data: null as { nombre: string } | null };
 
   const { data: valoracion } =
     esClienteDueno && solicitud.estado === "cerrada"
@@ -121,7 +166,7 @@ export default async function SolicitudDetallePage(
         </div>
       </div>
 
-      <div className="w-full max-w-lg flex flex-col gap-4">
+      <div id="mensaje" className="w-full max-w-lg flex flex-col gap-4 scroll-mt-8">
         <h2 className="text-xl font-semibold">Mensajes</h2>
 
         <div className="flex flex-col gap-3">
@@ -144,8 +189,33 @@ export default async function SolicitudDetallePage(
           ))}
         </div>
 
-        <MensajeForm solicitudId={solicitud.id} />
+        {esClienteDueno && contactarId && !contactarYaEscribio ? (
+          <ContactoCitaForm
+            solicitudId={solicitud.id}
+            profesionalId={contactarId}
+            profesionalNombre={contactarProfesional?.nombre}
+          />
+        ) : (
+          <MensajeForm
+            solicitudId={solicitud.id}
+            paraProfesional={contactarProfesional?.nombre}
+            destinatarioId={contactarId}
+          />
+        )}
       </div>
+
+      {esClienteDueno && profesionalesContactados.length > 0 && (
+        <div className="w-full max-w-lg flex flex-col gap-4">
+          <h2 className="text-xl font-semibold">Reservar cita</h2>
+          <ReservaCitaForm
+            solicitudId={solicitud.id}
+            profesionales={profesionalesContactados.map((p) => ({
+              id: p.id,
+              nombre: p.nombre,
+            }))}
+          />
+        </div>
+      )}
 
       {esClienteDueno && (
         <div className="w-full max-w-lg flex flex-col gap-4">
@@ -156,14 +226,14 @@ export default async function SolicitudDetallePage(
           </h2>
 
           {solicitud.estado === "abierta" ? (
-            (profesionalesRemitentes ?? []).length === 0 ? (
+            profesionalesContactados.length === 0 ? (
               <p className="text-sm text-zinc-600 dark:text-zinc-400">
                 Todavía no hay ningún profesional en el hilo para valorar.
               </p>
             ) : (
               <ValoracionForm
                 solicitudId={solicitud.id}
-                profesionales={(profesionalesRemitentes ?? []).map((p) => ({
+                profesionales={profesionalesContactados.map((p) => ({
                   id: p.id,
                   nombre: p.nombre,
                 }))}

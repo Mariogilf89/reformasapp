@@ -124,13 +124,21 @@ export default async function SolicitudesPage() {
                     {matchesPorSolicitud.get(solicitud.id)!.map((profesional) => (
                       <li
                         key={profesional.id}
-                        className="rounded-lg bg-black/[.03] p-3 text-sm dark:bg-white/[.05]"
+                        className="flex items-start justify-between gap-3 rounded-lg bg-black/[.03] p-3 text-sm dark:bg-white/[.05]"
                       >
-                        <p className="font-medium">{profesional.nombre}</p>
-                        <p className="text-zinc-600 dark:text-zinc-400">{profesional.zona}</p>
-                        <p className="text-zinc-600 dark:text-zinc-400">
-                          {profesional.descripcion}
-                        </p>
+                        <div>
+                          <p className="font-medium">{profesional.nombre}</p>
+                          <p className="text-zinc-600 dark:text-zinc-400">{profesional.zona}</p>
+                          <p className="text-zinc-600 dark:text-zinc-400">
+                            {profesional.descripcion}
+                          </p>
+                        </div>
+                        <Link
+                          href={`/dashboard/solicitudes/${solicitud.id}?contactar=${profesional.id}#mensaje`}
+                          className="shrink-0 font-medium underline"
+                        >
+                          Contactar
+                        </Link>
                       </li>
                     ))}
                   </ul>

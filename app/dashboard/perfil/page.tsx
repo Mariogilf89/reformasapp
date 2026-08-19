@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { DIAS_SEMANA } from "@/lib/disponibilidad";
-import { borrarTramoDisponibilidad } from "@/app/actions/disponibilidad";
+import { borrarTramoDisponibilidad, borrarExcepcionDisponibilidad } from "@/app/actions/disponibilidad";
 import { PerfilForm } from "./perfil-form";
 import { DisponibilidadForm } from "./disponibilidad-form";
+import { ExcepcionDisponibilidadForm } from "./excepcion-disponibilidad-form";
 
 type Tramo = {
   id: string;
@@ -11,6 +12,21 @@ type Tramo = {
   hora_inicio: string;
   hora_fin: string;
 };
+
+type Excepcion = {
+  id: string;
+  fecha: string;
+  todo_el_dia: boolean;
+  hora_inicio: string | null;
+  hora_fin: string | null;
+};
+
+function fechaISO(fecha: Date) {
+  const y = fecha.getFullYear();
+  const m = String(fecha.getMonth() + 1).padStart(2, "0");
+  const d = String(fecha.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
 export default async function PerfilProfesionalPage() {
   const supabase = await createServerSupabaseClient();
@@ -61,6 +77,16 @@ export default async function PerfilProfesionalPage() {
         .order("hora_inicio", { ascending: true })
         .returns<Tramo[]>()
     : { data: [] as Tramo[] };
+
+  const { data: excepciones } = perfil
+    ? await supabase
+        .from("excepciones_disponibilidad")
+        .select("id, fecha, todo_el_dia, hora_inicio, hora_fin")
+        .eq("profesional_id", perfil.id)
+        .gte("fecha", fechaISO(new Date()))
+        .order("fecha", { ascending: true })
+        .returns<Excepcion[]>()
+    : { data: [] as Excepcion[] };
 
   return (
     <div className="flex flex-1 flex-col items-center gap-10 px-4 py-16">
@@ -145,6 +171,46 @@ export default async function PerfilProfesionalPage() {
           </div>
 
           <DisponibilidadForm />
+        </div>
+      )}
+
+      {perfil && (
+        <div className="w-full max-w-lg flex flex-col gap-4">
+          <h2 className="text-xl font-semibold">Días no disponibles</h2>
+
+          <div className="flex flex-col gap-2">
+            {(excepciones ?? []).length === 0 && (
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                No tienes ninguna excepción próxima.
+              </p>
+            )}
+            {(excepciones ?? []).map((excepcion) => (
+              <div
+                key={excepcion.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/15"
+              >
+                <span className="text-zinc-600 dark:text-zinc-400">
+                  {new Date(`${excepcion.fecha}T00:00:00`).toLocaleDateString("es-ES", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                  })}
+                  {" · "}
+                  {excepcion.todo_el_dia
+                    ? "Todo el día"
+                    : `${excepcion.hora_inicio?.slice(0, 5)} – ${excepcion.hora_fin?.slice(0, 5)}`}
+                </span>
+                <form action={borrarExcepcionDisponibilidad}>
+                  <input type="hidden" name="id" value={excepcion.id} />
+                  <button type="submit" className="text-red-600 underline dark:text-red-400">
+                    Borrar
+                  </button>
+                </form>
+              </div>
+            ))}
+          </div>
+
+          <ExcepcionDisponibilidadForm />
         </div>
       )}
     </div>

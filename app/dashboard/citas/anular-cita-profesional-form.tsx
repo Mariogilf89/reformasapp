@@ -2,6 +2,9 @@
 
 import { useActionState } from "react";
 import { anularCitaProfesional } from "@/app/actions/citas";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 export function AnularCitaProfesionalForm({ citaId }: { citaId: string }) {
   const [state, action, pending] = useActionState(anularCitaProfesional, undefined);
@@ -9,33 +12,21 @@ export function AnularCitaProfesionalForm({ citaId }: { citaId: string }) {
   return (
     <form
       action={action}
-      className="flex flex-col gap-2 rounded-lg border border-black/10 p-3 dark:border-white/15"
+      className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800"
     >
       <input type="hidden" name="id" value={citaId} />
-      <p className="text-sm font-medium">Anular</p>
+      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Anular</p>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor={`comentario_anular_${citaId}`} className="text-xs font-medium">
-          Motivo
-        </label>
-        <textarea
-          id={`comentario_anular_${citaId}`}
-          name="comentario"
-          required
-          rows={2}
-          className="rounded border border-black/15 px-2 py-1 text-sm dark:border-white/20"
-        />
+        <Label htmlFor={`comentario_anular_${citaId}`}>Motivo</Label>
+        <Textarea id={`comentario_anular_${citaId}`} name="comentario" required rows={2} />
       </div>
 
       {state?.error && <p className="text-xs text-red-600 dark:text-red-400">{state.error}</p>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="self-start rounded-full px-4 py-1.5 text-xs font-medium text-red-600 underline disabled:opacity-50 dark:text-red-400"
-      >
+      <Button type="submit" variant="danger" size="xs" disabled={pending} className="self-start">
         {pending ? "Anulando..." : "Anular"}
-      </button>
+      </Button>
     </form>
   );
 }

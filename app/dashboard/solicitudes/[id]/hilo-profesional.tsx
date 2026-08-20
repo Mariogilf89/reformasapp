@@ -5,6 +5,11 @@ import { TIPOS_CITA } from "@/lib/citas";
 import { enviarMensajeConCita } from "@/app/actions/mensajes";
 import { obtenerHuecosDisponibles, type HuecosDia } from "@/app/actions/citas";
 import { CalendarioHuecos } from "./calendario-huecos";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 export type MensajeHilo = {
   id: string;
@@ -85,106 +90,87 @@ export function HiloProfesional({
   }
 
   return (
-    <form
-      ref={formRef}
-      action={action}
-      className="flex flex-col gap-4 rounded-xl border border-black/10 p-6 dark:border-white/15"
-    >
-      <input type="hidden" name="solicitud_id" value={solicitudId} />
-      <input type="hidden" name="destinatario_id" value={profesionalId} />
-      <input type="hidden" name="fecha" value={fechaSeleccionada} />
-      <input type="hidden" name="hora_inicio" value={horaSeleccionada} />
-      {horaSeleccionada && <input type="hidden" name="tipo" value={tipo} />}
+    <Card className="p-6">
+      <form ref={formRef} action={action} className="flex flex-col gap-4">
+        <input type="hidden" name="solicitud_id" value={solicitudId} />
+        <input type="hidden" name="destinatario_id" value={profesionalId} />
+        <input type="hidden" name="fecha" value={fechaSeleccionada} />
+        <input type="hidden" name="hora_inicio" value={horaSeleccionada} />
+        {horaSeleccionada && <input type="hidden" name="tipo" value={tipo} />}
 
-      <p className="font-medium">{profesionalNombre}</p>
+        <p className="font-medium text-neutral-900 dark:text-neutral-100">{profesionalNombre}</p>
 
-      <div className="flex flex-col gap-2">
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Opcional: propón un día y hora para una cita.
-        </p>
-        <CalendarioHuecos
-          dias={dias}
-          cargando={cargando}
-          anio={anio}
-          mes={mes}
-          fechaSeleccionada={fechaSeleccionada}
-          horaSeleccionada={horaSeleccionada}
-          onSeleccionarFecha={(fecha) => {
-            setFechaSeleccionada(fecha);
-            setHoraSeleccionada("");
-          }}
-          onSeleccionarHora={setHoraSeleccionada}
-          onMesAnterior={irMesAnterior}
-          onMesSiguiente={irMesSiguiente}
-        />
-        {horaSeleccionada && (
-          <div className="flex flex-col gap-1">
-            <label
-              htmlFor={`tipo-${profesionalId}`}
-              className="text-sm font-medium"
-            >
-              Tipo de cita
-            </label>
-            <select
-              id={`tipo-${profesionalId}`}
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value)}
-              className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
-            >
-              {TIPOS_CITA.map((tipoOpcion) => (
-                <option key={tipoOpcion.value} value={tipoOpcion.value}>
-                  {tipoOpcion.label}
-                </option>
-              ))}
-            </select>
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            Opcional: propón un día y hora para una cita.
+          </p>
+          <CalendarioHuecos
+            dias={dias}
+            cargando={cargando}
+            anio={anio}
+            mes={mes}
+            fechaSeleccionada={fechaSeleccionada}
+            horaSeleccionada={horaSeleccionada}
+            onSeleccionarFecha={(fecha) => {
+              setFechaSeleccionada(fecha);
+              setHoraSeleccionada("");
+            }}
+            onSeleccionarHora={setHoraSeleccionada}
+            onMesAnterior={irMesAnterior}
+            onMesSiguiente={irMesSiguiente}
+          />
+          {horaSeleccionada && (
+            <div className="flex flex-col gap-1">
+              <Label htmlFor={`tipo-${profesionalId}`}>Tipo de cita</Label>
+              <Select
+                id={`tipo-${profesionalId}`}
+                value={tipo}
+                onChange={(e) => setTipo(e.target.value)}
+              >
+                {TIPOS_CITA.map((tipoOpcion) => (
+                  <option key={tipoOpcion.value} value={tipoOpcion.value}>
+                    {tipoOpcion.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
+        </div>
+
+        {mensajes.length > 0 && (
+          <div className="flex flex-col gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+            {mensajes.map((mensaje) => (
+              <div
+                key={mensaje.id}
+                className="rounded-lg bg-neutral-50 p-3 text-sm dark:bg-neutral-800/60"
+              >
+                <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                  {mensaje.autor}
+                </p>
+                <p className="mt-1 text-neutral-700 dark:text-neutral-300">{mensaje.texto}</p>
+                <p className="mt-1 text-xs text-neutral-500">{mensaje.creadoEn}</p>
+              </div>
+            ))}
           </div>
         )}
-      </div>
 
-      {mensajes.length > 0 && (
-        <div className="flex flex-col gap-3 border-t border-black/10 pt-4 dark:border-white/15">
-          {mensajes.map((mensaje) => (
-            <div
-              key={mensaje.id}
-              className="rounded-lg bg-black/[.03] p-3 text-sm dark:bg-white/[.05]"
-            >
-              <p className="font-medium">{mensaje.autor}</p>
-              <p className="mt-1 text-zinc-700 dark:text-zinc-300">{mensaje.texto}</p>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">{mensaje.creadoEn}</p>
-            </div>
-          ))}
+        <div className="flex flex-col gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+          <Label htmlFor={`texto-${profesionalId}`}>Enviar un mensaje</Label>
+          <Textarea ref={textareaRef} id={`texto-${profesionalId}`} name="texto" required rows={3} />
         </div>
-      )}
 
-      <div className="flex flex-col gap-2 border-t border-black/10 pt-4 dark:border-white/15">
-        <label htmlFor={`texto-${profesionalId}`} className="text-sm font-medium">
-          Enviar un mensaje
-        </label>
-        <textarea
-          ref={textareaRef}
-          id={`texto-${profesionalId}`}
-          name="texto"
-          required
-          rows={3}
-          className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
-        />
-      </div>
+        {state?.error && (
+          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+        )}
 
-      {state?.error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
-      )}
-
-      <button
-        type="submit"
-        disabled={pending}
-        className="self-start rounded-full bg-foreground px-5 py-2.5 text-background font-medium disabled:opacity-50"
-      >
-        {pending
-          ? "Enviando..."
-          : horaSeleccionada
-            ? "Enviar mensaje y proponer cita"
-            : "Enviar mensaje"}
-      </button>
-    </form>
+        <Button type="submit" disabled={pending} size="xs" className="self-start">
+          {pending
+            ? "Enviando..."
+            : horaSeleccionada
+              ? "Enviar mensaje y proponer cita"
+              : "Enviar mensaje"}
+        </Button>
+      </form>
+    </Card>
   );
 }

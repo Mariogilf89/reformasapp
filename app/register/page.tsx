@@ -13,7 +13,7 @@ export default function RegisterPage() {
 
   return (
     <div className="flex flex-1 items-center justify-center px-4 py-16">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm p-6">
         <form action={action} className="flex flex-col gap-4">
           <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
             Crear cuenta

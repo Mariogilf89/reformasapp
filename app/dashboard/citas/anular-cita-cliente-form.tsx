@@ -2,6 +2,9 @@
 
 import { useActionState } from "react";
 import { anularCitaCliente } from "@/app/actions/citas";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 export function AnularCitaClienteForm({ citaId }: { citaId: string }) {
   const [state, action, pending] = useActionState(anularCitaCliente, undefined);
@@ -11,26 +14,15 @@ export function AnularCitaClienteForm({ citaId }: { citaId: string }) {
       <input type="hidden" name="id" value={citaId} />
 
       <div className="flex flex-col gap-1">
-        <label htmlFor={`comentario_cliente_${citaId}`} className="text-xs font-medium">
-          Comentario (opcional)
-        </label>
-        <textarea
-          id={`comentario_cliente_${citaId}`}
-          name="comentario"
-          rows={2}
-          className="rounded border border-black/15 px-2 py-1 text-sm dark:border-white/20"
-        />
+        <Label htmlFor={`comentario_cliente_${citaId}`}>Comentario (opcional)</Label>
+        <Textarea id={`comentario_cliente_${citaId}`} name="comentario" rows={2} />
       </div>
 
       {state?.error && <p className="text-xs text-red-600 dark:text-red-400">{state.error}</p>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="self-start rounded-full border border-black/15 px-4 py-1.5 text-xs font-medium disabled:opacity-50 dark:border-white/20"
-      >
+      <Button type="submit" variant="secondary" size="xs" disabled={pending} className="self-start">
         {pending ? "Anulando..." : "Anular"}
-      </button>
+      </Button>
     </form>
   );
 }

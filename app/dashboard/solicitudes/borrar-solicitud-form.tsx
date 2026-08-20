@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { borrarSolicitud } from "@/app/actions/solicitudes";
+import { Button } from "@/components/ui/button";
 
 export function BorrarSolicitudForm({
   solicitudId,
@@ -27,13 +28,9 @@ export function BorrarSolicitudForm({
       {state?.error && (
         <p className="text-xs text-red-600 dark:text-red-400">{state.error}</p>
       )}
-      <button
-        type="submit"
-        disabled={pending}
-        className="text-sm font-medium text-red-600 underline disabled:opacity-50 dark:text-red-400"
-      >
+      <Button type="submit" variant="danger" size="xs" disabled={pending}>
         {pending ? "Borrando..." : "Borrar"}
-      </button>
+      </Button>
     </form>
   );
 }

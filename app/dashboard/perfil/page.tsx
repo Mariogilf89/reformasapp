@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { DIAS_SEMANA } from "@/lib/disponibilidad";
 import { borrarTramoDisponibilidad, borrarExcepcionDisponibilidad } from "@/app/actions/disponibilidad";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { PerfilForm } from "./perfil-form";
 import { DisponibilidadForm } from "./disponibilidad-form";
 import { ExcepcionDisponibilidadForm } from "./excepcion-disponibilidad-form";
@@ -41,7 +43,7 @@ export default async function PerfilProfesionalPage() {
   if (user.user_metadata?.role !== "profesional") {
     return (
       <div className="flex flex-1 items-center justify-center px-4 py-16 text-center">
-        <p className="text-zinc-600 dark:text-zinc-400">
+        <p className="text-neutral-600 dark:text-neutral-400">
           Esta página es solo para cuentas de tipo profesional.
         </p>
       </div>
@@ -94,29 +96,28 @@ export default async function PerfilProfesionalPage() {
 
       {perfil && (
         <div className="w-full max-w-lg flex flex-col gap-4">
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
             Valoraciones {media !== null && `· ${media.toFixed(1)} / 5`}
           </h2>
 
           {(valoraciones ?? []).length === 0 ? (
-            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
               Todavía no has recibido ninguna valoración.
             </p>
           ) : (
             <ul className="flex flex-col gap-3">
               {(valoraciones ?? []).map((valoracion, index) => (
-                <li
-                  key={index}
-                  className="rounded-lg border border-black/10 p-3 text-sm dark:border-white/15"
-                >
-                  <p className="font-medium">
-                    {valoracion.puntuacion} {valoracion.puntuacion === 1 ? "estrella" : "estrellas"}
-                  </p>
-                  {valoracion.comentario && (
-                    <p className="mt-1 text-zinc-600 dark:text-zinc-400">
-                      {valoracion.comentario}
+                <li key={index}>
+                  <Card className="p-3 text-sm">
+                    <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                      {valoracion.puntuacion} {valoracion.puntuacion === 1 ? "estrella" : "estrellas"}
                     </p>
-                  )}
+                    {valoracion.comentario && (
+                      <p className="mt-1 text-neutral-600 dark:text-neutral-400">
+                        {valoracion.comentario}
+                      </p>
+                    )}
+                  </Card>
                 </li>
               ))}
             </ul>
@@ -126,7 +127,9 @@ export default async function PerfilProfesionalPage() {
 
       {perfil && (
         <div className="w-full max-w-lg flex flex-col gap-4">
-          <h2 className="text-xl font-semibold">Mi disponibilidad</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+            Mi disponibilidad
+          </h2>
 
           <div className="flex flex-col gap-4">
             {DIAS_SEMANA.map((dia) => {
@@ -137,25 +140,23 @@ export default async function PerfilProfesionalPage() {
 
               return (
                 <div key={dia.value}>
-                  <p className="text-sm font-medium">{dia.label}</p>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                    {dia.label}
+                  </p>
                   <ul className="mt-1 flex flex-col gap-1">
                     {tramosDia.map((tramo) => (
-                      <li
-                        key={tramo.id}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/15"
-                      >
-                        <span className="text-zinc-600 dark:text-zinc-400">
-                          {tramo.hora_inicio.slice(0, 5)} – {tramo.hora_fin.slice(0, 5)}
-                        </span>
-                        <form action={borrarTramoDisponibilidad}>
-                          <input type="hidden" name="id" value={tramo.id} />
-                          <button
-                            type="submit"
-                            className="text-red-600 underline dark:text-red-400"
-                          >
-                            Borrar
-                          </button>
-                        </form>
+                      <li key={tramo.id}>
+                        <Card className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                          <span className="text-neutral-600 dark:text-neutral-400">
+                            {tramo.hora_inicio.slice(0, 5)} – {tramo.hora_fin.slice(0, 5)}
+                          </span>
+                          <form action={borrarTramoDisponibilidad}>
+                            <input type="hidden" name="id" value={tramo.id} />
+                            <Button type="submit" variant="danger" size="xs">
+                              Borrar
+                            </Button>
+                          </form>
+                        </Card>
                       </li>
                     ))}
                   </ul>
@@ -164,7 +165,7 @@ export default async function PerfilProfesionalPage() {
             })}
 
             {(disponibilidad ?? []).length === 0 && (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 Todavía no has añadido ningún tramo de disponibilidad.
               </p>
             )}
@@ -176,20 +177,19 @@ export default async function PerfilProfesionalPage() {
 
       {perfil && (
         <div className="w-full max-w-lg flex flex-col gap-4">
-          <h2 className="text-xl font-semibold">Días no disponibles</h2>
+          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+            Días no disponibles
+          </h2>
 
           <div className="flex flex-col gap-2">
             {(excepciones ?? []).length === 0 && (
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 No tienes ninguna excepción próxima.
               </p>
             )}
             {(excepciones ?? []).map((excepcion) => (
-              <div
-                key={excepcion.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-black/10 px-3 py-2 text-sm dark:border-white/15"
-              >
-                <span className="text-zinc-600 dark:text-zinc-400">
+              <Card key={excepcion.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                <span className="text-neutral-600 dark:text-neutral-400">
                   {new Date(`${excepcion.fecha}T00:00:00`).toLocaleDateString("es-ES", {
                     weekday: "long",
                     day: "numeric",
@@ -202,11 +202,11 @@ export default async function PerfilProfesionalPage() {
                 </span>
                 <form action={borrarExcepcionDisponibilidad}>
                   <input type="hidden" name="id" value={excepcion.id} />
-                  <button type="submit" className="text-red-600 underline dark:text-red-400">
+                  <Button type="submit" variant="danger" size="xs">
                     Borrar
-                  </button>
+                  </Button>
                 </form>
-              </div>
+              </Card>
             ))}
           </div>
 

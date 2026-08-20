@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { TIPOS_CITA, type TipoCita, type EstadoCita, type PropuestoPor } from "@/lib/citas";
 import { aceptarCitaCliente } from "@/app/actions/citas";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { AceptarCitaForm } from "./aceptar-cita-form";
 import { ProponerHorarioForm } from "./proponer-horario-form";
 import { AnularCitaProfesionalForm } from "./anular-cita-profesional-form";
@@ -77,10 +80,12 @@ export default async function CitasPage() {
     <div className="flex flex-1 flex-col items-center gap-10 px-4 py-16">
       {perfilProfesional && (
         <div className="w-full max-w-lg flex flex-col gap-4">
-          <h1 className="text-2xl font-semibold">Citas por confirmar</h1>
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+            Citas por confirmar
+          </h1>
 
           {(citasPendientesProfesional ?? []).length === 0 ? (
-            <p className="text-zinc-600 dark:text-zinc-400">
+            <p className="text-neutral-600 dark:text-neutral-400">
               No tienes ninguna solicitud de cita pendiente.
             </p>
           ) : (
@@ -88,19 +93,21 @@ export default async function CitasPage() {
               {(citasPendientesProfesional ?? []).map((cita) => {
                 const tipoLabel = TIPOS_CITA.find((t) => t.value === cita.tipo)?.label ?? cita.tipo;
                 return (
-                  <div
-                    key={cita.id}
-                    className="rounded-xl border border-black/10 p-6 dark:border-white/15"
-                  >
-                    <p className="font-medium">
-                      {formatearFecha(cita.fecha)} · {cita.hora_inicio.slice(0, 5)}
-                    </p>
-                    <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                      Con Cliente · {tipoLabel}
-                    </p>
+                  <Card key={cita.id} className="p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                          {formatearFecha(cita.fecha)} · {cita.hora_inicio.slice(0, 5)}
+                        </p>
+                        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+                          Con Cliente · {tipoLabel}
+                        </p>
+                      </div>
+                      <Badge status="pendiente">pendiente</Badge>
+                    </div>
                     <Link
                       href={`/dashboard/solicitudes/${cita.solicitud_id}`}
-                      className="mt-2 inline-block text-sm font-medium underline"
+                      className="mt-2 inline-block text-sm font-medium text-primary-700 hover:underline dark:text-primary-400"
                     >
                       Ver solicitud
                     </Link>
@@ -110,7 +117,7 @@ export default async function CitasPage() {
                       <ProponerHorarioForm citaId={cita.id} />
                       <AnularCitaProfesionalForm citaId={cita.id} />
                     </div>
-                  </div>
+                  </Card>
                 );
               })}
             </div>
@@ -119,10 +126,12 @@ export default async function CitasPage() {
       )}
 
       <div className="w-full max-w-lg flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold">Mis citas</h1>
+        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+          Mis citas
+        </h1>
 
         {(citasCliente ?? []).length === 0 ? (
-          <p className="text-zinc-600 dark:text-zinc-400">
+          <p className="text-neutral-600 dark:text-neutral-400">
             Todavía no has reservado ninguna cita.
           </p>
         ) : (
@@ -132,49 +141,48 @@ export default async function CitasPage() {
               const nombreProfesional = cita.profesionales?.nombre ?? "Profesional";
 
               return (
-                <div
-                  key={cita.id}
-                  className="rounded-xl border border-black/10 p-6 dark:border-white/15"
-                >
-                  <p className="font-medium">
-                    Con {nombreProfesional} · {tipoLabel}
-                  </p>
-                  <Link
-                    href={`/dashboard/solicitudes/${cita.solicitud_id}`}
-                    className="mt-1 inline-block text-sm font-medium underline"
-                  >
-                    Ver solicitud
-                  </Link>
+                <Card key={cita.id} className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                        Con {nombreProfesional} · {tipoLabel}
+                      </p>
+                      <Link
+                        href={`/dashboard/solicitudes/${cita.solicitud_id}`}
+                        className="mt-1 inline-block text-sm font-medium text-primary-700 hover:underline dark:text-primary-400"
+                      >
+                        Ver solicitud
+                      </Link>
+                    </div>
+                    <Badge status={cita.estado}>{cita.estado}</Badge>
+                  </div>
 
                   <div className="mt-3 text-sm">
                     {cita.estado === "pendiente" && cita.propuesto_por === "cliente" && (
-                      <p className="text-zinc-600 dark:text-zinc-400">
+                      <p className="text-neutral-600 dark:text-neutral-400">
                         Esperando confirmación del profesional.
                       </p>
                     )}
 
                     {cita.estado === "pendiente" && cita.propuesto_por === "profesional" && (
                       <div className="flex flex-col gap-2">
-                        <p className="text-zinc-600 dark:text-zinc-400">
+                        <p className="text-neutral-600 dark:text-neutral-400">
                           El profesional propone: {formatearFecha(cita.fecha)}
                           {" · "}
                           {cita.hora_inicio.slice(0, 5)}
                           {cita.hora_fin && `–${cita.hora_fin.slice(0, 5)}`}
                         </p>
                         {cita.comentario && (
-                          <p className="text-zinc-600 dark:text-zinc-400">
+                          <p className="text-neutral-600 dark:text-neutral-400">
                             &quot;{cita.comentario}&quot;
                           </p>
                         )}
                         <div className="flex items-start gap-3">
                           <form action={aceptarCitaCliente}>
                             <input type="hidden" name="id" value={cita.id} />
-                            <button
-                              type="submit"
-                              className="rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background"
-                            >
+                            <Button type="submit" size="xs">
                               Aceptar
-                            </button>
+                            </Button>
                           </form>
                           <AnularCitaClienteForm citaId={cita.id} />
                         </div>
@@ -182,7 +190,7 @@ export default async function CitasPage() {
                     )}
 
                     {cita.estado === "confirmada" && (
-                      <p className="text-zinc-600 dark:text-zinc-400">
+                      <p className="text-neutral-600 dark:text-neutral-400">
                         {formatearFecha(cita.fecha)} · {cita.hora_inicio.slice(0, 5)}
                         {cita.hora_fin && `–${cita.hora_fin.slice(0, 5)}`}
                       </p>
@@ -190,16 +198,16 @@ export default async function CitasPage() {
 
                     {cita.estado === "cancelada" && (
                       <div>
-                        <p className="text-zinc-600 dark:text-zinc-400">Cita anulada.</p>
+                        <p className="text-neutral-600 dark:text-neutral-400">Cita anulada.</p>
                         {cita.comentario && (
-                          <p className="mt-1 text-zinc-600 dark:text-zinc-400">
+                          <p className="mt-1 text-neutral-600 dark:text-neutral-400">
                             &quot;{cita.comentario}&quot;
                           </p>
                         )}
                       </div>
                     )}
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>

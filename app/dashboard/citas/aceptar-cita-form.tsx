@@ -2,6 +2,9 @@
 
 import { useActionState } from "react";
 import { aceptarCitaProfesional } from "@/app/actions/citas";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export function AceptarCitaForm({ citaId }: { citaId: string }) {
   const [state, action, pending] = useActionState(aceptarCitaProfesional, undefined);
@@ -9,33 +12,21 @@ export function AceptarCitaForm({ citaId }: { citaId: string }) {
   return (
     <form
       action={action}
-      className="flex flex-col gap-2 rounded-lg border border-black/10 p-3 dark:border-white/15"
+      className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800"
     >
       <input type="hidden" name="id" value={citaId} />
-      <p className="text-sm font-medium">Aceptar</p>
+      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Aceptar</p>
 
       <div className="flex flex-col gap-1">
-        <label htmlFor={`hora_fin_${citaId}`} className="text-xs font-medium">
-          Hora de fin
-        </label>
-        <input
-          id={`hora_fin_${citaId}`}
-          name="hora_fin"
-          type="time"
-          required
-          className="rounded border border-black/15 px-2 py-1 text-sm dark:border-white/20"
-        />
+        <Label htmlFor={`hora_fin_${citaId}`}>Hora de fin</Label>
+        <Input id={`hora_fin_${citaId}`} name="hora_fin" type="time" required />
       </div>
 
       {state?.error && <p className="text-xs text-red-600 dark:text-red-400">{state.error}</p>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="self-start rounded-full bg-foreground px-4 py-1.5 text-xs font-medium text-background disabled:opacity-50"
-      >
+      <Button type="submit" disabled={pending} size="xs" className="self-start">
         {pending ? "Aceptando..." : "Aceptar"}
-      </button>
+      </Button>
     </form>
   );
 }

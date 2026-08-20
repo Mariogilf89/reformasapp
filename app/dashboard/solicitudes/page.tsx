@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { SolicitudForm } from "./solicitud-form";
 import { BorrarSolicitudForm } from "./borrar-solicitud-form";
 
@@ -34,7 +36,7 @@ export default async function SolicitudesPage() {
   if (user.user_metadata?.role !== "cliente") {
     return (
       <div className="flex flex-1 items-center justify-center px-4 py-16 text-center">
-        <p className="text-zinc-600 dark:text-zinc-400">
+        <p className="text-neutral-600 dark:text-neutral-400">
           Esta página es solo para cuentas de tipo cliente.
         </p>
       </div>
@@ -92,47 +94,37 @@ export default async function SolicitudesPage() {
       <SolicitudForm />
 
       <div className="w-full max-w-lg flex flex-col gap-6">
-        <h2 className="text-xl font-semibold">Mis solicitudes</h2>
+        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+          Mis solicitudes
+        </h2>
 
         {(solicitudes ?? []).length === 0 && (
-          <p className="text-zinc-600 dark:text-zinc-400">
+          <p className="text-neutral-600 dark:text-neutral-400">
             Todavía no has publicado ninguna solicitud.
           </p>
         )}
 
         {(solicitudes ?? []).map((solicitud) => (
-          <div
-            key={solicitud.id}
-            className="rounded-xl border border-black/10 p-6 dark:border-white/15"
-          >
+          <Card key={solicitud.id} className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-medium">
+                <p className="font-medium text-neutral-900 dark:text-neutral-100">
                   {CATEGORIAS.find((c) => c.value === solicitud.categoria)?.label ??
                     solicitud.categoria}
                   {" · "}
                   {solicitud.zona}
                 </p>
-                <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
                   {solicitud.descripcion}
                 </p>
               </div>
-              <span
-                className={
-                  "shrink-0 rounded-full px-3 py-1 text-xs font-medium " +
-                  (solicitud.estado === "abierta"
-                    ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300"
-                    : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400")
-                }
-              >
-                {solicitud.estado}
-              </span>
+              <Badge status={solicitud.estado}>{solicitud.estado}</Badge>
             </div>
 
             <div className="mt-3 flex items-center justify-between gap-4">
               <Link
                 href={`/dashboard/solicitudes/${solicitud.id}`}
-                className="text-sm font-medium underline"
+                className="text-sm font-medium text-primary-700 hover:underline dark:text-primary-400"
               >
                 Ver detalle y mensajes
               </Link>
@@ -143,39 +135,44 @@ export default async function SolicitudesPage() {
             </div>
 
             {solicitud.estado === "abierta" && (
-              <div className="mt-4 flex flex-col gap-3 border-t border-black/10 pt-4 dark:border-white/15">
-                <p className="text-sm font-medium">Profesionales que coinciden</p>
+              <div className="mt-4 flex flex-col gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                  Profesionales que coinciden
+                </p>
                 {(matchesPorSolicitud.get(solicitud.id) ?? []).length === 0 ? (
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
                     Todavía no hay profesionales de esta categoría.
                   </p>
                 ) : (
                   <ul className="flex flex-col gap-3">
                     {matchesPorSolicitud.get(solicitud.id)!.map((profesional) => (
-                      <li
-                        key={profesional.id}
-                        className="flex items-start justify-between gap-3 rounded-lg bg-black/[.03] p-3 text-sm dark:bg-white/[.05]"
-                      >
-                        <div>
-                          <p className="font-medium">{profesional.nombre}</p>
-                          <p className="text-zinc-600 dark:text-zinc-400">{profesional.zona}</p>
-                          <p className="text-zinc-600 dark:text-zinc-400">
-                            {profesional.descripcion}
-                          </p>
+                      <li key={profesional.id}>
+                        <div className="flex items-start justify-between gap-3 rounded-lg bg-neutral-50 p-3 text-sm dark:bg-neutral-800/60">
+                          <div>
+                            <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                              {profesional.nombre}
+                            </p>
+                            <p className="text-neutral-600 dark:text-neutral-400">
+                              {profesional.zona}
+                            </p>
+                            <p className="text-neutral-600 dark:text-neutral-400">
+                              {profesional.descripcion}
+                            </p>
+                          </div>
+                          <Link
+                            href={`/dashboard/solicitudes/${solicitud.id}?contactar=${profesional.id}#mensaje`}
+                            className="shrink-0 font-medium text-primary-700 hover:underline dark:text-primary-400"
+                          >
+                            Contactar
+                          </Link>
                         </div>
-                        <Link
-                          href={`/dashboard/solicitudes/${solicitud.id}?contactar=${profesional.id}#mensaje`}
-                          className="shrink-0 font-medium underline"
-                        >
-                          Contactar
-                        </Link>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
             )}
-          </div>
+          </Card>
         ))}
       </div>
     </div>

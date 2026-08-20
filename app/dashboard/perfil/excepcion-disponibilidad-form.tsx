@@ -2,6 +2,10 @@
 
 import { useActionState, useState } from "react";
 import { crearExcepcionDisponibilidad } from "@/app/actions/disponibilidad";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const DIAS_MAXIMO = 60;
 
@@ -23,89 +27,69 @@ export function ExcepcionDisponibilidadForm() {
   );
 
   return (
-    <form
-      action={action}
-      className="flex flex-col gap-3 rounded-xl border border-black/10 p-6 dark:border-white/15"
-    >
-      <div className="flex flex-col gap-1">
-        <label htmlFor="fecha" className="text-sm font-medium">
-          Fecha
-        </label>
-        <input
-          id="fecha"
-          name="fecha"
-          type="date"
-          required
-          min={fechaMinima}
-          max={fechaMaxima}
-          className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
-        />
-      </div>
-
-      <fieldset className="flex flex-col gap-2">
-        <legend className="mb-1 text-sm font-medium">Tipo de bloqueo</legend>
-        <label className="flex items-center gap-2">
-          <input
-            type="radio"
-            name="todo_el_dia"
-            value="true"
-            checked={todoElDia}
-            onChange={() => setTodoElDia(true)}
+    <Card className="p-6">
+      <form action={action} className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="fecha">Fecha</Label>
+          <Input
+            id="fecha"
+            name="fecha"
+            type="date"
+            required
+            min={fechaMinima}
+            max={fechaMaxima}
           />
-          No disponible todo el día
-        </label>
-        <label className="flex items-center gap-2">
-          <input
-            type="radio"
-            name="todo_el_dia"
-            value="false"
-            checked={!todoElDia}
-            onChange={() => setTodoElDia(false)}
-          />
-          No disponible en una franja concreta
-        </label>
-      </fieldset>
-
-      {!todoElDia && (
-        <div className="flex gap-3">
-          <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="hora_inicio" className="text-sm font-medium">
-              Hora inicio
-            </label>
-            <input
-              id="hora_inicio"
-              name="hora_inicio"
-              type="time"
-              required
-              className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
-            />
-          </div>
-          <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="hora_fin" className="text-sm font-medium">
-              Hora fin
-            </label>
-            <input
-              id="hora_fin"
-              name="hora_fin"
-              type="time"
-              required
-              className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
-            />
-          </div>
         </div>
-      )}
 
-      {state?.error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
-      )}
+        <fieldset className="flex flex-col gap-2">
+          <legend className="mb-1 text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            Tipo de bloqueo
+          </legend>
+          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+            <input
+              type="radio"
+              name="todo_el_dia"
+              value="true"
+              checked={todoElDia}
+              onChange={() => setTodoElDia(true)}
+              className="accent-primary-600"
+            />
+            No disponible todo el día
+          </label>
+          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+            <input
+              type="radio"
+              name="todo_el_dia"
+              value="false"
+              checked={!todoElDia}
+              onChange={() => setTodoElDia(false)}
+              className="accent-primary-600"
+            />
+            No disponible en una franja concreta
+          </label>
+        </fieldset>
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="self-start rounded-full bg-foreground px-5 py-2.5 text-background font-medium disabled:opacity-50"
-      >
-        {pending ? "Guardando..." : "Guardar excepción"}
-      </button>
-    </form>
+        {!todoElDia && (
+          <div className="flex gap-3">
+            <div className="flex flex-1 flex-col gap-1">
+              <Label htmlFor="hora_inicio">Hora inicio</Label>
+              <Input id="hora_inicio" name="hora_inicio" type="time" required />
+            </div>
+            <div className="flex flex-1 flex-col gap-1">
+              <Label htmlFor="hora_fin">Hora fin</Label>
+              <Input id="hora_fin" name="hora_fin" type="time" required />
+            </div>
+          </div>
+        )}
+
+        {state?.error && (
+          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+        )}
+
+        <Button type="submit" disabled={pending} size="xs" className="self-start">
+          {pending ? "Guardando..." : "Guardar excepción"}
+        </Button>
+      </form>
+    </Card>
   );
 }

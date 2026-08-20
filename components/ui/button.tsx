@@ -2,6 +2,7 @@ import { ButtonHTMLAttributes, forwardRef } from "react";
 import { cn } from "@/lib/cn";
 
 export type ButtonVariant = "primary" | "secondary" | "danger";
+export type ButtonSize = "sm" | "xs";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary: "bg-primary-600 text-white hover:bg-primary-700",
@@ -10,9 +11,19 @@ const variantClasses: Record<ButtonVariant, string> = {
   danger: "bg-red-600 text-white hover:bg-red-700",
 };
 
-export function buttonClassName(variant: ButtonVariant = "primary", className?: string) {
+const sizeClasses: Record<ButtonSize, string> = {
+  sm: "px-5 py-2.5 text-sm",
+  xs: "px-4 py-1.5 text-xs",
+};
+
+export function buttonClassName(
+  variant: ButtonVariant = "primary",
+  size: ButtonSize = "sm",
+  className?: string
+) {
   return cn(
-    "inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex items-center justify-center rounded-full font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+    sizeClasses[size],
     variantClasses[variant],
     className
   );
@@ -20,11 +31,12 @@ export function buttonClassName(variant: ButtonVariant = "primary", className?: 
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
+  size?: ButtonSize;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", ...props }, ref) => (
-    <button ref={ref} className={buttonClassName(variant, className)} {...props} />
+  ({ className, variant = "primary", size = "sm", ...props }, ref) => (
+    <button ref={ref} className={buttonClassName(variant, size, className)} {...props} />
   )
 );
 Button.displayName = "Button";

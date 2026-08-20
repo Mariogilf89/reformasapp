@@ -167,7 +167,7 @@ export default function Home() {
               necesitas y compara propuestas reales antes de decidir.
             </p>
 
-            <Card className="mt-4 w-full max-w-lg shadow-sm">
+            <Card className="mt-4 w-full max-w-lg p-6 shadow-sm">
               <form
                 action="/register"
                 method="get"

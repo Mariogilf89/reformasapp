@@ -3,68 +3,56 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { signIn } from "@/app/actions/auth";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export function LoginForm({ justRegistered }: { justRegistered: boolean }) {
   const [state, action, pending] = useActionState(signIn, undefined);
 
   return (
-    <form
-      action={action}
-      className="w-full max-w-sm flex flex-col gap-4 rounded-xl border border-black/10 p-8 dark:border-white/15"
-    >
-      <h1 className="text-2xl font-semibold">Iniciar sesión</h1>
+    <Card className="w-full max-w-sm">
+      <form action={action} className="flex flex-col gap-4">
+        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+          Iniciar sesión
+        </h1>
 
-      {justRegistered && (
-        <p className="text-sm text-green-600 dark:text-green-400">
-          Cuenta creada. Revisa tu email si se requiere confirmación, luego
-          inicia sesión.
+        {justRegistered && (
+          <p className="text-sm text-primary-600 dark:text-primary-400">
+            Cuenta creada. Revisa tu email si se requiere confirmación, luego
+            inicia sesión.
+          </p>
+        )}
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" name="email" type="email" required />
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="password">Contraseña</Label>
+          <Input id="password" name="password" type="password" required />
+        </div>
+
+        {state?.error && (
+          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+        )}
+
+        <Button type="submit" disabled={pending} className="mt-2 w-full">
+          {pending ? "Entrando..." : "Entrar"}
+        </Button>
+
+        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          ¿No tienes cuenta?{" "}
+          <Link
+            href="/register"
+            className="font-medium text-primary-600 hover:underline dark:text-primary-400"
+          >
+            Regístrate
+          </Link>
         </p>
-      )}
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="email" className="text-sm font-medium">
-          Email
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
-        />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label htmlFor="password" className="text-sm font-medium">
-          Contraseña
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          className="rounded border border-black/15 px-3 py-2 dark:border-white/20"
-        />
-      </div>
-
-      {state?.error && (
-        <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
-      )}
-
-      <button
-        type="submit"
-        disabled={pending}
-        className="mt-2 rounded-full bg-foreground px-5 py-2.5 text-background font-medium disabled:opacity-50"
-      >
-        {pending ? "Entrando..." : "Entrar"}
-      </button>
-
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        ¿No tienes cuenta?{" "}
-        <Link href="/register" className="font-medium underline">
-          Regístrate
-        </Link>
-      </p>
-    </form>
+      </form>
+    </Card>
   );
 }

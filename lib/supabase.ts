@@ -1,13 +1,8 @@
-import { createBrowserClient, createServerClient } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-/** Supabase client for use in Client Components. */
-export function createClient() {
-  return createBrowserClient(supabaseUrl, supabaseAnonKey);
-}
 
 /**
  * Supabase client for use in Server Components, Server Actions and Route

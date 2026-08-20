@@ -33,6 +33,12 @@ export function LoginForm({ justRegistered }: { justRegistered: boolean }) {
         <div className="flex flex-col gap-1">
           <Label htmlFor="password">Contraseña</Label>
           <Input id="password" name="password" type="password" required />
+          <Link
+            href="/forgot-password"
+            className="mt-1 self-end text-xs font-medium text-primary-600 hover:underline dark:text-primary-400"
+          >
+            ¿Olvidaste tu contraseña?
+          </Link>
         </div>
 
         {state?.error && (

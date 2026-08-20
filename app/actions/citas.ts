@@ -2,11 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase";
-import { isTipoCita, type TipoCita } from "@/lib/citas";
+import { TIPOS_CITA, type TipoCita } from "@/lib/citas";
+import { obtenerEmailUsuario } from "@/lib/supabase-admin";
+import { enviarEmail } from "@/lib/email";
 
 export type Supabase = Awaited<ReturnType<typeof createServerSupabaseClient>>;
 
-export type ReservaCitaFormState = { error?: string; success?: boolean } | undefined;
 export type CitaAccionFormState = { error?: string } | undefined;
 
 function aMinutos(hora: string) {
@@ -33,6 +34,87 @@ function finConFallback(horaInicio: string, horaFin: string | null) {
 
 function seSuperponen(inicioA: number, finA: number, inicioB: number, finB: number) {
   return inicioA < finB && inicioB < finA;
+}
+
+function escapeHtml(texto: string) {
+  return texto
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function etiquetaTipo(tipo: string) {
+  return TIPOS_CITA.find((t) => t.value === tipo)?.label ?? tipo;
+}
+
+function formatearFechaLarga(fecha: string) {
+  const [anio, mes, dia] = fecha.split("-").map(Number);
+  return new Date(anio, mes - 1, dia).toLocaleDateString("es-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function formatearHoraCorta(hora: string | null) {
+  return hora ? hora.slice(0, 5) : null;
+}
+
+function construirCuerpoCitaHtml(opts: {
+  titulo: string;
+  mensaje: string;
+  fecha: string;
+  horaInicio: string;
+  horaFin: string | null;
+  tipo: string;
+  motivo?: string | null;
+}) {
+  const { titulo, mensaje, fecha, horaInicio, horaFin, tipo, motivo } = opts;
+  const inicio = formatearHoraCorta(horaInicio);
+  const fin = formatearHoraCorta(horaFin);
+  const horaTexto = fin ? `${inicio} - ${fin}` : `${inicio} (hora de fin por confirmar)`;
+
+  return `
+    <div style="font-family: sans-serif; line-height: 1.5; color: #1a1a1a;">
+      <h2>${escapeHtml(titulo)}</h2>
+      <p>${escapeHtml(mensaje)}</p>
+      <ul>
+        <li><strong>Fecha:</strong> ${escapeHtml(formatearFechaLarga(fecha))}</li>
+        <li><strong>Hora:</strong> ${escapeHtml(horaTexto)}</li>
+        <li><strong>Tipo de cita:</strong> ${escapeHtml(etiquetaTipo(tipo))}</li>
+      </ul>
+      ${motivo ? `<p><strong>Motivo:</strong> ${escapeHtml(motivo)}</p>` : ""}
+    </div>
+  `;
+}
+
+/**
+ * Envía la notificación por email sin dejar que un fallo (API caída,
+ * usuario sin email resoluble, etc.) interrumpa la acción principal:
+ * el cambio en la base de datos ya se ha guardado cuando se llama a esto.
+ */
+async function notificarCambioCita(destinatario: string | null, asunto: string, cuerpoHtml: string) {
+  if (!destinatario) {
+    console.error("No se pudo enviar la notificación de cita: destinatario sin email resoluble.");
+    return;
+  }
+  try {
+    await enviarEmail(destinatario, asunto, cuerpoHtml);
+  } catch (error) {
+    console.error("Error al enviar el email de notificación de cita:", error);
+  }
+}
+
+async function obtenerUserIdProfesional(supabase: Supabase, profesionalId: string) {
+  const { data } = await supabase
+    .from("profesionales")
+    .select("user_id")
+    .eq("id", profesionalId)
+    .maybeSingle<{ user_id: string }>();
+  return data?.user_id ?? null;
 }
 
 type CitaOcupada = {
@@ -97,11 +179,18 @@ async function propioProfesionalId(supabase: Supabase, userId: string) {
 
 export type HuecosDia = { fecha: string; horas: string[] };
 
-const DIAS_A_CALCULAR = 14;
 const INTERVALO_MINUTOS = 30;
 const DURACION_PROVISIONAL_MINUTOS = 60;
 
-export async function obtenerHuecosDisponibles(profesionalId: string): Promise<HuecosDia[]> {
+/**
+ * Calcula los huecos disponibles del profesional para un mes concreto
+ * (mes en base 1). Si no se indica mes/año, usa el mes actual.
+ */
+export async function obtenerHuecosDisponibles(
+  profesionalId: string,
+  anio?: number,
+  mes?: number
+): Promise<HuecosDia[]> {
   if (!profesionalId) {
     return [];
   }
@@ -115,10 +204,13 @@ export async function obtenerHuecosDisponibles(profesionalId: string): Promise<H
     .returns<{ dia_semana: number; hora_inicio: string; hora_fin: string }[]>();
 
   const hoy = new Date();
-  const fechaInicio = fechaISO(hoy);
-  const fechaFin = fechaISO(
-    new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + DIAS_A_CALCULAR - 1)
-  );
+  const anioObjetivo = anio ?? hoy.getFullYear();
+  const mesObjetivo = mes ?? hoy.getMonth() + 1;
+  const primerDiaMes = new Date(anioObjetivo, mesObjetivo - 1, 1);
+  const diasEnMes = new Date(anioObjetivo, mesObjetivo, 0).getDate();
+
+  const fechaInicio = fechaISO(primerDiaMes);
+  const fechaFin = fechaISO(new Date(anioObjetivo, mesObjetivo - 1, diasEnMes));
 
   const ocupadas = await obtenerCitasOcupadas(supabase, profesionalId, fechaInicio, fechaFin);
 
@@ -161,8 +253,8 @@ export async function obtenerHuecosDisponibles(profesionalId: string): Promise<H
 
   const dias: HuecosDia[] = [];
 
-  for (let i = 0; i < DIAS_A_CALCULAR; i++) {
-    const fechaObj = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i);
+  for (let dia = 1; dia <= diasEnMes; dia++) {
+    const fechaObj = new Date(anioObjetivo, mesObjetivo - 1, dia);
     const fecha = fechaISO(fechaObj);
     const excepcionDia = excepcionesPorFecha.get(fecha);
 
@@ -262,56 +354,6 @@ export async function crearCitaPendiente(
   return {};
 }
 
-export async function reservarCita(
-  _prevState: ReservaCitaFormState,
-  formData: FormData
-): Promise<ReservaCitaFormState> {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "No autorizado." };
-  }
-
-  const solicitudId = formData.get("solicitud_id")?.toString();
-  const profesionalId = formData.get("profesional_id")?.toString();
-  const tipo = formData.get("tipo")?.toString() ?? "";
-  const fecha = formData.get("fecha")?.toString();
-  const horaInicio = formData.get("hora_inicio")?.toString();
-
-  if (!solicitudId || !profesionalId) {
-    return { error: "Selecciona un profesional." };
-  }
-  if (!isTipoCita(tipo)) {
-    return { error: "Selecciona un tipo de cita válido." };
-  }
-  if (!fecha) {
-    return { error: "Indica una fecha." };
-  }
-  if (!horaInicio) {
-    return { error: "Indica la hora de inicio." };
-  }
-
-  const resultado = await crearCitaPendiente(supabase, {
-    solicitudId,
-    profesionalId,
-    clienteId: user.id,
-    tipo,
-    fecha,
-    horaInicio,
-  });
-
-  if (resultado.error) {
-    return { error: resultado.error };
-  }
-
-  revalidatePath(`/dashboard/solicitudes/${solicitudId}`);
-  revalidatePath("/dashboard/citas");
-  return { success: true };
-}
-
 export async function aceptarCitaProfesional(
   _prevState: CitaAccionFormState,
   formData: FormData
@@ -342,13 +384,15 @@ export async function aceptarCitaProfesional(
 
   const { data: cita } = await supabase
     .from("citas")
-    .select("id, profesional_id, fecha, hora_inicio, estado")
+    .select("id, profesional_id, cliente_id, fecha, hora_inicio, tipo, estado")
     .eq("id", citaId)
     .maybeSingle<{
       id: string;
       profesional_id: string;
+      cliente_id: string;
       fecha: string;
       hora_inicio: string;
+      tipo: string;
       estado: string;
     }>();
 
@@ -383,6 +427,17 @@ export async function aceptarCitaProfesional(
   if (error) {
     return { error: error.message };
   }
+
+  const emailCliente = await obtenerEmailUsuario(cita.cliente_id);
+  const cuerpo = construirCuerpoCitaHtml({
+    titulo: "Cita confirmada",
+    mensaje: "El profesional ha confirmado tu cita.",
+    fecha: cita.fecha,
+    horaInicio: cita.hora_inicio,
+    horaFin,
+    tipo: cita.tipo,
+  });
+  await notificarCambioCita(emailCliente, "Cita confirmada", cuerpo);
 
   revalidatePath("/dashboard/citas");
   return undefined;
@@ -430,9 +485,9 @@ export async function proponerOtroHorario(
 
   const { data: cita } = await supabase
     .from("citas")
-    .select("id, profesional_id, estado")
+    .select("id, profesional_id, cliente_id, tipo, estado")
     .eq("id", citaId)
-    .maybeSingle<{ id: string; profesional_id: string; estado: string }>();
+    .maybeSingle<{ id: string; profesional_id: string; cliente_id: string; tipo: string; estado: string }>();
 
   if (!cita || cita.profesional_id !== profesionalId) {
     return { error: "No autorizado." };
@@ -469,6 +524,18 @@ export async function proponerOtroHorario(
     return { error: error.message };
   }
 
+  const emailCliente = await obtenerEmailUsuario(cita.cliente_id);
+  const cuerpo = construirCuerpoCitaHtml({
+    titulo: "Nuevo horario propuesto",
+    mensaje: "El profesional ha propuesto un nuevo horario para tu cita.",
+    fecha,
+    horaInicio,
+    horaFin,
+    tipo: cita.tipo,
+    motivo: comentario,
+  });
+  await notificarCambioCita(emailCliente, "Nuevo horario propuesto para tu cita", cuerpo);
+
   revalidatePath("/dashboard/citas");
   return undefined;
 }
@@ -503,9 +570,18 @@ export async function anularCitaProfesional(
 
   const { data: cita } = await supabase
     .from("citas")
-    .select("id, profesional_id, estado")
+    .select("id, profesional_id, cliente_id, fecha, hora_inicio, hora_fin, tipo, estado")
     .eq("id", citaId)
-    .maybeSingle<{ id: string; profesional_id: string; estado: string }>();
+    .maybeSingle<{
+      id: string;
+      profesional_id: string;
+      cliente_id: string;
+      fecha: string;
+      hora_inicio: string;
+      hora_fin: string | null;
+      tipo: string;
+      estado: string;
+    }>();
 
   if (!cita || cita.profesional_id !== profesionalId) {
     return { error: "No autorizado." };
@@ -522,6 +598,18 @@ export async function anularCitaProfesional(
   if (error) {
     return { error: error.message };
   }
+
+  const emailCliente = await obtenerEmailUsuario(cita.cliente_id);
+  const cuerpo = construirCuerpoCitaHtml({
+    titulo: "Cita cancelada",
+    mensaje: "El profesional ha cancelado la cita.",
+    fecha: cita.fecha,
+    horaInicio: cita.hora_inicio,
+    horaFin: cita.hora_fin,
+    tipo: cita.tipo,
+    motivo: comentario,
+  });
+  await notificarCambioCita(emailCliente, "Cita cancelada", cuerpo);
 
   revalidatePath("/dashboard/citas");
   return undefined;
@@ -542,15 +630,42 @@ export async function aceptarCitaCliente(formData: FormData) {
     return;
   }
 
-  await supabase
+  const { data: cita } = await supabase
     .from("citas")
     .update({ estado: "confirmada" })
     .eq("id", citaId)
     .eq("cliente_id", user.id)
     .eq("estado", "pendiente")
-    .eq("propuesto_por", "profesional");
+    .eq("propuesto_por", "profesional")
+    .select("id, profesional_id, fecha, hora_inicio, hora_fin, tipo")
+    .maybeSingle<{
+      id: string;
+      profesional_id: string;
+      fecha: string;
+      hora_inicio: string;
+      hora_fin: string | null;
+      tipo: string;
+    }>();
 
   revalidatePath("/dashboard/citas");
+
+  if (!cita) {
+    return;
+  }
+
+  const profesionalUserId = await obtenerUserIdProfesional(supabase, cita.profesional_id);
+  if (profesionalUserId) {
+    const emailProfesional = await obtenerEmailUsuario(profesionalUserId);
+    const cuerpo = construirCuerpoCitaHtml({
+      titulo: "Cita confirmada",
+      mensaje: "El cliente ha aceptado el nuevo horario y la cita queda confirmada.",
+      fecha: cita.fecha,
+      horaInicio: cita.hora_inicio,
+      horaFin: cita.hora_fin,
+      tipo: cita.tipo,
+    });
+    await notificarCambioCita(emailProfesional, "Cita confirmada", cuerpo);
+  }
 }
 
 export async function anularCitaCliente(
@@ -573,15 +688,41 @@ export async function anularCitaCliente(
     return { error: "Cita inválida." };
   }
 
-  const { error } = await supabase
+  const { data: cita, error } = await supabase
     .from("citas")
     .update({ estado: "cancelada", comentario })
     .eq("id", citaId)
     .eq("cliente_id", user.id)
-    .eq("estado", "pendiente");
+    .eq("estado", "pendiente")
+    .select("id, profesional_id, fecha, hora_inicio, hora_fin, tipo")
+    .maybeSingle<{
+      id: string;
+      profesional_id: string;
+      fecha: string;
+      hora_inicio: string;
+      hora_fin: string | null;
+      tipo: string;
+    }>();
 
   if (error) {
     return { error: error.message };
+  }
+
+  if (cita) {
+    const profesionalUserId = await obtenerUserIdProfesional(supabase, cita.profesional_id);
+    if (profesionalUserId) {
+      const emailProfesional = await obtenerEmailUsuario(profesionalUserId);
+      const cuerpo = construirCuerpoCitaHtml({
+        titulo: "Cita cancelada",
+        mensaje: "El cliente ha cancelado la cita.",
+        fecha: cita.fecha,
+        horaInicio: cita.hora_inicio,
+        horaFin: cita.hora_fin,
+        tipo: cita.tipo,
+        motivo: comentario,
+      });
+      await notificarCambioCita(emailProfesional, "Cita cancelada", cuerpo);
+    }
   }
 
   revalidatePath("/dashboard/citas");

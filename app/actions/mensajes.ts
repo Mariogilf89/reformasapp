@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase";
+import { isTipoCita } from "@/lib/citas";
 import { crearCitaPendiente } from "./citas";
 
 export type MensajeFormState = { error?: string } | undefined;
@@ -69,6 +70,8 @@ export async function enviarMensajeConCita(
   const texto = formData.get("texto")?.toString().trim();
   const fecha = formData.get("fecha")?.toString();
   const horaInicio = formData.get("hora_inicio")?.toString();
+  const tipoInput = formData.get("tipo")?.toString() ?? "";
+  const tipo = isTipoCita(tipoInput) ? tipoInput : "visita";
 
   if (!solicitudId) {
     return { error: "Solicitud inválida." };
@@ -96,7 +99,7 @@ export async function enviarMensajeConCita(
       solicitudId,
       profesionalId: destinatarioId,
       clienteId: user.id,
-      tipo: "visita",
+      tipo,
       fecha,
       horaInicio,
     });

@@ -3,67 +3,105 @@
 import type { HuecosDia } from "@/app/actions/citas";
 
 const DIAS_CABECERA = ["L", "M", "X", "J", "V", "S", "D"];
+const NOMBRES_MES = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
 
 function fechaLocal(fecha: string) {
   const [anio, mes, dia] = fecha.split("-").map(Number);
   return new Date(anio, mes - 1, dia);
 }
 
-function claveSemana(fecha: string) {
-  const fechaObj = fechaLocal(fecha);
-  const diasDesdeElLunes = (fechaObj.getDay() + 6) % 7;
-  const lunes = new Date(
-    fechaObj.getFullYear(),
-    fechaObj.getMonth(),
-    fechaObj.getDate() - diasDesdeElLunes
-  );
-  return `${lunes.getFullYear()}-${String(lunes.getMonth() + 1).padStart(2, "0")}-${String(
-    lunes.getDate()
-  ).padStart(2, "0")}`;
-}
-
-function agruparPorSemana(dias: HuecosDia[]): (HuecosDia | null)[][] {
-  const semanas = new Map<string, (HuecosDia | null)[]>();
-  for (const dia of dias) {
-    const columna = (fechaLocal(dia.fecha).getDay() + 6) % 7;
-    const clave = claveSemana(dia.fecha);
-    if (!semanas.has(clave)) {
-      semanas.set(clave, new Array(7).fill(null));
-    }
-    semanas.get(clave)![columna] = dia;
-  }
-  return Array.from(semanas.values());
+function inicioDeHoy() {
+  const hoy = new Date();
+  return new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
 }
 
 export function CalendarioHuecos({
   dias,
   cargando,
+  anio,
+  mes,
   fechaSeleccionada,
   horaSeleccionada,
   onSeleccionarFecha,
   onSeleccionarHora,
+  onMesAnterior,
+  onMesSiguiente,
 }: {
   dias: HuecosDia[];
   cargando: boolean;
+  anio: number;
+  mes: number;
   fechaSeleccionada: string;
   horaSeleccionada: string;
   onSeleccionarFecha: (fecha: string) => void;
   onSeleccionarHora: (hora: string) => void;
+  onMesAnterior: () => void;
+  onMesSiguiente: () => void;
 }) {
-  const semanas = agruparPorSemana(dias);
+  const hoy = inicioDeHoy();
+  const diasPorFecha = new Map(dias.map((dia) => [dia.fecha, dia]));
+  const diasEnMes = new Date(anio, mes, 0).getDate();
+  const columnaInicio = (new Date(anio, mes - 1, 1).getDay() + 6) % 7;
+
+  const celdas: (HuecosDia | null)[] = new Array(columnaInicio).fill(null);
+  for (let dia = 1; dia <= diasEnMes; dia++) {
+    const fecha = `${anio}-${String(mes).padStart(2, "0")}-${String(dia).padStart(2, "0")}`;
+    celdas.push(diasPorFecha.get(fecha) ?? { fecha, horas: [] });
+  }
+  while (celdas.length % 7 !== 0) {
+    celdas.push(null);
+  }
+
+  const semanas: (HuecosDia | null)[][] = [];
+  for (let i = 0; i < celdas.length; i += 7) {
+    semanas.push(celdas.slice(i, i + 7));
+  }
+
+  const noSePuedeRetroceder = anio * 12 + mes <= hoy.getFullYear() * 12 + (hoy.getMonth() + 1);
   const horasDelDia = dias.find((dia) => dia.fecha === fechaSeleccionada)?.horas ?? [];
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium">Fecha</p>
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={onMesAnterior}
+            disabled={noSePuedeRetroceder}
+            className="rounded-full px-2 py-1 text-sm font-medium hover:bg-black/[.05] disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-white/[.08]"
+            aria-label="Mes anterior"
+          >
+            ←
+          </button>
+          <p className="text-sm font-medium capitalize">
+            {NOMBRES_MES[mes - 1]} {anio}
+          </p>
+          <button
+            type="button"
+            onClick={onMesSiguiente}
+            className="rounded-full px-2 py-1 text-sm font-medium hover:bg-black/[.05] dark:hover:bg-white/[.08]"
+            aria-label="Mes siguiente"
+          >
+            →
+          </button>
+        </div>
+
         {cargando ? (
           <p className="text-sm text-zinc-600 dark:text-zinc-400">
             Consultando disponibilidad...
-          </p>
-        ) : dias.length === 0 ? (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Selecciona un profesional para ver su disponibilidad.
           </p>
         ) : (
           <div className="flex flex-col gap-1">
@@ -78,7 +116,8 @@ export function CalendarioHuecos({
                   if (!dia) {
                     return <div key={columna} />;
                   }
-                  const disponible = dia.horas.length > 0;
+                  const esPasado = fechaLocal(dia.fecha) < hoy;
+                  const disponible = dia.horas.length > 0 && !esPasado;
                   const seleccionado = dia.fecha === fechaSeleccionada;
                   return (
                     <button

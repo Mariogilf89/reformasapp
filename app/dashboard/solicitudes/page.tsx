@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
 import { SolicitudForm } from "./solicitud-form";
+import { BorrarSolicitudForm } from "./borrar-solicitud-form";
 
 type Solicitud = {
   id: string;
@@ -48,6 +49,29 @@ export default async function SolicitudesPage() {
     .returns<Solicitud[]>();
 
   const abiertas = (solicitudes ?? []).filter((s) => s.estado === "abierta");
+
+  const solicitudIds = (solicitudes ?? []).map((s) => s.id);
+
+  const { data: mensajesDeSolicitudes } = solicitudIds.length
+    ? await supabase
+        .from("mensajes")
+        .select("solicitud_id")
+        .in("solicitud_id", solicitudIds)
+        .returns<{ solicitud_id: string }[]>()
+    : { data: [] as { solicitud_id: string }[] };
+
+  const { data: citasDeSolicitudes } = solicitudIds.length
+    ? await supabase
+        .from("citas")
+        .select("solicitud_id")
+        .in("solicitud_id", solicitudIds)
+        .returns<{ solicitud_id: string }[]>()
+    : { data: [] as { solicitud_id: string }[] };
+
+  const solicitudesConDatosAsociados = new Set<string>([
+    ...(mensajesDeSolicitudes ?? []).map((m) => m.solicitud_id),
+    ...(citasDeSolicitudes ?? []).map((c) => c.solicitud_id),
+  ]);
 
   const matchesPorSolicitud = new Map<string, ProfesionalMatch[]>();
 
@@ -105,12 +129,18 @@ export default async function SolicitudesPage() {
               </span>
             </div>
 
-            <Link
-              href={`/dashboard/solicitudes/${solicitud.id}`}
-              className="mt-3 inline-block text-sm font-medium underline"
-            >
-              Ver detalle y mensajes
-            </Link>
+            <div className="mt-3 flex items-center justify-between gap-4">
+              <Link
+                href={`/dashboard/solicitudes/${solicitud.id}`}
+                className="text-sm font-medium underline"
+              >
+                Ver detalle y mensajes
+              </Link>
+              <BorrarSolicitudForm
+                solicitudId={solicitud.id}
+                tieneDatosAsociados={solicitudesConDatosAsociados.has(solicitud.id)}
+              />
+            </div>
 
             {solicitud.estado === "abierta" && (
               <div className="mt-4 flex flex-col gap-3 border-t border-black/10 pt-4 dark:border-white/15">

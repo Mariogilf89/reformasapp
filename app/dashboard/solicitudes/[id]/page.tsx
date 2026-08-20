@@ -2,9 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
 import { MensajeForm } from "./mensaje-form";
-import { ContactoCitaForm } from "./contacto-cita-form";
 import { ValoracionForm } from "./valoracion-form";
-import { ReservaCitaForm } from "./reserva-cita-form";
+import { HiloProfesional, type MensajeHilo } from "./hilo-profesional";
 
 type Solicitud = {
   id: string;
@@ -117,10 +116,6 @@ export default async function SolicitudDetallePage(
 
   const esClienteDueno = user.id === solicitud.cliente_id;
 
-  const contactarYaEscribio = contactarId
-    ? (profesionalesPorUserId ?? []).some((p) => p.id === contactarId)
-    : false;
-
   const { data: contactarProfesional } = contactarId
     ? await supabase
         .from("profesionales")
@@ -137,6 +132,35 @@ export default async function SolicitudDetallePage(
           .eq("solicitud_id", id)
           .maybeSingle<ValoracionDetalle>()
       : { data: null as ValoracionDetalle | null };
+
+  const hilosPorProfesional = new Map<string, ProfesionalContacto>(
+    profesionalesContactados.map((profesional) => [profesional.id, profesional])
+  );
+  if (contactarId && !hilosPorProfesional.has(contactarId)) {
+    hilosPorProfesional.set(contactarId, {
+      id: contactarId,
+      user_id: "",
+      nombre: contactarProfesional?.nombre ?? "Profesional",
+    });
+  }
+  const hilos = Array.from(hilosPorProfesional.values());
+  if (contactarId) {
+    hilos.sort((a, b) => (a.id === contactarId ? -1 : b.id === contactarId ? 1 : 0));
+  }
+
+  const mensajesDelHilo = (hilo: ProfesionalContacto): MensajeHilo[] =>
+    (mensajes ?? [])
+      .filter(
+        (mensaje) =>
+          mensaje.destinatario_id === hilo.id ||
+          (hilo.user_id && mensaje.remitente_id === hilo.user_id)
+      )
+      .map((mensaje) => ({
+        id: mensaje.id,
+        autor: nombreRemitente(mensaje.remitente_id),
+        texto: mensaje.texto,
+        creadoEn: new Date(mensaje.creado_en).toLocaleString("es-ES"),
+      }));
 
   return (
     <div className="flex flex-1 flex-col items-center gap-8 px-4 py-16">
@@ -166,56 +190,56 @@ export default async function SolicitudDetallePage(
         </div>
       </div>
 
-      <div id="mensaje" className="w-full max-w-lg flex flex-col gap-4 scroll-mt-8">
-        <h2 className="text-xl font-semibold">Mensajes</h2>
-
-        <div className="flex flex-col gap-3">
-          {(mensajes ?? []).length === 0 && (
+      <div id="mensaje" className="w-full max-w-lg flex flex-col gap-6 scroll-mt-8">
+        {esClienteDueno ? (
+          hilos.length === 0 ? (
             <p className="text-sm text-zinc-600 dark:text-zinc-400">
-              Todavía no hay mensajes en esta solicitud.
+              Todavía no has contactado con ningún profesional para esta solicitud.
             </p>
-          )}
-          {(mensajes ?? []).map((mensaje) => (
-            <div
-              key={mensaje.id}
-              className="rounded-lg bg-black/[.03] p-3 text-sm dark:bg-white/[.05]"
-            >
-              <p className="font-medium">{nombreRemitente(mensaje.remitente_id)}</p>
-              <p className="mt-1 text-zinc-700 dark:text-zinc-300">{mensaje.texto}</p>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
-                {new Date(mensaje.creado_en).toLocaleString("es-ES")}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {esClienteDueno && contactarId && !contactarYaEscribio ? (
-          <ContactoCitaForm
-            solicitudId={solicitud.id}
-            profesionalId={contactarId}
-            profesionalNombre={contactarProfesional?.nombre}
-          />
+          ) : (
+            hilos.map((hilo) => (
+              <HiloProfesional
+                key={hilo.id}
+                solicitudId={solicitud.id}
+                profesionalId={hilo.id}
+                profesionalNombre={hilo.nombre}
+                mensajes={mensajesDelHilo(hilo)}
+                enfocar={hilo.id === contactarId}
+              />
+            ))
+          )
         ) : (
-          <MensajeForm
-            solicitudId={solicitud.id}
-            paraProfesional={contactarProfesional?.nombre}
-            destinatarioId={contactarId}
-          />
+          <>
+            <h2 className="text-xl font-semibold">Mensajes</h2>
+
+            <div className="flex flex-col gap-3">
+              {(mensajes ?? []).length === 0 && (
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                  Todavía no hay mensajes en esta solicitud.
+                </p>
+              )}
+              {(mensajes ?? []).map((mensaje) => (
+                <div
+                  key={mensaje.id}
+                  className="rounded-lg bg-black/[.03] p-3 text-sm dark:bg-white/[.05]"
+                >
+                  <p className="font-medium">{nombreRemitente(mensaje.remitente_id)}</p>
+                  <p className="mt-1 text-zinc-700 dark:text-zinc-300">{mensaje.texto}</p>
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-500">
+                    {new Date(mensaje.creado_en).toLocaleString("es-ES")}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <MensajeForm
+              solicitudId={solicitud.id}
+              paraProfesional={contactarProfesional?.nombre}
+              destinatarioId={contactarId}
+            />
+          </>
         )}
       </div>
-
-      {esClienteDueno && profesionalesContactados.length > 0 && (
-        <div className="w-full max-w-lg flex flex-col gap-4">
-          <h2 className="text-xl font-semibold">Reservar cita</h2>
-          <ReservaCitaForm
-            solicitudId={solicitud.id}
-            profesionales={profesionalesContactados.map((p) => ({
-              id: p.id,
-              nombre: p.nombre,
-            }))}
-          />
-        </div>
-      )}
 
       {esClienteDueno && (
         <div className="w-full max-w-lg flex flex-col gap-4">

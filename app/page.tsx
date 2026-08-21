@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { SVGProps } from "react";
-import { Button, buttonClassName } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PublicHeader } from "@/components/public-header";
 
 function IconPintura(props: SVGProps<SVGSVGElement>) {
   return (
@@ -133,24 +134,7 @@ const CONFIANZA = [
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4">
-          <span className="text-lg font-semibold text-primary-700 dark:text-primary-400">
-            ReformasApp
-          </span>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-neutral-600 hover:text-primary-700 dark:text-neutral-400 dark:hover:text-primary-400"
-            >
-              Iniciar sesión
-            </Link>
-            <Link href="/register" className={buttonClassName()}>
-              Registrarse
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main className="flex flex-1 flex-col">
         {/* Hero */}
@@ -169,7 +153,7 @@ export default function Home() {
 
             <Card className="mt-4 w-full max-w-lg p-6 shadow-sm">
               <form
-                action="/register"
+                action="/profesionales"
                 method="get"
                 className="flex flex-col items-stretch gap-3 sm:flex-row"
               >
@@ -207,7 +191,7 @@ export default function Home() {
             </h2>
             <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
               {CATEGORIAS_HOME.map(({ value, label, Icon }) => (
-                <Link key={value} href={`/register?categoria=${value}`}>
+                <Link key={value} href={`/profesionales?categoria=${value}`}>
                   <Card className="flex flex-col items-center gap-3 px-3 py-6 text-center transition-colors hover:border-primary-300">
                     <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                       <Icon className="h-5 w-5" />

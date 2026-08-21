@@ -3,6 +3,13 @@ export const CATEGORIAS = [
   { value: "electricidad", label: "Electricidad" },
   { value: "fontaneria", label: "Fontanería" },
   { value: "carpinteria", label: "Carpintería" },
+  { value: "albanileria", label: "Albañilería" },
+  { value: "cerrajeria", label: "Cerrajería" },
+  { value: "climatizacion", label: "Climatización" },
+  { value: "jardineria", label: "Jardinería" },
+  { value: "limpieza", label: "Limpieza" },
+  { value: "mudanzas", label: "Mudanzas" },
+  { value: "decoracion", label: "Decoración" },
   { value: "otros", label: "Otros" },
 ] as const;
 

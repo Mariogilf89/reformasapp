@@ -11,3 +11,7 @@ export type Categoria = (typeof CATEGORIAS)[number]["value"];
 export function isCategoria(value: string): value is Categoria {
   return CATEGORIAS.some((categoria) => categoria.value === value);
 }
+
+export const FOTOS_BUCKET = "fotos-profesionales";
+export const MAX_FOTOS_PROFESIONAL = 6;
+export const MAX_TAMANO_FOTO_BYTES = 5 * 1024 * 1024;

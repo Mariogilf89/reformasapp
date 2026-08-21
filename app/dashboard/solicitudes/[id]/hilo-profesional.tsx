@@ -22,12 +22,14 @@ export function HiloProfesional({
   solicitudId,
   profesionalId,
   profesionalNombre,
+  profesionalFotos,
   mensajes,
   enfocar,
 }: {
   solicitudId: string;
   profesionalId: string;
   profesionalNombre: string;
+  profesionalFotos?: string[];
   mensajes: MensajeHilo[];
   enfocar?: boolean;
 }) {
@@ -98,7 +100,22 @@ export function HiloProfesional({
         <input type="hidden" name="hora_inicio" value={horaSeleccionada} />
         {horaSeleccionada && <input type="hidden" name="tipo" value={tipo} />}
 
-        <p className="font-medium text-neutral-900 dark:text-neutral-100">{profesionalNombre}</p>
+        <div>
+          <p className="font-medium text-neutral-900 dark:text-neutral-100">{profesionalNombre}</p>
+          {profesionalFotos && profesionalFotos.length > 0 && (
+            <div className="mt-2 flex gap-2">
+              {profesionalFotos.slice(0, 6).map((url) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={url}
+                  src={url}
+                  alt={`Trabajo de ${profesionalNombre}`}
+                  className="h-14 w-14 rounded-md border border-neutral-200 object-cover dark:border-neutral-800"
+                />
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="flex flex-col gap-2">
           <p className="text-sm text-neutral-600 dark:text-neutral-400">

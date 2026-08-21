@@ -25,7 +25,7 @@ type Mensaje = {
   creado_en: string;
 };
 
-type ProfesionalContacto = { id: string; user_id: string; nombre: string };
+type ProfesionalContacto = { id: string; user_id: string; nombre: string; fotos: string[] };
 
 type ValoracionDetalle = {
   puntuacion: number;
@@ -84,7 +84,7 @@ export default async function SolicitudDetallePage(
   const { data: profesionalesPorUserId } = remitentesProfesionalUserIds.length
     ? await supabase
         .from("profesionales")
-        .select("id, user_id, nombre")
+        .select("id, user_id, nombre, fotos")
         .in("user_id", remitentesProfesionalUserIds)
         .returns<ProfesionalContacto[]>()
     : { data: [] as ProfesionalContacto[] };
@@ -92,7 +92,7 @@ export default async function SolicitudDetallePage(
   const { data: profesionalesPorId } = destinatarioProfesionalIds.length
     ? await supabase
         .from("profesionales")
-        .select("id, user_id, nombre")
+        .select("id, user_id, nombre, fotos")
         .in("id", destinatarioProfesionalIds)
         .returns<ProfesionalContacto[]>()
     : { data: [] as ProfesionalContacto[] };
@@ -121,10 +121,10 @@ export default async function SolicitudDetallePage(
   const { data: contactarProfesional } = contactarId
     ? await supabase
         .from("profesionales")
-        .select("nombre")
+        .select("nombre, fotos")
         .eq("id", contactarId)
-        .maybeSingle<{ nombre: string }>()
-    : { data: null as { nombre: string } | null };
+        .maybeSingle<{ nombre: string; fotos: string[] }>()
+    : { data: null as { nombre: string; fotos: string[] } | null };
 
   const { data: valoracion } =
     esClienteDueno && solicitud.estado === "cerrada"
@@ -143,6 +143,7 @@ export default async function SolicitudDetallePage(
       id: contactarId,
       user_id: "",
       nombre: contactarProfesional?.nombre ?? "Profesional",
+      fotos: contactarProfesional?.fotos ?? [],
     });
   }
   const hilos = Array.from(hilosPorProfesional.values());
@@ -196,6 +197,7 @@ export default async function SolicitudDetallePage(
                 solicitudId={solicitud.id}
                 profesionalId={hilo.id}
                 profesionalNombre={hilo.nombre}
+                profesionalFotos={hilo.fotos}
                 mensajes={mensajesDelHilo(hilo)}
                 enfocar={hilo.id === contactarId}
               />

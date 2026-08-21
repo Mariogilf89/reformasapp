@@ -5,6 +5,7 @@ import { borrarTramoDisponibilidad, borrarExcepcionDisponibilidad } from "@/app/
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PerfilForm } from "./perfil-form";
+import { FotosForm } from "./fotos-form";
 import { DisponibilidadForm } from "./disponibilidad-form";
 import { ExcepcionDisponibilidadForm } from "./excepcion-disponibilidad-form";
 
@@ -52,7 +53,7 @@ export default async function PerfilProfesionalPage() {
 
   const { data: perfil } = await supabase
     .from("profesionales")
-    .select("id, categorias, zona, descripcion")
+    .select("id, categorias, zona, descripcion, fotos")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -93,6 +94,8 @@ export default async function PerfilProfesionalPage() {
   return (
     <div className="flex flex-1 flex-col items-center gap-10 px-4 py-16">
       <PerfilForm perfil={perfil} />
+
+      {perfil && <FotosForm userId={user.id} fotosIniciales={perfil.fotos ?? []} />}
 
       {perfil && (
         <div className="w-full max-w-lg flex flex-col gap-4">

@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { Card } from "@/components/ui/card";
+import { buttonClassName } from "@/components/ui/button";
 
 export default async function DashboardPage() {
   const supabase = await createServerSupabaseClient();
@@ -25,6 +27,11 @@ export default async function DashboardPage() {
           Cuenta de tipo:{" "}
           <span className="font-medium text-neutral-900 dark:text-neutral-100">{role}</span>
         </p>
+        {role === "admin" && (
+          <Link href="/admin/verificaciones" className={buttonClassName()}>
+            Ir a verificaciones pendientes
+          </Link>
+        )}
       </Card>
     </div>
   );

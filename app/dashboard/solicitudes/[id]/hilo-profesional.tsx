@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { VerificadoBadge } from "@/components/ui/verificado-badge";
 
 export type MensajeHilo = {
   id: string;
@@ -23,6 +24,7 @@ export function HiloProfesional({
   profesionalId,
   profesionalNombre,
   profesionalFotos,
+  profesionalVerificado,
   mensajes,
   enfocar,
 }: {
@@ -30,6 +32,7 @@ export function HiloProfesional({
   profesionalId: string;
   profesionalNombre: string;
   profesionalFotos?: string[];
+  profesionalVerificado?: boolean;
   mensajes: MensajeHilo[];
   enfocar?: boolean;
 }) {
@@ -101,7 +104,10 @@ export function HiloProfesional({
         {horaSeleccionada && <input type="hidden" name="tipo" value={tipo} />}
 
         <div>
-          <p className="font-medium text-neutral-900 dark:text-neutral-100">{profesionalNombre}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-neutral-900 dark:text-neutral-100">{profesionalNombre}</p>
+            {profesionalVerificado && <VerificadoBadge />}
+          </div>
           {profesionalFotos && profesionalFotos.length > 0 && (
             <div className="mt-2 flex gap-2">
               {profesionalFotos.slice(0, 6).map((url) => (

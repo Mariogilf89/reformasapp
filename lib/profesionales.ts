@@ -15,3 +15,5 @@ export function isCategoria(value: string): value is Categoria {
 export const FOTOS_BUCKET = "fotos-profesionales";
 export const MAX_FOTOS_PROFESIONAL = 6;
 export const MAX_TAMANO_FOTO_BYTES = 5 * 1024 * 1024;
+
+export const DOCUMENTOS_IDENTIDAD_BUCKET = "documentos-identidad";

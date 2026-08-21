@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PerfilForm } from "./perfil-form";
 import { FotosForm } from "./fotos-form";
+import { VerificacionForm } from "./verificacion-form";
 import { DisponibilidadForm } from "./disponibilidad-form";
 import { ExcepcionDisponibilidadForm } from "./excepcion-disponibilidad-form";
 
@@ -53,7 +54,7 @@ export default async function PerfilProfesionalPage() {
 
   const { data: perfil } = await supabase
     .from("profesionales")
-    .select("id, categorias, zona, descripcion, fotos")
+    .select("id, categorias, zona, descripcion, fotos, documento_identidad_url, verificado")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -96,6 +97,14 @@ export default async function PerfilProfesionalPage() {
       <PerfilForm perfil={perfil} />
 
       {perfil && <FotosForm userId={user.id} fotosIniciales={perfil.fotos ?? []} />}
+
+      {perfil && (
+        <VerificacionForm
+          userId={user.id}
+          tieneDocumentoInicial={Boolean(perfil.documento_identidad_url)}
+          verificadoInicial={Boolean(perfil.verificado)}
+        />
+      )}
 
       {perfil && (
         <div className="w-full max-w-lg flex flex-col gap-4">

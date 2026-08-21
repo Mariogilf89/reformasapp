@@ -2,7 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase";
-import { FOTOS_BUCKET, MAX_FOTOS_PROFESIONAL, isCategoria } from "@/lib/profesionales";
+import {
+  DOCUMENTOS_IDENTIDAD_BUCKET,
+  FOTOS_BUCKET,
+  MAX_FOTOS_PROFESIONAL,
+  isCategoria,
+} from "@/lib/profesionales";
 
 export type PerfilFormState = { error?: string; success?: boolean } | undefined;
 
@@ -134,6 +139,49 @@ export async function borrarFotoProfesional(url: string): Promise<PerfilFormStat
   }
 
   await supabase.storage.from(FOTOS_BUCKET).remove([ruta]);
+
+  revalidatePath("/dashboard/perfil");
+  return { success: true };
+}
+
+export async function subirDocumentoIdentidad(ruta: string): Promise<PerfilFormState> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.user_metadata?.role !== "profesional") {
+    return { error: "No autorizado." };
+  }
+
+  if (!ruta.startsWith(`${user.id}/`)) {
+    return { error: "Documento no válido." };
+  }
+
+  const { data: perfil } = await supabase
+    .from("profesionales")
+    .select("id, documento_identidad_url")
+    .eq("user_id", user.id)
+    .maybeSingle<{ id: string; documento_identidad_url: string | null }>();
+
+  if (!perfil) {
+    return { error: "Completa tu perfil antes de subir tu documento." };
+  }
+
+  const rutaAnterior = perfil.documento_identidad_url;
+
+  const { error } = await supabase
+    .from("profesionales")
+    .update({ documento_identidad_url: ruta, verificado: false, verificado_en: null })
+    .eq("id", perfil.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (rutaAnterior && rutaAnterior !== ruta) {
+    await supabase.storage.from(DOCUMENTOS_IDENTIDAD_BUCKET).remove([rutaAnterior]);
+  }
 
   revalidatePath("/dashboard/perfil");
   return { success: true };

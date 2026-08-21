@@ -25,7 +25,13 @@ type Mensaje = {
   creado_en: string;
 };
 
-type ProfesionalContacto = { id: string; user_id: string; nombre: string; fotos: string[] };
+type ProfesionalContacto = {
+  id: string;
+  user_id: string;
+  nombre: string;
+  fotos: string[];
+  verificado: boolean;
+};
 
 type ValoracionDetalle = {
   puntuacion: number;
@@ -84,7 +90,7 @@ export default async function SolicitudDetallePage(
   const { data: profesionalesPorUserId } = remitentesProfesionalUserIds.length
     ? await supabase
         .from("profesionales")
-        .select("id, user_id, nombre, fotos")
+        .select("id, user_id, nombre, fotos, verificado")
         .in("user_id", remitentesProfesionalUserIds)
         .returns<ProfesionalContacto[]>()
     : { data: [] as ProfesionalContacto[] };
@@ -92,7 +98,7 @@ export default async function SolicitudDetallePage(
   const { data: profesionalesPorId } = destinatarioProfesionalIds.length
     ? await supabase
         .from("profesionales")
-        .select("id, user_id, nombre, fotos")
+        .select("id, user_id, nombre, fotos, verificado")
         .in("id", destinatarioProfesionalIds)
         .returns<ProfesionalContacto[]>()
     : { data: [] as ProfesionalContacto[] };
@@ -121,10 +127,10 @@ export default async function SolicitudDetallePage(
   const { data: contactarProfesional } = contactarId
     ? await supabase
         .from("profesionales")
-        .select("nombre, fotos")
+        .select("nombre, fotos, verificado")
         .eq("id", contactarId)
-        .maybeSingle<{ nombre: string; fotos: string[] }>()
-    : { data: null as { nombre: string; fotos: string[] } | null };
+        .maybeSingle<{ nombre: string; fotos: string[]; verificado: boolean }>()
+    : { data: null as { nombre: string; fotos: string[]; verificado: boolean } | null };
 
   const { data: valoracion } =
     esClienteDueno && solicitud.estado === "cerrada"
@@ -144,6 +150,7 @@ export default async function SolicitudDetallePage(
       user_id: "",
       nombre: contactarProfesional?.nombre ?? "Profesional",
       fotos: contactarProfesional?.fotos ?? [],
+      verificado: contactarProfesional?.verificado ?? false,
     });
   }
   const hilos = Array.from(hilosPorProfesional.values());
@@ -198,6 +205,7 @@ export default async function SolicitudDetallePage(
                 profesionalId={hilo.id}
                 profesionalNombre={hilo.nombre}
                 profesionalFotos={hilo.fotos}
+                profesionalVerificado={hilo.verificado}
                 mensajes={mensajesDelHilo(hilo)}
                 enfocar={hilo.id === contactarId}
               />

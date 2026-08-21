@@ -3,13 +3,17 @@
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 
-export type UserRole = "profesional" | "cliente";
+export type UserRole = "profesional" | "cliente" | "admin";
 
 export type AuthFormState = {
   error?: string;
 } | undefined;
 
-function isUserRole(value: FormDataEntryValue | null): value is UserRole {
+// El rol "admin" nunca se acepta aquí: no hay autorregistro para ese rol,
+// se asigna manualmente en base de datos.
+function isRoleRegistrable(
+  value: FormDataEntryValue | null
+): value is "profesional" | "cliente" {
   return value === "profesional" || value === "cliente";
 }
 
@@ -29,7 +33,7 @@ export async function signUp(
   if (password.length < 8) {
     return { error: "La contraseña debe tener al menos 8 caracteres." };
   }
-  if (!isUserRole(role)) {
+  if (!isRoleRegistrable(role)) {
     return { error: "Selecciona un tipo de cuenta válido." };
   }
   if (acceptTerms !== "on") {

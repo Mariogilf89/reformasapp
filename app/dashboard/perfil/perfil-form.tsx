@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { VerificadoBadge } from "@/components/ui/verificado-badge";
 
 type PerfilInicial = {
   categorias: Categoria[];
   zona: string;
   descripcion: string;
+  verificado: boolean;
 } | null;
 
 export function PerfilForm({ perfil }: { perfil: PerfilInicial }) {
@@ -21,9 +23,12 @@ export function PerfilForm({ perfil }: { perfil: PerfilInicial }) {
   return (
     <Card className="w-full max-w-lg p-8">
       <form action={action} className="flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
-          Mi perfil profesional
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+            Mi perfil profesional
+          </h1>
+          {perfil?.verificado && <VerificadoBadge />}
+        </div>
 
         <fieldset className="flex flex-col gap-2">
           <legend className="mb-1 text-sm font-medium text-neutral-900 dark:text-neutral-100">

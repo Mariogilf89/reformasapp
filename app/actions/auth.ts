@@ -21,6 +21,7 @@ export async function signUp(
   const email = formData.get("email")?.toString().trim();
   const password = formData.get("password")?.toString();
   const role = formData.get("role");
+  const acceptTerms = formData.get("acceptTerms");
 
   if (!name || !email || !password) {
     return { error: "Rellena todos los campos." };
@@ -30,6 +31,9 @@ export async function signUp(
   }
   if (!isUserRole(role)) {
     return { error: "Selecciona un tipo de cuenta válido." };
+  }
+  if (acceptTerms !== "on") {
+    return { error: "Debes aceptar los Términos y la Política de Privacidad." };
   }
 
   const supabase = await createServerSupabaseClient();

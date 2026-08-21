@@ -59,6 +59,34 @@ export default function RegisterPage() {
             <Input id="password" name="password" type="password" required minLength={8} />
           </div>
 
+          <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+            <input
+              type="checkbox"
+              name="acceptTerms"
+              required
+              className="mt-0.5 accent-primary-600"
+            />
+            <span>
+              Al registrarte, aceptas los{" "}
+              <Link
+                href="/terminos"
+                target="_blank"
+                className="font-medium text-primary-600 hover:underline dark:text-primary-400"
+              >
+                Términos
+              </Link>{" "}
+              y la{" "}
+              <Link
+                href="/privacidad"
+                target="_blank"
+                className="font-medium text-primary-600 hover:underline dark:text-primary-400"
+              >
+                Política de Privacidad
+              </Link>
+              .
+            </span>
+          </label>
+
           {state?.error && (
             <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
           )}

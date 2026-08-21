@@ -284,6 +284,17 @@ export default function Home() {
             </Link>
           </p>
         </div>
+        <div className="mx-auto mt-6 flex w-full max-w-5xl flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-neutral-100 pt-6 text-xs text-neutral-500 sm:justify-start dark:border-neutral-900 dark:text-neutral-500">
+          <Link href="/aviso-legal" className="hover:text-primary-700 hover:underline dark:hover:text-primary-400">
+            Aviso legal
+          </Link>
+          <Link href="/privacidad" className="hover:text-primary-700 hover:underline dark:hover:text-primary-400">
+            Política de privacidad
+          </Link>
+          <Link href="/terminos" className="hover:text-primary-700 hover:underline dark:hover:text-primary-400">
+            Términos y condiciones
+          </Link>
+        </div>
       </footer>
     </div>
   );

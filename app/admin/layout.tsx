@@ -19,7 +19,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
       <header className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4">
           <Link
-            href="/admin/verificaciones"
+            href="/"
             className="text-lg font-semibold text-primary-700 dark:text-primary-400"
           >
             ReformasApp · Admin

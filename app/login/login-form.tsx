@@ -8,12 +8,20 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-export function LoginForm({ justRegistered }: { justRegistered: boolean }) {
+export function LoginForm({
+  justRegistered,
+  redirectTo,
+}: {
+  justRegistered: boolean;
+  redirectTo?: string;
+}) {
   const [state, action, pending] = useActionState(signIn, undefined);
 
   return (
     <Card className="w-full max-w-sm p-6">
       <form action={action} className="flex flex-col gap-4">
+        <input type="hidden" name="redirect" value={redirectTo ?? ""} />
+
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
           Iniciar sesión
         </h1>
@@ -52,7 +60,7 @@ export function LoginForm({ justRegistered }: { justRegistered: boolean }) {
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
           ¿No tienes cuenta?{" "}
           <Link
-            href="/register"
+            href={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : "/register"}
             className="font-medium text-primary-600 hover:underline dark:text-primary-400"
           >
             Regístrate

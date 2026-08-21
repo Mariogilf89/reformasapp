@@ -17,6 +17,13 @@ function isRoleRegistrable(
   return value === "profesional" || value === "cliente";
 }
 
+// Solo se sigue un "redirect" si es una ruta interna (empieza por "/" y no
+// por "//" o "/\", que un navegador podría interpretar como otro host),
+// para evitar redirigir a un sitio externo controlado por el parámetro.
+function esRutaInternaSegura(ruta: string): boolean {
+  return ruta.startsWith("/") && !ruta.startsWith("//") && !ruta.startsWith("/\\");
+}
+
 export async function signUp(
   _prevState: AuthFormState,
   formData: FormData
@@ -54,7 +61,13 @@ export async function signUp(
     return { error: error.message };
   }
 
-  redirect("/login?registered=1");
+  const redirectTo = formData.get("redirect")?.toString();
+  const loginUrl =
+    redirectTo && esRutaInternaSegura(redirectTo)
+      ? `/login?registered=1&redirect=${encodeURIComponent(redirectTo)}`
+      : "/login?registered=1";
+
+  redirect(loginUrl);
 }
 
 export async function signIn(
@@ -79,7 +92,8 @@ export async function signIn(
     return { error: "Email o contraseña incorrectos." };
   }
 
-  redirect("/dashboard");
+  const redirectTo = formData.get("redirect")?.toString();
+  redirect(redirectTo && esRutaInternaSegura(redirectTo) ? redirectTo : "/dashboard");
 }
 
 export async function signOut() {

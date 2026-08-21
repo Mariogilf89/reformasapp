@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buttonClassName } from "@/components/ui/button";
 import { VerificadoBadge } from "@/components/ui/verificado-badge";
+import { ContactarForm } from "./contactar-form";
 
 type ProfesionalPublico = {
   id: string;
@@ -27,6 +28,10 @@ export default async function ProfesionalDetallePage(
 ) {
   const { id } = await props.params;
   const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const rol = user?.user_metadata?.role;
 
   const { data: profesional } = await supabase
     .from("profesionales_publico")
@@ -55,21 +60,16 @@ export default async function ProfesionalDetallePage(
     <div className="flex flex-1 flex-col items-center gap-8 px-4 py-16">
       <Card className="w-full max-w-2xl p-8">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
-                  {profesional.nombre}
-                </h1>
-                {profesional.verificado && <VerificadoBadge />}
-              </div>
-              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-                {profesional.zona}
-              </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+                {profesional.nombre}
+              </h1>
+              {profesional.verificado && <VerificadoBadge />}
             </div>
-            <Button type="button" disabled>
-              Contactar
-            </Button>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              {profesional.zona}
+            </p>
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -108,6 +108,26 @@ export default async function ProfesionalDetallePage(
           )}
         </div>
       </Card>
+
+      <div className="w-full max-w-2xl">
+        {!user ? (
+          <Link
+            href={`/register?redirect=${encodeURIComponent(`/profesionales/${profesional.id}`)}`}
+            className={buttonClassName()}
+          >
+            Contactar
+          </Link>
+        ) : rol === "cliente" ? (
+          <ContactarForm
+            profesionalId={profesional.id}
+            categoriasProfesional={profesional.categorias}
+          />
+        ) : (
+          <p className="text-sm text-neutral-500 dark:text-neutral-500">
+            Esta vista es para clientes.
+          </p>
+        )}
+      </div>
 
       <div className="flex w-full max-w-2xl flex-col gap-4">
         <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">

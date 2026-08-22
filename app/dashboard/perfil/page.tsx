@@ -4,7 +4,11 @@ import { DIAS_SEMANA } from "@/lib/disponibilidad";
 import { borrarTramoDisponibilidad, borrarExcepcionDisponibilidad } from "@/app/actions/disponibilidad";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PerfilForm } from "./perfil-form";
+import { VerificadoBadge } from "@/components/ui/verificado-badge";
+import { DescripcionSection } from "./descripcion-section";
+import { CategoriasSection } from "./categorias-section";
+import { ProvinciasSection } from "./provincias-section";
+import { ZonaGuardarSection } from "./zona-guardar-section";
 import { FotosForm } from "./fotos-form";
 import { VerificacionForm } from "./verificacion-form";
 import { DisponibilidadForm } from "./disponibilidad-form";
@@ -54,7 +58,7 @@ export default async function PerfilProfesionalPage() {
 
   const { data: perfil } = await supabase
     .from("profesionales")
-    .select("id, categorias, zona, descripcion, fotos, documento_identidad_url, verificado")
+    .select("id, categorias, zona, descripcion, fotos, documento_identidad_url, verificado, provincias")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -94,9 +98,122 @@ export default async function PerfilProfesionalPage() {
 
   return (
     <div className="flex flex-1 flex-col items-center gap-10 px-4 py-16">
-      <PerfilForm perfil={perfil} />
+      <div className="flex w-full max-w-6xl items-center gap-3">
+        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+          Mi perfil profesional
+        </h1>
+        {perfil?.verificado && <VerificadoBadge />}
+      </div>
 
-      {perfil && <FotosForm userId={user.id} fotosIniciales={perfil.fotos ?? []} />}
+      <div className="grid w-full max-w-6xl grid-cols-1 gap-8 md:grid-cols-3 md:items-start">
+        {/* Columna izquierda */}
+        <div className="flex flex-col gap-8">
+          <DescripcionSection descripcionInicial={perfil?.descripcion} />
+          <CategoriasSection categoriasIniciales={perfil?.categorias} />
+          {perfil && <FotosForm userId={user.id} fotosIniciales={perfil.fotos ?? []} />}
+        </div>
+
+        {/* Columna central */}
+        <div className="flex flex-col gap-8">
+          {perfil && (
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+                Mi disponibilidad
+              </h2>
+
+              <div className="flex flex-col gap-4">
+                {DIAS_SEMANA.map((dia) => {
+                  const tramosDia = (disponibilidad ?? []).filter(
+                    (tramo) => tramo.dia_semana === dia.value
+                  );
+                  if (tramosDia.length === 0) return null;
+
+                  return (
+                    <div key={dia.value}>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                        {dia.label}
+                      </p>
+                      <ul className="mt-1 flex flex-col gap-1">
+                        {tramosDia.map((tramo) => (
+                          <li key={tramo.id}>
+                            <Card className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                              <span className="text-neutral-600 dark:text-neutral-400">
+                                {tramo.hora_inicio.slice(0, 5)} – {tramo.hora_fin.slice(0, 5)}
+                              </span>
+                              <form action={borrarTramoDisponibilidad}>
+                                <input type="hidden" name="id" value={tramo.id} />
+                                <Button type="submit" variant="danger" size="xs">
+                                  Borrar
+                                </Button>
+                              </form>
+                            </Card>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
+
+                {(disponibilidad ?? []).length === 0 && (
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    Todavía no has añadido ningún tramo de disponibilidad.
+                  </p>
+                )}
+              </div>
+
+              <DisponibilidadForm />
+            </div>
+          )}
+
+          {perfil && (
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+                Días no disponibles
+              </h2>
+
+              <div className="flex flex-col gap-2">
+                {(excepciones ?? []).length === 0 && (
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    No tienes ninguna excepción próxima.
+                  </p>
+                )}
+                {(excepciones ?? []).map((excepcion) => (
+                  <Card
+                    key={excepcion.id}
+                    className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+                  >
+                    <span className="text-neutral-600 dark:text-neutral-400">
+                      {new Date(`${excepcion.fecha}T00:00:00`).toLocaleDateString("es-ES", {
+                        weekday: "long",
+                        day: "numeric",
+                        month: "long",
+                      })}
+                      {" · "}
+                      {excepcion.todo_el_dia
+                        ? "Todo el día"
+                        : `${excepcion.hora_inicio?.slice(0, 5)} – ${excepcion.hora_fin?.slice(0, 5)}`}
+                    </span>
+                    <form action={borrarExcepcionDisponibilidad}>
+                      <input type="hidden" name="id" value={excepcion.id} />
+                      <Button type="submit" variant="danger" size="xs">
+                        Borrar
+                      </Button>
+                    </form>
+                  </Card>
+                ))}
+              </div>
+
+              <ExcepcionDisponibilidadForm />
+            </div>
+          )}
+        </div>
+
+        {/* Columna derecha */}
+        <div className="flex flex-col gap-8">
+          <ProvinciasSection provinciasIniciales={perfil?.provincias} />
+          <ZonaGuardarSection zonaInicial={perfil?.zona} />
+        </div>
+      </div>
 
       {perfil && (
         <VerificacionForm
@@ -134,95 +251,6 @@ export default async function PerfilProfesionalPage() {
               ))}
             </ul>
           )}
-        </div>
-      )}
-
-      {perfil && (
-        <div className="w-full max-w-lg flex flex-col gap-4">
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
-            Mi disponibilidad
-          </h2>
-
-          <div className="flex flex-col gap-4">
-            {DIAS_SEMANA.map((dia) => {
-              const tramosDia = (disponibilidad ?? []).filter(
-                (tramo) => tramo.dia_semana === dia.value
-              );
-              if (tramosDia.length === 0) return null;
-
-              return (
-                <div key={dia.value}>
-                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                    {dia.label}
-                  </p>
-                  <ul className="mt-1 flex flex-col gap-1">
-                    {tramosDia.map((tramo) => (
-                      <li key={tramo.id}>
-                        <Card className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                          <span className="text-neutral-600 dark:text-neutral-400">
-                            {tramo.hora_inicio.slice(0, 5)} – {tramo.hora_fin.slice(0, 5)}
-                          </span>
-                          <form action={borrarTramoDisponibilidad}>
-                            <input type="hidden" name="id" value={tramo.id} />
-                            <Button type="submit" variant="danger" size="xs">
-                              Borrar
-                            </Button>
-                          </form>
-                        </Card>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              );
-            })}
-
-            {(disponibilidad ?? []).length === 0 && (
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                Todavía no has añadido ningún tramo de disponibilidad.
-              </p>
-            )}
-          </div>
-
-          <DisponibilidadForm />
-        </div>
-      )}
-
-      {perfil && (
-        <div className="w-full max-w-lg flex flex-col gap-4">
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
-            Días no disponibles
-          </h2>
-
-          <div className="flex flex-col gap-2">
-            {(excepciones ?? []).length === 0 && (
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                No tienes ninguna excepción próxima.
-              </p>
-            )}
-            {(excepciones ?? []).map((excepcion) => (
-              <Card key={excepcion.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                <span className="text-neutral-600 dark:text-neutral-400">
-                  {new Date(`${excepcion.fecha}T00:00:00`).toLocaleDateString("es-ES", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                  })}
-                  {" · "}
-                  {excepcion.todo_el_dia
-                    ? "Todo el día"
-                    : `${excepcion.hora_inicio?.slice(0, 5)} – ${excepcion.hora_fin?.slice(0, 5)}`}
-                </span>
-                <form action={borrarExcepcionDisponibilidad}>
-                  <input type="hidden" name="id" value={excepcion.id} />
-                  <Button type="submit" variant="danger" size="xs">
-                    Borrar
-                  </Button>
-                </form>
-              </Card>
-            ))}
-          </div>
-
-          <ExcepcionDisponibilidadForm />
         </div>
       )}
     </div>

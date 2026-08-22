@@ -10,14 +10,27 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
+function formatearFecha(fecha: string) {
+  return new Date(`${fecha}T00:00:00`).toLocaleDateString("es-ES", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
 export function ContactarForm({
   profesionalId,
   categoriasProfesional,
+  fechaElegida,
+  horaInicioElegida,
 }: {
   profesionalId: string;
   categoriasProfesional: Categoria[];
+  fechaElegida?: string;
+  horaInicioElegida?: string;
 }) {
-  const [mostrar, setMostrar] = useState(false);
+  const proponeCita = Boolean(fechaElegida && horaInicioElegida);
+  const [mostrar, setMostrar] = useState(proponeCita);
   const [state, action, pending] = useActionState(crearSolicitudYContactar, undefined);
 
   if (!mostrar) {
@@ -36,6 +49,20 @@ export function ContactarForm({
         <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
           Cuéntale al profesional lo que necesitas
         </h2>
+
+        {proponeCita && (
+          <>
+            <input type="hidden" name="fecha" value={fechaElegida} />
+            <input type="hidden" name="hora_inicio" value={horaInicioElegida} />
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              Además de tu solicitud, le vas a proponer una cita:{" "}
+              <span className="font-medium text-neutral-900 dark:text-neutral-100">
+                {formatearFecha(fechaElegida!)} a las {horaInicioElegida}
+              </span>
+              .
+            </p>
+          </>
+        )}
 
         <div className="flex flex-col gap-1">
           <Label htmlFor="categoria">Categoría</Label>

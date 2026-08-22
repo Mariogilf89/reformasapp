@@ -27,6 +27,11 @@ export default async function ProfesionalDetallePage(
   props: PageProps<"/profesionales/[id]">
 ) {
   const { id } = await props.params;
+  const searchParams = await props.searchParams;
+  const fechaElegida = typeof searchParams.fecha === "string" ? searchParams.fecha : undefined;
+  const horaInicioElegida =
+    typeof searchParams.hora_inicio === "string" ? searchParams.hora_inicio : undefined;
+
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -121,6 +126,8 @@ export default async function ProfesionalDetallePage(
           <ContactarForm
             profesionalId={profesional.id}
             categoriasProfesional={profesional.categorias}
+            fechaElegida={fechaElegida}
+            horaInicioElegida={horaInicioElegida}
           />
         ) : (
           <p className="text-sm text-neutral-500 dark:text-neutral-500">

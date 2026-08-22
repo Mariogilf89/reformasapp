@@ -1,48 +1,61 @@
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase";
-import { CATEGORIAS, isCategoria, type Categoria } from "@/lib/profesionales";
+import { CATEGORIAS, isCategoria } from "@/lib/profesionales";
+import { isProvincia } from "@/lib/provincias";
+import {
+  obtenerProfesionalesDisponibles,
+  type ModoBusquedaDisponibilidad,
+} from "@/app/actions/profesionales";
 import { Card } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { VerificadoBadge } from "@/components/ui/verificado-badge";
-
-type ProfesionalPublico = {
-  id: string;
-  nombre: string;
-  categorias: Categoria[];
-  zona: string;
-  descripcion: string;
-  fotos: string[];
-  verificado: boolean;
-};
+import { FiltroBusqueda } from "./filtro-busqueda";
 
 type ValoracionResumen = { profesional_id: string; puntuacion: number };
 
+function esModoValido(value: string): value is ModoBusquedaDisponibilidad {
+  return value === "indiferente" || value === "lo_antes_posible" || value === "dia_hora";
+}
+
+function formatearFecha(fecha: string) {
+  return new Date(`${fecha}T00:00:00`).toLocaleDateString("es-ES", {
+    day: "numeric",
+    month: "long",
+  });
+}
+
 export default async function ProfesionalesPage(props: PageProps<"/profesionales">) {
   const searchParams = await props.searchParams;
+
   const categoriaParam =
-    typeof searchParams.categoria === "string" ? searchParams.categoria : undefined;
+    typeof searchParams.categoria === "string" ? searchParams.categoria : "";
   const categoria = categoriaParam && isCategoria(categoriaParam) ? categoriaParam : undefined;
+
+  const provinciaParam =
+    typeof searchParams.provincia === "string" ? searchParams.provincia : "";
+  const provincia = provinciaParam && isProvincia(provinciaParam) ? provinciaParam : undefined;
+
   const zonaParam = typeof searchParams.zona === "string" ? searchParams.zona.trim() : "";
 
+  const modoParam = typeof searchParams.modo === "string" ? searchParams.modo : "indiferente";
+  const modo = esModoValido(modoParam) ? modoParam : "indiferente";
+
+  const fechaParam = typeof searchParams.fecha === "string" ? searchParams.fecha : "";
+  const horaParam = typeof searchParams.hora_inicio === "string" ? searchParams.hora_inicio : "";
+
+  const resultados = await obtenerProfesionalesDisponibles({
+    categoria,
+    provincia,
+    modo,
+    fecha: modo === "dia_hora" ? fechaParam : undefined,
+    horaInicio: modo === "dia_hora" ? horaParam : undefined,
+  });
+
+  const profesionales = zonaParam
+    ? resultados.filter((p) => p.zona.toLowerCase().includes(zonaParam.toLowerCase()))
+    : resultados;
+
   const supabase = await createServerSupabaseClient();
-
-  let query = supabase
-    .from("profesionales_publico")
-    .select("id, nombre, categorias, zona, descripcion, fotos, verificado")
-    .order("creado_en", { ascending: false });
-
-  if (categoria) {
-    query = query.contains("categorias", [categoria]);
-  }
-  if (zonaParam) {
-    query = query.ilike("zona", `%${zonaParam}%`);
-  }
-
-  const { data: profesionales } = await query.returns<ProfesionalPublico[]>();
-
-  const ids = (profesionales ?? []).map((profesional) => profesional.id);
+  const ids = profesionales.map((profesional) => profesional.id);
   const { data: valoraciones } = ids.length
     ? await supabase
         .from("valoraciones")
@@ -73,56 +86,31 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
         </p>
       </div>
 
-      <Card className="w-full max-w-5xl p-6">
-        <form method="get" className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex flex-1 flex-col gap-1">
-            <label
-              htmlFor="categoria"
-              className="text-sm font-medium text-neutral-900 dark:text-neutral-100"
-            >
-              Categoría
-            </label>
-            <Select id="categoria" name="categoria" defaultValue={categoria ?? ""}>
-              <option value="">Todas las categorías</option>
-              {CATEGORIAS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </Select>
-          </div>
-
-          <div className="flex flex-1 flex-col gap-1">
-            <label
-              htmlFor="zona"
-              className="text-sm font-medium text-neutral-900 dark:text-neutral-100"
-            >
-              Zona
-            </label>
-            <Input
-              id="zona"
-              name="zona"
-              type="text"
-              placeholder="Ej. Vigo"
-              defaultValue={zonaParam}
-            />
-          </div>
-
-          <Button type="submit">Filtrar</Button>
-        </form>
-      </Card>
+      <FiltroBusqueda
+        categoriaInicial={categoria ?? ""}
+        provinciaInicial={provincia ?? ""}
+        zonaInicial={zonaParam}
+        modoInicial={modo}
+        fechaInicial={fechaParam}
+        horaInicial={horaParam}
+      />
 
       <div className="grid w-full max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {(profesionales ?? []).length === 0 && (
+        {profesionales.length === 0 && (
           <p className="text-sm text-neutral-600 dark:text-neutral-400 sm:col-span-2 lg:col-span-3">
             No hay profesionales que coincidan con tu búsqueda.
           </p>
         )}
 
-        {(profesionales ?? []).map((profesional) => {
+        {profesionales.map((profesional) => {
           const resumen = resumenPorProfesional.get(profesional.id);
+          const href =
+            modo === "dia_hora" && fechaParam && horaParam
+              ? `/profesionales/${profesional.id}?fecha=${encodeURIComponent(fechaParam)}&hora_inicio=${encodeURIComponent(horaParam)}`
+              : `/profesionales/${profesional.id}`;
+
           return (
-            <Link key={profesional.id} href={`/profesionales/${profesional.id}`}>
+            <Link key={profesional.id} href={href}>
               <Card className="flex h-full flex-col gap-3 p-4 transition-colors hover:border-primary-300">
                 <div className="aspect-video w-full overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-800">
                   {profesional.fotos?.[0] && (
@@ -148,6 +136,14 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
                     .join(", ")}
                 </p>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">{profesional.zona}</p>
+
+                {profesional.primerHueco && (
+                  <p className="text-sm font-medium text-primary-700 dark:text-primary-400">
+                    Libre {modo === "dia_hora" ? "el" : "a partir del"}{" "}
+                    {formatearFecha(profesional.primerHueco.fecha)} a las{" "}
+                    {profesional.primerHueco.hora}
+                  </p>
+                )}
 
                 <p className="mt-auto text-sm text-neutral-500 dark:text-neutral-500">
                   {resumen

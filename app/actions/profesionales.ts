@@ -7,7 +7,11 @@ import {
   FOTOS_BUCKET,
   MAX_FOTOS_PROFESIONAL,
   isCategoria,
+  type Categoria,
 } from "@/lib/profesionales";
+import { isProvincia, type Provincia } from "@/lib/provincias";
+import { obtenerHuecosDisponibles, type HuecosDia } from "@/app/actions/citas";
+import { fechaISO } from "@/lib/fechas";
 
 export type PerfilFormState = { error?: string; success?: boolean } | undefined;
 
@@ -25,6 +29,7 @@ export async function guardarPerfilProfesional(
   }
 
   const categorias = formData.getAll("categorias").map(String).filter(isCategoria);
+  const provincias = formData.getAll("provincias").map(String).filter(isProvincia);
   const zona = formData.get("zona")?.toString().trim();
   const descripcion = formData.get("descripcion")?.toString().trim();
 
@@ -41,7 +46,7 @@ export async function guardarPerfilProfesional(
   const nombre = user.user_metadata?.full_name ?? user.email ?? "Profesional";
 
   const { error } = await supabase.from("profesionales").upsert(
-    { user_id: user.id, nombre, categorias, zona, descripcion },
+    { user_id: user.id, nombre, categorias, provincias, zona, descripcion },
     { onConflict: "user_id" }
   );
 
@@ -182,6 +187,136 @@ export async function borrarFotoProfesional(url: string): Promise<PerfilFormStat
 
   revalidatePath("/dashboard/perfil");
   return { success: true };
+}
+
+export type ModoBusquedaDisponibilidad = "indiferente" | "lo_antes_posible" | "dia_hora";
+
+export type ProfesionalBusqueda = {
+  id: string;
+  nombre: string;
+  categorias: Categoria[];
+  zona: string;
+  descripcion: string;
+  fotos: string[];
+  verificado: boolean;
+  primerHueco: { fecha: string; hora: string } | null;
+};
+
+const MESES_BUSQUEDA_LO_ANTES_POSIBLE = 3;
+
+function minutosDesdeHoraCorta(hora: string) {
+  const [h, m] = hora.split(":").map(Number);
+  return h * 60 + m;
+}
+
+/** Horas de un día de obtenerHuecosDisponibles que aún no han pasado. */
+function horasFuturas(dia: HuecosDia, hoyISO: string, ahoraMinutos: number): string[] {
+  if (dia.fecha < hoyISO) return [];
+  if (dia.fecha > hoyISO) return dia.horas;
+  return dia.horas.filter((hora) => minutosDesdeHoraCorta(hora) > ahoraMinutos);
+}
+
+/**
+ * Busca profesionales por categoría/provincia y, según el modo, por
+ * disponibilidad real. Reutiliza obtenerHuecosDisponibles (app/actions/citas.ts)
+ * como única fuente de verdad de disponibilidad: no se reimplementa el
+ * cruce de disponibilidad/excepciones/citas ocupadas.
+ */
+export async function obtenerProfesionalesDisponibles(params: {
+  categoria?: Categoria;
+  provincia?: Provincia;
+  modo: ModoBusquedaDisponibilidad;
+  fecha?: string;
+  horaInicio?: string;
+}): Promise<ProfesionalBusqueda[]> {
+  const { categoria, provincia, modo, fecha, horaInicio } = params;
+
+  if (modo === "dia_hora" && (!fecha || !horaInicio)) {
+    return [];
+  }
+
+  const supabase = await createServerSupabaseClient();
+
+  let query = supabase
+    .from("profesionales_publico")
+    .select("id, nombre, categorias, zona, descripcion, fotos, verificado")
+    .order("creado_en", { ascending: false });
+
+  if (categoria) {
+    query = query.contains("categorias", [categoria]);
+  }
+  if (provincia) {
+    query = query.contains("provincias", [provincia]);
+  }
+
+  const { data, error } = await query.returns<Omit<ProfesionalBusqueda, "primerHueco">[]>();
+  if (error) {
+    console.error("obtenerProfesionalesDisponibles: error al buscar profesionales", error);
+  }
+  const candidatos = data ?? [];
+
+  if (modo === "indiferente") {
+    return candidatos.map((candidato) => ({ ...candidato, primerHueco: null }));
+  }
+
+  const hoy = new Date();
+  const hoyISO = fechaISO(hoy);
+  const ahoraMinutos = hoy.getHours() * 60 + hoy.getMinutes();
+
+  if (modo === "dia_hora") {
+    if (fecha! < hoyISO) {
+      return [];
+    }
+    const [anio, mes] = fecha!.split("-").map(Number);
+
+    const resultados = await Promise.all(
+      candidatos.map(async (candidato): Promise<ProfesionalBusqueda | null> => {
+        const dias = await obtenerHuecosDisponibles(candidato.id, anio, mes);
+        const dia = dias.find((d) => d.fecha === fecha);
+        const libre = Boolean(dia && horasFuturas(dia, hoyISO, ahoraMinutos).includes(horaInicio!));
+        return libre
+          ? { ...candidato, primerHueco: { fecha: fecha!, hora: horaInicio! } }
+          : null;
+      })
+    );
+
+    return resultados.filter((r): r is ProfesionalBusqueda => r !== null);
+  }
+
+  // modo === "lo_antes_posible"
+  const resultados = await Promise.all(
+    candidatos.map(async (candidato): Promise<ProfesionalBusqueda | null> => {
+      let anio = hoy.getFullYear();
+      let mes = hoy.getMonth() + 1;
+
+      for (let intento = 0; intento < MESES_BUSQUEDA_LO_ANTES_POSIBLE; intento++) {
+        const dias = await obtenerHuecosDisponibles(candidato.id, anio, mes);
+
+        for (const dia of dias) {
+          const horas = horasFuturas(dia, hoyISO, ahoraMinutos);
+          if (horas.length > 0) {
+            return { ...candidato, primerHueco: { fecha: dia.fecha, hora: horas[0] } };
+          }
+        }
+
+        mes += 1;
+        if (mes > 12) {
+          mes = 1;
+          anio += 1;
+        }
+      }
+
+      return null;
+    })
+  );
+
+  return resultados
+    .filter((r): r is ProfesionalBusqueda => r !== null)
+    .sort((a, b) => {
+      const claveA = `${a.primerHueco!.fecha} ${a.primerHueco!.hora}`;
+      const claveB = `${b.primerHueco!.fecha} ${b.primerHueco!.hora}`;
+      return claveA < claveB ? -1 : claveA > claveB ? 1 : 0;
+    });
 }
 
 export async function subirDocumentoIdentidad(ruta: string): Promise<PerfilFormState> {

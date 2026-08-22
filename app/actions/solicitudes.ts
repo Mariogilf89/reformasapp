@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { isCategoria, type Categoria } from "@/lib/profesionales";
+import { crearCitaPendiente } from "@/app/actions/citas";
 
 export type SolicitudFormState = { error?: string; success?: boolean } | undefined;
 
@@ -109,6 +110,24 @@ export async function crearSolicitudYContactar(
 
   if (error || !solicitud) {
     return { error: error?.message ?? "No se pudo crear la solicitud." };
+  }
+
+  // Si la búsqueda de profesionales ya traía una fecha/hora elegida (modo
+  // "Elegir día y hora"), se propone directamente esa cita además de la
+  // solicitud. Es "mejor esfuerzo": si el hueco se ocupó entre la búsqueda
+  // y este envío, la solicitud igualmente se ha creado y el cliente puede
+  // proponer horario a mano desde el hilo, como siempre.
+  const fecha = formData.get("fecha")?.toString();
+  const horaInicio = formData.get("hora_inicio")?.toString();
+  if (fecha && horaInicio) {
+    await crearCitaPendiente(supabase, {
+      solicitudId: solicitud.id,
+      profesionalId,
+      clienteId: user.id,
+      tipo: "visita",
+      fecha,
+      horaInicio,
+    });
   }
 
   revalidatePath("/dashboard/solicitudes");

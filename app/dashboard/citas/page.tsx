@@ -145,6 +145,11 @@ export default async function CitasPage() {
     .eq("user_id", user.id)
     .maybeSingle<{ id: string }>();
 
+  // Esta vista de lista es solicitud-céntrica (cada tarjeta enlaza a "Ver
+  // solicitud" y muestra al cliente/su teléfono): las citas externas
+  // (origen_externo = true, sin cliente_id/solicitud_id/tipo) se crean,
+  // editan y cancelan por completo desde el calendario nuevo en
+  // /dashboard, así que aquí se excluyen para no reventar esos supuestos.
   const { data: citasPendientesProfesional } = perfilProfesional
     ? await supabase
         .from("citas")
@@ -152,6 +157,7 @@ export default async function CitasPage() {
         .eq("profesional_id", perfilProfesional.id)
         .eq("estado", "pendiente")
         .eq("propuesto_por", "cliente")
+        .eq("origen_externo", false)
         .order("creado_en", { ascending: true })
         .returns<CitaPendienteProfesional[]>()
     : { data: [] as CitaPendienteProfesional[] };
@@ -162,6 +168,7 @@ export default async function CitasPage() {
         .select("id, solicitud_id, cliente_id, fecha, hora_inicio, hora_fin, tipo")
         .eq("profesional_id", perfilProfesional.id)
         .eq("estado", "confirmada")
+        .eq("origen_externo", false)
         .order("fecha", { ascending: true })
         .returns<CitaConfirmadaProfesional[]>()
     : { data: [] as CitaConfirmadaProfesional[] };
@@ -172,6 +179,7 @@ export default async function CitasPage() {
         .select("id, solicitud_id, fecha, hora_inicio, hora_fin, tipo, comentario")
         .eq("profesional_id", perfilProfesional.id)
         .eq("estado", "cancelada")
+        .eq("origen_externo", false)
         .order("fecha", { ascending: false })
         .returns<CitaCanceladaProfesional[]>()
     : { data: [] as CitaCanceladaProfesional[] };

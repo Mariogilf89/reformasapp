@@ -24,7 +24,7 @@ export function PanelPendientesSinFecha({
     <Card className="flex w-60 shrink-0 flex-col gap-3 p-4">
       <div className="flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
-          Pendientes (sin fecha)
+          Citas externas
         </h2>
         <Button type="button" size="xs" variant="secondary" onClick={onAbrirFormulario}>
           Añadir

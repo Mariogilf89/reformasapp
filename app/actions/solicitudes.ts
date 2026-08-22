@@ -23,6 +23,8 @@ export async function crearSolicitud(
   const categoria = formData.get("categoria")?.toString() ?? "";
   const zona = formData.get("zona")?.toString().trim();
   const descripcion = formData.get("descripcion")?.toString().trim();
+  const localidad = formData.get("localidad")?.toString().trim() || null;
+  const calle = formData.get("calle")?.toString().trim() || null;
 
   if (!isCategoria(categoria)) {
     return { error: "Selecciona una categoría válida." };
@@ -39,6 +41,8 @@ export async function crearSolicitud(
     categoria,
     zona,
     descripcion,
+    localidad,
+    calle,
   });
 
   if (error) {

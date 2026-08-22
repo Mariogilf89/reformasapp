@@ -354,6 +354,12 @@ export async function crearCitaPendiente(
     return { error: "El profesional ya tiene otra cita confirmada en ese horario." };
   }
 
+  const { data: solicitud } = await supabase
+    .from("solicitudes")
+    .select("localidad, calle")
+    .eq("id", solicitudId)
+    .maybeSingle<{ localidad: string | null; calle: string | null }>();
+
   const { error } = await supabase.from("citas").insert({
     solicitud_id: solicitudId,
     profesional_id: profesionalId,
@@ -364,6 +370,8 @@ export async function crearCitaPendiente(
     tipo,
     estado: "pendiente",
     propuesto_por: "cliente",
+    localidad: solicitud?.localidad ?? null,
+    calle: solicitud?.calle ?? null,
   });
 
   if (error) {
@@ -764,6 +772,10 @@ export type CitaCalendario = {
   cliente_id: string | null;
   origen_externo: boolean;
   titulo_externo: string | null;
+  // En citas reales viene copiada de la solicitud al crear la cita; en
+  // citas externas se edita libremente.
+  localidad: string | null;
+  calle: string | null;
   // Solo se rellena para estado="confirmada" && !origen_externo, reutilizando
   // la misma revelación de teléfono que ya usa /dashboard/citas.
   telefonoCliente: string | null;
@@ -795,7 +807,7 @@ export async function obtenerCitasCalendario(desde: string, hasta: string): Prom
   const { data } = await supabase
     .from("citas")
     .select(
-      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo"
+      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle"
     )
     .eq("profesional_id", profesionalId)
     .neq("estado", "cancelada")
@@ -847,7 +859,7 @@ export async function obtenerCitasExternasPendientes(): Promise<CitaCalendario[]
   const { data } = await supabase
     .from("citas")
     .select(
-      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo"
+      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle"
     )
     .eq("profesional_id", profesionalId)
     .eq("origen_externo", true)
@@ -866,6 +878,23 @@ export async function obtenerCitasExternasPendientes(): Promise<CitaCalendario[]
  * blanco, se guarda como "pendiente de agendar" (aparece en el panel lateral
  * en vez de en el calendario) hasta que se arrastre a un hueco.
  */
+/**
+ * Las citas externas admiten fecha/horas completas (agendada) o las tres en
+ * blanco (pendiente de agendar); cualquier combinación mixta es un error.
+ * Lo comparten crearCitaExterna y editarCitaExterna.
+ */
+function estadoFechaHoraCitaExterna(
+  fecha: string | null,
+  horaInicio: string | null,
+  horaFin: string | null
+): "vacio" | "completo" | "mixto" {
+  const todosVacios = !fecha && !horaInicio && !horaFin;
+  const todosCompletos = Boolean(fecha && horaInicio && horaFin);
+  if (todosVacios) return "vacio";
+  if (todosCompletos) return "completo";
+  return "mixto";
+}
+
 export async function crearCitaExterna(
   _prevState: CitaAccionFormState,
   formData: FormData
@@ -883,15 +912,15 @@ export async function crearCitaExterna(
   const horaInicio = formData.get("hora_inicio")?.toString() || null;
   const horaFin = formData.get("hora_fin")?.toString() || null;
   const titulo = formData.get("titulo")?.toString().trim();
+  const localidad = formData.get("localidad")?.toString().trim() || null;
+  const calle = formData.get("calle")?.toString().trim() || null;
 
   if (!titulo) {
     return { error: "Indica un título para la cita." };
   }
 
-  const todosVacios = !fecha && !horaInicio && !horaFin;
-  const todosCompletos = Boolean(fecha && horaInicio && horaFin);
-
-  if (!todosVacios && !todosCompletos) {
+  const estadoFechaHora = estadoFechaHoraCitaExterna(fecha, horaInicio, horaFin);
+  if (estadoFechaHora === "mixto") {
     return {
       error:
         "Indica fecha y horas completas, o déjalas todas vacías para guardarla como pendiente de agendar.",
@@ -903,7 +932,7 @@ export async function crearCitaExterna(
     return { error: "No autorizado." };
   }
 
-  if (!todosCompletos) {
+  if (estadoFechaHora === "vacio") {
     const { error } = await supabase.from("citas").insert({
       profesional_id: profesionalId,
       cliente_id: null,
@@ -915,6 +944,8 @@ export async function crearCitaExterna(
       estado: "pendiente",
       origen_externo: true,
       titulo_externo: titulo,
+      localidad,
+      calle,
     });
 
     if (error) {
@@ -945,7 +976,127 @@ export async function crearCitaExterna(
     estado: "confirmada",
     origen_externo: true,
     titulo_externo: titulo,
+    localidad,
+    calle,
   });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return undefined;
+}
+
+/**
+ * Edita un bloqueo externo propio: título, fecha/horas (con la misma regla
+ * "todo o nada" que crearCitaExterna — vaciarlas lo devuelve al panel de
+ * pendientes) y localidad/calle.
+ */
+export async function editarCitaExterna(
+  _prevState: CitaAccionFormState,
+  formData: FormData
+): Promise<CitaAccionFormState> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "No autorizado." };
+  }
+
+  const citaId = formData.get("id")?.toString();
+  const fecha = formData.get("fecha")?.toString() || null;
+  const horaInicio = formData.get("hora_inicio")?.toString() || null;
+  const horaFin = formData.get("hora_fin")?.toString() || null;
+  const titulo = formData.get("titulo")?.toString().trim();
+  const localidad = formData.get("localidad")?.toString().trim() || null;
+  const calle = formData.get("calle")?.toString().trim() || null;
+
+  if (!citaId) {
+    return { error: "Cita inválida." };
+  }
+  if (!titulo) {
+    return { error: "Indica un título para la cita." };
+  }
+
+  const estadoFechaHora = estadoFechaHoraCitaExterna(fecha, horaInicio, horaFin);
+  if (estadoFechaHora === "mixto") {
+    return {
+      error:
+        "Indica fecha y horas completas, o déjalas todas vacías para guardarla como pendiente de agendar.",
+    };
+  }
+
+  const profesionalId = await propioProfesionalId(supabase, user.id);
+  if (!profesionalId) {
+    return { error: "No autorizado." };
+  }
+
+  const { data: cita } = await supabase
+    .from("citas")
+    .select("id, profesional_id, origen_externo")
+    .eq("id", citaId)
+    .maybeSingle<{ id: string; profesional_id: string; origen_externo: boolean }>();
+
+  if (!cita || cita.profesional_id !== profesionalId) {
+    return { error: "No autorizado." };
+  }
+  if (!cita.origen_externo) {
+    return { error: "Esta cita no es un bloqueo externo." };
+  }
+
+  if (estadoFechaHora === "vacio") {
+    const { error } = await supabase
+      .from("citas")
+      .update({
+        titulo_externo: titulo,
+        fecha: null,
+        hora_inicio: null,
+        hora_fin: null,
+        estado: "pendiente",
+        localidad,
+        calle,
+      })
+      .eq("id", citaId);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return undefined;
+  }
+
+  if (aMinutos(horaFin!) <= aMinutos(horaInicio!)) {
+    return { error: "La hora de fin debe ser posterior a la hora de inicio." };
+  }
+
+  const seSolapa = await haySolapeConConfirmadas(
+    supabase,
+    profesionalId,
+    fecha!,
+    horaInicio!,
+    horaFin!,
+    citaId
+  );
+  if (seSolapa) {
+    return { error: "Ya tienes otra cita confirmada que se solapa con ese horario." };
+  }
+
+  const { error } = await supabase
+    .from("citas")
+    .update({
+      titulo_externo: titulo,
+      fecha,
+      hora_inicio: horaInicio,
+      hora_fin: horaFin,
+      estado: "confirmada",
+      localidad,
+      calle,
+    })
+    .eq("id", citaId);
 
   if (error) {
     return { error: error.message };

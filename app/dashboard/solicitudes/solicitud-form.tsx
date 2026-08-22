@@ -39,6 +39,20 @@ export function SolicitudForm() {
           <Input id="zona" name="zona" type="text" required placeholder="Ej. Vigo y alrededores" />
         </div>
 
+        <fieldset className="flex flex-col gap-3">
+          <legend className="mb-1 text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            ¿Dónde es el trabajo? (opcional, pero recomendado)
+          </legend>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="localidad">Localidad</Label>
+            <Input id="localidad" name="localidad" type="text" placeholder="Ej. Vigo" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="calle">Calle</Label>
+            <Input id="calle" name="calle" type="text" placeholder="Ej. Rúa do Príncipe 12" />
+          </div>
+        </fieldset>
+
         <div className="flex flex-col gap-1">
           <Label htmlFor="descripcion">Descripción</Label>
           <Textarea

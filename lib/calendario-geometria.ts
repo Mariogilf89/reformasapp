@@ -17,6 +17,17 @@ export function horaDesdeMinutos(minutos: number) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+export function rangoHoraTexto(horaInicio: string, horaFin: string | null) {
+  const inicio = horaInicio.slice(0, 5);
+  return horaFin ? `${inicio}–${horaFin.slice(0, 5)}` : inicio;
+}
+
+// Alturas mínimas (px) de un bloque de la vista semanal para mostrar la
+// ubicación completa (localidad + calle en dos líneas) o la versión
+// compacta (icono + un solo valor, priorizando la localidad).
+export const ALTURA_UBICACION_COMPLETA_PX = 60;
+export const ALTURA_UBICACION_COMPACTA_PX = 36;
+
 export function finEfectivoMinutos(horaInicio: string, horaFin: string | null) {
   return horaFin ? minutosDesdeHora(horaFin) : minutosDesdeHora(horaInicio) + 60;
 }

@@ -2,14 +2,18 @@ import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import type { CitaCalendario } from "@/app/actions/citas";
 import {
   ALTURA_HORA_PX,
+  ALTURA_UBICACION_COMPACTA_PX,
+  ALTURA_UBICACION_COMPLETA_PX,
   estiloCita,
   finEfectivoMinutos,
   horaDesdeMinutos,
   minutosDesdeHora,
+  rangoHoraTexto,
   tituloCita,
   type ArrastreEstado,
 } from "@/lib/calendario-geometria";
 import { fechaISO, inicioSemana, sumarDias } from "@/lib/fechas";
+import { IconUbicacion } from "@/components/ui/icon-ubicacion";
 
 const DIAS_CABECERA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -242,9 +246,34 @@ export function VistaSemana({
                     }}
                   >
                     <span className="block font-medium">
-                      {esArrastrada && arrastre ? horaDesdeMinutos(arrastre.inicioMin) : bloque.hora_inicio.slice(0, 5)}
+                      {esArrastrada && arrastre
+                        ? `${horaDesdeMinutos(arrastre.inicioMin)}–${horaDesdeMinutos(arrastre.inicioMin + arrastre.duracionMin)}`
+                        : rangoHoraTexto(bloque.hora_inicio, bloque.hora_fin)}
                     </span>
                     <span className="block truncate">{tituloCita(bloque)}</span>
+
+                    {!esArrastrada && height >= ALTURA_UBICACION_COMPLETA_PX && (
+                      <>
+                        {bloque.localidad && (
+                          <span className="block truncate text-[10px] opacity-80">
+                            {bloque.localidad}
+                          </span>
+                        )}
+                        {bloque.calle && (
+                          <span className="block truncate text-[10px] opacity-80">{bloque.calle}</span>
+                        )}
+                      </>
+                    )}
+
+                    {!esArrastrada &&
+                      height >= ALTURA_UBICACION_COMPACTA_PX &&
+                      height < ALTURA_UBICACION_COMPLETA_PX &&
+                      (bloque.localidad || bloque.calle) && (
+                        <span className="flex items-center gap-0.5 truncate text-[10px] opacity-80">
+                          <IconUbicacion className="h-2.5 w-2.5 shrink-0" />
+                          <span className="truncate">{bloque.localidad || bloque.calle}</span>
+                        </span>
+                      )}
                   </button>
                 );
               });
@@ -260,7 +289,9 @@ export function VistaSemana({
                   width: `calc(${100 / 7}% - 2px)`,
                 }}
               >
-                <span className="block font-medium">{horaDesdeMinutos(arrastre.inicioMin)}</span>
+                <span className="block font-medium">
+                  {horaDesdeMinutos(arrastre.inicioMin)}–{horaDesdeMinutos(arrastre.inicioMin + arrastre.duracionMin)}
+                </span>
                 <span className="block truncate">{arrastre.titulo}</span>
               </div>
             )}

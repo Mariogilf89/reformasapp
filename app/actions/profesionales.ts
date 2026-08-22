@@ -53,6 +53,46 @@ export async function guardarPerfilProfesional(
   return { success: true };
 }
 
+export type RangoHorarioFormState = { error?: string } | undefined;
+
+/**
+ * Guarda el rango horario que usa el calendario de /dashboard. Se llama
+ * directamente (no via useActionState/<form>) desde los <select> de
+ * calendario-citas.tsx.
+ */
+export async function actualizarRangoHorarioCalendario(
+  horaInicio: number,
+  horaFin: number
+): Promise<RangoHorarioFormState> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.user_metadata?.role !== "profesional") {
+    return { error: "No autorizado." };
+  }
+
+  if (!Number.isInteger(horaInicio) || !Number.isInteger(horaFin)) {
+    return { error: "Rango horario inválido." };
+  }
+  if (horaInicio < 0 || horaInicio > 23 || horaFin < 1 || horaFin > 24 || horaFin <= horaInicio) {
+    return { error: "La hora de fin debe ser posterior a la de inicio." };
+  }
+
+  const { error } = await supabase
+    .from("profesionales")
+    .update({ calendario_hora_inicio: horaInicio, calendario_hora_fin: horaFin })
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return undefined;
+}
+
 // Extrae la ruta dentro del bucket (userId/archivo.ext) de una URL pública,
 // verificando que la foto pertenece a la carpeta del propio usuario.
 function extraerRutaStorage(url: string, userId: string): string | null {

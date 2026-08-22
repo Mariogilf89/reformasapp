@@ -8,11 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export function CitaExternaForm({
-  fechaInicial,
   onClose,
   onExito,
 }: {
-  fechaInicial: string;
   onClose: () => void;
   onExito: () => void;
 }) {
@@ -21,6 +19,18 @@ export function CitaExternaForm({
 
   async function handleSubmit(formData: FormData) {
     setError(null);
+
+    const fecha = formData.get("fecha")?.toString();
+    const horaInicio = formData.get("hora_inicio")?.toString();
+    const horaFin = formData.get("hora_fin")?.toString();
+    const todosVacios = !fecha && !horaInicio && !horaFin;
+    const todosCompletos = Boolean(fecha && horaInicio && horaFin);
+
+    if (!todosVacios && !todosCompletos) {
+      setError("Indica fecha y horas completas, o déjalas todas vacías para guardarla como pendiente de agendar.");
+      return;
+    }
+
     setEnviando(true);
     const resultado = await crearCitaExterna(undefined, formData);
     setEnviando(false);
@@ -50,19 +60,24 @@ export function CitaExternaForm({
 
         <div className="flex flex-col gap-1">
           <Label htmlFor="fecha">Fecha</Label>
-          <Input id="fecha" name="fecha" type="date" required defaultValue={fechaInicial} />
+          <Input id="fecha" name="fecha" type="date" />
         </div>
 
         <div className="flex gap-2">
           <div className="flex flex-1 flex-col gap-1">
             <Label htmlFor="hora_inicio">Hora inicio</Label>
-            <Input id="hora_inicio" name="hora_inicio" type="time" required />
+            <Input id="hora_inicio" name="hora_inicio" type="time" />
           </div>
           <div className="flex flex-1 flex-col gap-1">
             <Label htmlFor="hora_fin">Hora fin</Label>
-            <Input id="hora_fin" name="hora_fin" type="time" required />
+            <Input id="hora_fin" name="hora_fin" type="time" />
           </div>
         </div>
+
+        <p className="text-xs text-neutral-500 dark:text-neutral-500">
+          Déjalo sin fecha ni horas para guardarla como pendiente de agendar: aparecerá en el
+          panel lateral y podrás arrastrarla al calendario más adelante.
+        </p>
 
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 

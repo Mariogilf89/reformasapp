@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
-import { caducarCitasPendientes, obtenerCitasCalendario } from "@/app/actions/citas";
+import {
+  caducarCitasPendientes,
+  obtenerCitasCalendario,
+  obtenerCitasExternasPendientes,
+} from "@/app/actions/citas";
 import { fechaISO, inicioSemana, sumarDias } from "@/lib/fechas";
 import type { Categoria } from "@/lib/profesionales";
 import { Card } from "@/components/ui/card";
@@ -47,7 +51,7 @@ export default async function DashboardPage() {
 
   const { data: perfil } = await supabase
     .from("profesionales")
-    .select("id, nombre, categorias, zona, verificado")
+    .select("id, nombre, categorias, zona, verificado, calendario_hora_inicio, calendario_hora_fin")
     .eq("user_id", user.id)
     .maybeSingle<{
       id: string;
@@ -55,6 +59,8 @@ export default async function DashboardPage() {
       categorias: Categoria[];
       zona: string;
       verificado: boolean;
+      calendario_hora_inicio: number;
+      calendario_hora_fin: number;
     }>();
 
   if (!perfil) {
@@ -80,7 +86,10 @@ export default async function DashboardPage() {
 
   const hoy = new Date();
   const lunes = inicioSemana(hoy);
-  const citasIniciales = await obtenerCitasCalendario(fechaISO(lunes), fechaISO(sumarDias(lunes, 6)));
+  const [citasIniciales, citasPendientesIniciales] = await Promise.all([
+    obtenerCitasCalendario(fechaISO(lunes), fechaISO(sumarDias(lunes, 6))),
+    obtenerCitasExternasPendientes(),
+  ]);
 
   return (
     <div className="flex flex-1 flex-col items-center gap-6 px-4 py-10">
@@ -94,7 +103,13 @@ export default async function DashboardPage() {
           telefonoVerificado={telefonoVerificado}
         />
 
-        <CalendarioCitas citasIniciales={citasIniciales} anchorInicial={hoy} />
+        <CalendarioCitas
+          citasIniciales={citasIniciales}
+          citasPendientesIniciales={citasPendientesIniciales}
+          anchorInicial={hoy}
+          horaInicioInicial={perfil.calendario_hora_inicio}
+          horaFinInicial={perfil.calendario_hora_fin}
+        />
       </div>
     </div>
   );

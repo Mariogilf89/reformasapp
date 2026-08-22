@@ -1,43 +1,21 @@
+import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import type { CitaCalendario } from "@/app/actions/citas";
-import { TIPOS_CITA } from "@/lib/citas";
+import {
+  ALTURA_HORA_PX,
+  estiloCita,
+  finEfectivoMinutos,
+  horaDesdeMinutos,
+  minutosDesdeHora,
+  tituloCita,
+  type ArrastreEstado,
+} from "@/lib/calendario-geometria";
 import { fechaISO, inicioSemana, sumarDias } from "@/lib/fechas";
-
-const HORA_INICIO = 8;
-const HORA_FIN = 20;
-const MINUTOS_INICIO = HORA_INICIO * 60;
-const MINUTOS_FIN = HORA_FIN * 60;
-const ALTURA_HORA_PX = 60;
-const ALTURA_GRID_PX = (HORA_FIN - HORA_INICIO) * ALTURA_HORA_PX;
 
 const DIAS_CABECERA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
-function minutosDesdeHora(hora: string) {
-  const [h, m] = hora.slice(0, 5).split(":").map(Number);
-  return h * 60 + m;
-}
+type CitaConFecha = CitaCalendario & { fecha: string; hora_inicio: string };
 
-function finEfectivoMinutos(cita: CitaCalendario) {
-  return cita.hora_fin ? minutosDesdeHora(cita.hora_fin) : minutosDesdeHora(cita.hora_inicio) + 60;
-}
-
-function claseColor(cita: CitaCalendario) {
-  if (cita.origen_externo) {
-    return "border-neutral-400 bg-neutral-100 text-neutral-700 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300";
-  }
-  if (cita.estado === "confirmada") {
-    return "border-primary-500 bg-primary-100 text-primary-800 dark:border-primary-600 dark:bg-primary-900/40 dark:text-primary-200";
-  }
-  return "border-amber-400 bg-amber-50 text-amber-800 dark:border-amber-600 dark:bg-amber-900/30 dark:text-amber-200";
-}
-
-function tituloCita(cita: CitaCalendario) {
-  if (cita.origen_externo) {
-    return cita.titulo_externo ?? "Bloqueo";
-  }
-  return TIPOS_CITA.find((t) => t.value === cita.tipo)?.label ?? "Cita";
-}
-
-type BloquePosicionado = CitaCalendario & {
+type BloquePosicionado = CitaConFecha & {
   inicioMin: number;
   finMin: number;
   columna: number;
@@ -45,12 +23,22 @@ type BloquePosicionado = CitaCalendario & {
 };
 
 /** Agrupa citas solapadas en clusters y les asigna columna (greedy). */
-function calcularColumnas(citasDelDia: CitaCalendario[]): BloquePosicionado[] {
+function calcularColumnas(
+  citasDelDia: CitaConFecha[],
+  minutosInicio: number,
+  minutosFin: number
+): BloquePosicionado[] {
   const conMinutos = citasDelDia
     .map((cita) => ({
       ...cita,
-      inicioMin: Math.max(MINUTOS_INICIO, minutosDesdeHora(cita.hora_inicio)),
-      finMin: Math.min(MINUTOS_FIN, Math.max(finEfectivoMinutos(cita), minutosDesdeHora(cita.hora_inicio) + 1)),
+      inicioMin: Math.max(minutosInicio, minutosDesdeHora(cita.hora_inicio)),
+      finMin: Math.min(
+        minutosFin,
+        Math.max(
+          finEfectivoMinutos(cita.hora_inicio, cita.hora_fin),
+          minutosDesdeHora(cita.hora_inicio) + 1
+        )
+      ),
     }))
     .sort((a, b) => a.inicioMin - b.inicioMin);
 
@@ -91,24 +79,61 @@ function calcularColumnas(citasDelDia: CitaCalendario[]): BloquePosicionado[] {
 export function VistaSemana({
   anchor,
   citas,
-  onSeleccionarCita,
+  horaInicio,
+  horaFin,
+  gridRef,
+  arrastre,
+  onPointerDownCita,
+  onPointerMoveArrastre,
+  onPointerUpArrastre,
 }: {
   anchor: Date;
   citas: CitaCalendario[];
-  onSeleccionarCita: (id: string) => void;
+  horaInicio: number;
+  horaFin: number;
+  gridRef: RefObject<HTMLDivElement | null>;
+  arrastre: ArrastreEstado | null;
+  onPointerDownCita: (e: ReactPointerEvent<HTMLButtonElement>, cita: CitaCalendario) => void;
+  onPointerMoveArrastre: (e: ReactPointerEvent<HTMLButtonElement>) => void;
+  onPointerUpArrastre: (e: ReactPointerEvent<HTMLButtonElement>) => void;
 }) {
+  const minutosInicio = horaInicio * 60;
+  const minutosFin = horaFin * 60;
+  const alturaGridPx = (horaFin - horaInicio) * ALTURA_HORA_PX;
+
   const lunes = inicioSemana(anchor);
   const dias = Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i));
   const hoyISO = fechaISO(new Date());
 
-  const citasPorDia = new Map<string, CitaCalendario[]>();
-  for (const cita of citas) {
+  // El bloque que se está arrastrando (si es uno ya existente del propio
+  // calendario, no desde el panel de pendientes) se mantiene en el mismo
+  // nodo del árbol/DOM durante todo el gesto: si se le quitara de aquí para
+  // dibujarlo aparte, React lo desmontaría justo cuando setPointerCapture lo
+  // está reteniendo, y el navegador cortaría el arrastre en ese instante.
+  // Por eso solo se le sobrescribe la posición (ver más abajo), nunca se
+  // excluye de esta lista.
+  const citasConFecha = citas.filter(
+    (c): c is CitaConFecha => c.fecha !== null && c.hora_inicio !== null
+  );
+
+  const citasPorDia = new Map<string, CitaConFecha[]>();
+  for (const cita of citasConFecha) {
     const lista = citasPorDia.get(cita.fecha) ?? [];
     lista.push(cita);
     citasPorDia.set(cita.fecha, lista);
   }
 
-  const horas = Array.from({ length: HORA_FIN - HORA_INICIO }, (_, i) => HORA_INICIO + i);
+  const horas = Array.from({ length: horaFin - horaInicio }, (_, i) => horaInicio + i);
+
+  // El "fantasma" solo hace falta para un arrastre que viene del panel de
+  // pendientes: ahí no hay ningún bloque previo en el calendario que reusar.
+  const ghost =
+    arrastre?.moved && arrastre.origenPanel
+      ? {
+          className:
+            "border-dashed border-neutral-400 bg-neutral-100 text-neutral-700 dark:border-neutral-500 dark:bg-neutral-800 dark:text-neutral-300",
+        }
+      : null;
 
   return (
     <div className="flex w-full overflow-x-auto">
@@ -126,16 +151,15 @@ export function VistaSemana({
           ))}
         </div>
 
-        <div className="grid flex-1 grid-cols-7">
-          {dias.map((dia) => {
-            const fecha = fechaISO(dia);
-            const esHoy = fecha === hoyISO;
-            const bloques = calcularColumnas(citasPorDia.get(fecha) ?? []);
-
-            return (
-              <div key={fecha} className="border-l border-neutral-200 dark:border-neutral-800">
+        <div className="flex-1">
+          <div className="grid h-10 grid-cols-7 border-b border-neutral-200 dark:border-neutral-800">
+            {dias.map((dia) => {
+              const fecha = fechaISO(dia);
+              const esHoy = fecha === hoyISO;
+              return (
                 <div
-                  className={`flex h-10 flex-col items-center justify-center border-b border-neutral-200 text-xs font-medium dark:border-neutral-800 ${
+                  key={fecha}
+                  className={`flex flex-col items-center justify-center border-l border-neutral-200 text-xs font-medium first:border-l-0 dark:border-neutral-800 ${
                     esHoy
                       ? "text-primary-700 dark:text-primary-400"
                       : "text-neutral-600 dark:text-neutral-400"
@@ -144,47 +168,103 @@ export function VistaSemana({
                   <span>{DIAS_CABECERA[(dia.getDay() + 6) % 7]}</span>
                   <span>{dia.getDate()}</span>
                 </div>
+              );
+            })}
+          </div>
 
-                <div className="relative" style={{ height: `${ALTURA_GRID_PX}px` }}>
-                  {horas.map((h) => (
-                    <div
-                      key={h}
-                      className="absolute inset-x-0 border-t border-neutral-100 dark:border-neutral-800/60"
-                      style={{ top: `${(h - HORA_INICIO) * ALTURA_HORA_PX}px` }}
-                    />
-                  ))}
+          <div
+            ref={gridRef}
+            className="relative grid grid-cols-7"
+            style={{ height: `${alturaGridPx}px` }}
+          >
+            {dias.map((dia, i) => (
+              <div
+                key={i}
+                className="border-l border-neutral-200 first:border-l-0 dark:border-neutral-800"
+              />
+            ))}
 
-                  {bloques.map((bloque) => {
-                    const top = ((bloque.inicioMin - MINUTOS_INICIO) / 60) * ALTURA_HORA_PX;
-                    const height = Math.max(
-                      18,
-                      ((bloque.finMin - bloque.inicioMin) / 60) * ALTURA_HORA_PX
-                    );
-                    const width = 100 / bloque.totalColumnas;
-                    const left = bloque.columna * width;
+            {horas.map((h) => (
+              <div
+                key={h}
+                className="absolute inset-x-0 border-t border-neutral-100 dark:border-neutral-800/60"
+                style={{ top: `${(h - horaInicio) * ALTURA_HORA_PX}px` }}
+              />
+            ))}
 
-                    return (
-                      <button
-                        key={bloque.id}
-                        type="button"
-                        onClick={() => onSeleccionarCita(bloque.id)}
-                        className={`absolute overflow-hidden rounded-md border px-1.5 py-0.5 text-left text-[11px] leading-tight ${claseColor(bloque)}`}
-                        style={{
-                          top: `${top}px`,
-                          height: `${height}px`,
-                          left: `${left}%`,
-                          width: `calc(${width}% - 2px)`,
-                        }}
-                      >
-                        <span className="block font-medium">{bloque.hora_inicio.slice(0, 5)}</span>
-                        <span className="block truncate">{tituloCita(bloque)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+            {dias.map((dia) => {
+              const fecha = fechaISO(dia);
+              const diaIndex = (dia.getDay() + 6) % 7;
+              const bloques = calcularColumnas(citasPorDia.get(fecha) ?? [], minutosInicio, minutosFin);
+
+              return bloques.map((bloque) => {
+                const esArrastrada =
+                  arrastre?.moved && !arrastre.origenPanel && arrastre.citaId === bloque.id;
+
+                let top: number;
+                let height: number;
+                let left: number;
+                let width: string;
+
+                if (esArrastrada && arrastre) {
+                  top = ((arrastre.inicioMin - minutosInicio) / 60) * ALTURA_HORA_PX;
+                  height = Math.max(18, (arrastre.duracionMin / 60) * ALTURA_HORA_PX);
+                  left = (arrastre.diaIndex / 7) * 100;
+                  width = `calc(${100 / 7}% - 2px)`;
+                } else {
+                  top = ((bloque.inicioMin - minutosInicio) / 60) * ALTURA_HORA_PX;
+                  height = Math.max(18, ((bloque.finMin - bloque.inicioMin) / 60) * ALTURA_HORA_PX);
+                  const anchoColumna = 100 / 7 / bloque.totalColumnas;
+                  left = (diaIndex / 7) * 100 + bloque.columna * anchoColumna;
+                  width = `calc(${anchoColumna}% - 2px)`;
+                }
+
+                const estilo = estiloCita(bloque);
+
+                return (
+                  <button
+                    key={bloque.id}
+                    type="button"
+                    onPointerDown={(e) => onPointerDownCita(e, bloque)}
+                    onPointerMove={onPointerMoveArrastre}
+                    onPointerUp={onPointerUpArrastre}
+                    className={`absolute cursor-grab overflow-hidden rounded-md border px-1.5 py-0.5 text-left text-[11px] leading-tight active:cursor-grabbing ${estilo.className} ${
+                      esArrastrada ? "shadow-lg ring-2 ring-primary-500" : ""
+                    }`}
+                    style={{
+                      ...estilo.style,
+                      top: `${top}px`,
+                      height: `${height}px`,
+                      left: `${left}%`,
+                      width,
+                      touchAction: "none",
+                      zIndex: esArrastrada ? 10 : undefined,
+                    }}
+                  >
+                    <span className="block font-medium">
+                      {esArrastrada && arrastre ? horaDesdeMinutos(arrastre.inicioMin) : bloque.hora_inicio.slice(0, 5)}
+                    </span>
+                    <span className="block truncate">{tituloCita(bloque)}</span>
+                  </button>
+                );
+              });
+            })}
+
+            {arrastre?.moved && ghost && (
+              <div
+                className={`pointer-events-none absolute overflow-hidden rounded-md border px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-lg ring-2 ring-primary-500 ${ghost.className}`}
+                style={{
+                  top: `${((arrastre.inicioMin - minutosInicio) / 60) * ALTURA_HORA_PX}px`,
+                  height: `${Math.max(18, (arrastre.duracionMin / 60) * ALTURA_HORA_PX)}px`,
+                  left: `${(arrastre.diaIndex / 7) * 100}%`,
+                  width: `calc(${100 / 7}% - 2px)`,
+                }}
+              >
+                <span className="block font-medium">{horaDesdeMinutos(arrastre.inicioMin)}</span>
+                <span className="block truncate">{arrastre.titulo}</span>
               </div>
-            );
-          })}
+            )}
+          </div>
         </div>
       </div>
     </div>

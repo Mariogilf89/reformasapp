@@ -57,8 +57,14 @@ export function DetalleCitaModal({
             {cita.origen_externo ? cita.titulo_externo : tipoLabel}
           </h2>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
-            {formatearFecha(cita.fecha)} · {cita.hora_inicio.slice(0, 5)}
-            {cita.hora_fin && `–${cita.hora_fin.slice(0, 5)}`}
+            {cita.fecha && cita.hora_inicio ? (
+              <>
+                {formatearFecha(cita.fecha)} · {cita.hora_inicio.slice(0, 5)}
+                {cita.hora_fin && `–${cita.hora_fin.slice(0, 5)}`}
+              </>
+            ) : (
+              "Pendiente de agendar"
+            )}
           </p>
           {!cita.origen_externo && (
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{tipoLabel}</p>

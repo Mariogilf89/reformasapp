@@ -29,6 +29,7 @@ export function VistaMes({
 
   const citasPorFecha = new Map<string, CitaCalendario[]>();
   for (const cita of citas) {
+    if (!cita.fecha) continue;
     const lista = citasPorFecha.get(cita.fecha) ?? [];
     lista.push(cita);
     citasPorFecha.set(cita.fecha, lista);

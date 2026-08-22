@@ -25,6 +25,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       ? [{ href: "/dashboard/solicitudes", label: "Mis solicitudes" }]
       : []),
     { href: "/dashboard/citas", label: "Mis citas" },
+    { href: "/dashboard/verificar-telefono", label: "Verificar teléfono" },
     ...(role === "profesional"
       ? [{ href: "/dashboard/solicitudes-disponibles", label: "Solicitudes disponibles" }]
       : []),

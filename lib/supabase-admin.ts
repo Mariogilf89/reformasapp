@@ -29,3 +29,22 @@ export async function obtenerEmailUsuario(userId: string): Promise<string | null
 
   return data.user.email;
 }
+
+/**
+ * Resuelve el teléfono guardado en user_metadata de un usuario a partir de
+ * su user_id usando la service role key. Solo debe llamarse desde server
+ * actions o Server Components, nunca desde código que pueda acabar en el
+ * bundle de cliente.
+ */
+export async function obtenerTelefonoUsuario(userId: string): Promise<string | null> {
+  const supabaseAdmin = createAdminSupabaseClient();
+  const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+
+  if (error || !data.user) {
+    console.error("No se pudo resolver el teléfono del usuario", userId, error);
+    return null;
+  }
+
+  const telefono = (data.user.user_metadata as { telefono?: string } | null)?.telefono;
+  return telefono ?? null;
+}

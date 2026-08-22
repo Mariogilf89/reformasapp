@@ -168,6 +168,25 @@ async function haySolapeConConfirmadas(
   });
 }
 
+const MENSAJE_CITA_CADUCADA = "Caducada: no se confirmó antes de la fecha";
+
+/**
+ * Cancela automáticamente las citas "pendiente" cuya fecha ya pasó, tanto si
+ * las propuso el cliente como el profesional. RLS limita el update a las
+ * citas donde el usuario de la sesión es cliente o profesional participante,
+ * así que basta con filtrar por estado/fecha: cada carga de /dashboard/citas
+ * caduca solo las propias del usuario que la visita.
+ */
+export async function caducarCitasPendientes(supabase: Supabase) {
+  const hoy = fechaISO(new Date());
+
+  await supabase
+    .from("citas")
+    .update({ estado: "cancelada", comentario: MENSAJE_CITA_CADUCADA })
+    .eq("estado", "pendiente")
+    .lt("fecha", hoy);
+}
+
 async function propioProfesionalId(supabase: Supabase, userId: string) {
   const { data } = await supabase
     .from("profesionales")

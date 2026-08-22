@@ -1,14 +1,33 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { proponerOtroHorario } from "@/app/actions/citas";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
-export function ProponerHorarioForm({ citaId }: { citaId: string }) {
+export function ProponerHorarioForm({
+  citaId,
+  onExito,
+}: {
+  citaId: string;
+  onExito?: () => void;
+}) {
   const [state, action, pending] = useActionState(proponerOtroHorario, undefined);
+  const enviado = useRef(false);
+
+  useEffect(() => {
+    if (pending) {
+      enviado.current = true;
+      return;
+    }
+    if (enviado.current && !state?.error) {
+      enviado.current = false;
+      onExito?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending, state]);
 
   return (
     <form

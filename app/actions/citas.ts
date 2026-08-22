@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase";
-import { TIPOS_CITA, type TipoCita } from "@/lib/citas";
-import { obtenerEmailUsuario } from "@/lib/supabase-admin";
+import { TIPOS_CITA, type TipoCita, type EstadoCita, type PropuestoPor } from "@/lib/citas";
+import { obtenerEmailUsuario, obtenerContactoTelefonicoUsuario } from "@/lib/supabase-admin";
 import { enviarEmail } from "@/lib/email";
 
 export type Supabase = Awaited<ReturnType<typeof createServerSupabaseClient>>;
@@ -459,6 +459,7 @@ export async function aceptarCitaProfesional(
   await notificarCambioCita(emailCliente, "Cita confirmada", cuerpo);
 
   revalidatePath("/dashboard/citas");
+  revalidatePath("/dashboard");
   return undefined;
 }
 
@@ -556,6 +557,7 @@ export async function proponerOtroHorario(
   await notificarCambioCita(emailCliente, "Nuevo horario propuesto para tu cita", cuerpo);
 
   revalidatePath("/dashboard/citas");
+  revalidatePath("/dashboard");
   return undefined;
 }
 
@@ -631,6 +633,7 @@ export async function anularCitaProfesional(
   await notificarCambioCita(emailCliente, "Cita cancelada", cuerpo);
 
   revalidatePath("/dashboard/citas");
+  revalidatePath("/dashboard");
   return undefined;
 }
 
@@ -745,5 +748,197 @@ export async function anularCitaCliente(
   }
 
   revalidatePath("/dashboard/citas");
+  return undefined;
+}
+
+export type CitaCalendario = {
+  id: string;
+  fecha: string;
+  hora_inicio: string;
+  hora_fin: string | null;
+  tipo: TipoCita | null;
+  estado: EstadoCita;
+  propuesto_por: PropuestoPor;
+  comentario: string | null;
+  cliente_id: string | null;
+  origen_externo: boolean;
+  titulo_externo: string | null;
+  // Solo se rellena para estado="confirmada" && !origen_externo, reutilizando
+  // la misma revelación de teléfono que ya usa /dashboard/citas.
+  telefonoCliente: string | null;
+};
+
+/**
+ * Citas propias del profesional autenticado en un rango de fechas, para el
+ * calendario de /dashboard. A diferencia de obtenerCitasOcupadas (que usa la
+ * RPC para ocultar datos de otros clientes), el profesional ya tiene acceso
+ * RLS completo a sus propias filas, así que se consulta "citas" directamente.
+ * Las canceladas quedan fuera: no se muestran en el calendario (ya tienen su
+ * propio listado en /dashboard/citas).
+ */
+export async function obtenerCitasCalendario(desde: string, hasta: string): Promise<CitaCalendario[]> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return [];
+  }
+
+  const profesionalId = await propioProfesionalId(supabase, user.id);
+  if (!profesionalId) {
+    return [];
+  }
+
+  const { data } = await supabase
+    .from("citas")
+    .select(
+      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo"
+    )
+    .eq("profesional_id", profesionalId)
+    .neq("estado", "cancelada")
+    .gte("fecha", desde)
+    .lte("fecha", hasta)
+    .order("fecha", { ascending: true })
+    .order("hora_inicio", { ascending: true })
+    .returns<Omit<CitaCalendario, "telefonoCliente">[]>();
+
+  const citas = data ?? [];
+
+  const telefonosPorCliente = new Map<string, string | null>();
+  for (const cita of citas) {
+    if (cita.estado === "confirmada" && !cita.origen_externo && cita.cliente_id) {
+      if (!telefonosPorCliente.has(cita.cliente_id)) {
+        const contacto = await obtenerContactoTelefonicoUsuario(cita.cliente_id);
+        telefonosPorCliente.set(cita.cliente_id, contacto.telefono);
+      }
+    }
+  }
+
+  return citas.map((cita) => ({
+    ...cita,
+    telefonoCliente: cita.cliente_id ? telefonosPorCliente.get(cita.cliente_id) ?? null : null,
+  }));
+}
+
+/**
+ * Crea un bloqueo manual del profesional en su propio calendario (p.ej.
+ * "Comida", "Cita personal"). No pasa por negociación: se inserta ya
+ * "confirmada" y sin cliente/solicitud asociados.
+ */
+export async function crearCitaExterna(
+  _prevState: CitaAccionFormState,
+  formData: FormData
+): Promise<CitaAccionFormState> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "No autorizado." };
+  }
+
+  const fecha = formData.get("fecha")?.toString();
+  const horaInicio = formData.get("hora_inicio")?.toString();
+  const horaFin = formData.get("hora_fin")?.toString();
+  const titulo = formData.get("titulo")?.toString().trim();
+
+  if (!fecha) {
+    return { error: "Indica una fecha." };
+  }
+  if (!horaInicio || !horaFin) {
+    return { error: "Indica la hora de inicio y de fin." };
+  }
+  if (aMinutos(horaFin) <= aMinutos(horaInicio)) {
+    return { error: "La hora de fin debe ser posterior a la hora de inicio." };
+  }
+  if (!titulo) {
+    return { error: "Indica un título para la cita." };
+  }
+
+  const profesionalId = await propioProfesionalId(supabase, user.id);
+  if (!profesionalId) {
+    return { error: "No autorizado." };
+  }
+
+  const seSolapa = await haySolapeConConfirmadas(supabase, profesionalId, fecha, horaInicio, horaFin);
+  if (seSolapa) {
+    return { error: "Ya tienes otra cita confirmada que se solapa con ese horario." };
+  }
+
+  const { error } = await supabase.from("citas").insert({
+    profesional_id: profesionalId,
+    cliente_id: null,
+    solicitud_id: null,
+    tipo: null,
+    fecha,
+    hora_inicio: horaInicio,
+    hora_fin: horaFin,
+    estado: "confirmada",
+    origen_externo: true,
+    titulo_externo: titulo,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return undefined;
+}
+
+/**
+ * Cancela un bloqueo externo propio. Deliberadamente NO sirve para cancelar
+ * citas confirmadas normales cliente-profesional: ese flujo no existe hoy
+ * (anularCitaProfesional/anularCitaCliente solo actúan sobre "pendiente") y
+ * añadirlo es una decisión de producto fuera del alcance de esta feature.
+ */
+export async function cancelarCitaExterna(
+  _prevState: CitaAccionFormState,
+  formData: FormData
+): Promise<CitaAccionFormState> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "No autorizado." };
+  }
+
+  const citaId = formData.get("id")?.toString();
+  if (!citaId) {
+    return { error: "Cita inválida." };
+  }
+
+  const profesionalId = await propioProfesionalId(supabase, user.id);
+  if (!profesionalId) {
+    return { error: "No autorizado." };
+  }
+
+  const { data: cita } = await supabase
+    .from("citas")
+    .select("id, profesional_id, origen_externo, estado")
+    .eq("id", citaId)
+    .maybeSingle<{ id: string; profesional_id: string; origen_externo: boolean; estado: string }>();
+
+  if (!cita || cita.profesional_id !== profesionalId) {
+    return { error: "No autorizado." };
+  }
+  if (!cita.origen_externo) {
+    return { error: "Esta cita no es un bloqueo externo." };
+  }
+  if (cita.estado === "cancelada") {
+    return undefined;
+  }
+
+  const { error } = await supabase.from("citas").update({ estado: "cancelada" }).eq("id", citaId);
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
   return undefined;
 }

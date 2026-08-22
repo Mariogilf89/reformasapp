@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
-import { obtenerTelefonoUsuario } from "@/lib/supabase-admin";
+import { obtenerContactoTelefonicoUsuario, type ContactoTelefonico } from "@/lib/supabase-admin";
 import { TIPOS_CITA, type TipoCita, type EstadoCita, type PropuestoPor } from "@/lib/citas";
 import { aceptarCitaCliente, caducarCitasPendientes } from "@/app/actions/citas";
 import { Card } from "@/components/ui/card";
@@ -62,21 +62,40 @@ function formatearFecha(fecha: string) {
 }
 
 /**
- * El teléfono de la otra parte solo se revela si quien mira la cita tiene
- * su propio teléfono verificado (incentiva a verificar antes de poder ver
- * datos de contacto de nadie).
+ * El profesional ve el teléfono del cliente en cuanto este lo ha guardado:
+ * los clientes no pasan por verificación SMS, así que no hay nada que
+ * exigirles más allá de haberlo añadido.
  */
-function ContactoTelefono({ verificado, telefono }: { verificado: boolean; telefono: string | null }) {
+function TelefonoDeContacto({
+  telefono,
+  mensajeAusente,
+}: {
+  telefono: string | null;
+  mensajeAusente: string;
+}) {
+  return (
+    <p className="text-neutral-600 dark:text-neutral-400">
+      {telefono ? `Teléfono de contacto: ${telefono}` : mensajeAusente}
+    </p>
+  );
+}
+
+/**
+ * El cliente solo ve el teléfono del profesional si este lo ha verificado
+ * por SMS. No es una acción que el cliente pueda realizar por él, así que
+ * el aviso es informativo, sin enlace.
+ */
+function TelefonoProfesionalParaCliente({
+  verificado,
+  telefono,
+}: {
+  verificado: boolean;
+  telefono: string | null;
+}) {
   if (!verificado) {
     return (
       <p className="text-neutral-600 dark:text-neutral-400">
-        <Link
-          href="/dashboard/verificar-telefono"
-          className="font-medium text-primary-700 hover:underline dark:text-primary-400"
-        >
-          Verifica tu teléfono
-        </Link>{" "}
-        para ver el número de contacto.
+        El profesional todavía no ha verificado su teléfono.
       </p>
     );
   }
@@ -84,6 +103,24 @@ function ContactoTelefono({ verificado, telefono }: { verificado: boolean; telef
   return (
     <p className="text-neutral-600 dark:text-neutral-400">
       Teléfono de contacto: {telefono ?? "todavía no disponible"}
+    </p>
+  );
+}
+
+function AvisoAnadirTelefonoPropio({ tieneTelefono }: { tieneTelefono: boolean }) {
+  if (tieneTelefono) {
+    return null;
+  }
+
+  return (
+    <p className="text-neutral-600 dark:text-neutral-400">
+      <Link
+        href="/dashboard/verificar-telefono"
+        className="font-medium text-primary-700 hover:underline dark:text-primary-400"
+      >
+        Añade tu teléfono de contacto
+      </Link>{" "}
+      para que el profesional pueda localizarte.
     </p>
   );
 }
@@ -100,7 +137,7 @@ export default async function CitasPage() {
 
   await caducarCitasPendientes(supabase);
 
-  const telefonoPropioVerificado = user.user_metadata?.telefono_verificado === true;
+  const telefonoPropio = (user.user_metadata?.telefono as string | undefined) ?? null;
 
   const { data: perfilProfesional } = await supabase
     .from("profesionales")
@@ -140,11 +177,10 @@ export default async function CitasPage() {
     : { data: [] as CitaCanceladaProfesional[] };
 
   const telefonosClientes = new Map<string, string | null>();
-  if (telefonoPropioVerificado) {
-    for (const cita of citasConfirmadasProfesional ?? []) {
-      if (!telefonosClientes.has(cita.cliente_id)) {
-        telefonosClientes.set(cita.cliente_id, await obtenerTelefonoUsuario(cita.cliente_id));
-      }
+  for (const cita of citasConfirmadasProfesional ?? []) {
+    if (!telefonosClientes.has(cita.cliente_id)) {
+      const contacto = await obtenerContactoTelefonicoUsuario(cita.cliente_id);
+      telefonosClientes.set(cita.cliente_id, contacto.telefono);
     }
   }
 
@@ -157,13 +193,11 @@ export default async function CitasPage() {
     .order("creado_en", { ascending: false })
     .returns<CitaCliente[]>();
 
-  const telefonosProfesionales = new Map<string, string | null>();
-  if (telefonoPropioVerificado) {
-    for (const cita of citasCliente ?? []) {
-      const profesionalUserId = cita.profesionales?.user_id;
-      if (cita.estado === "confirmada" && profesionalUserId && !telefonosProfesionales.has(profesionalUserId)) {
-        telefonosProfesionales.set(profesionalUserId, await obtenerTelefonoUsuario(profesionalUserId));
-      }
+  const telefonosProfesionales = new Map<string, ContactoTelefonico>();
+  for (const cita of citasCliente ?? []) {
+    const profesionalUserId = cita.profesionales?.user_id;
+    if (cita.estado === "confirmada" && profesionalUserId && !telefonosProfesionales.has(profesionalUserId)) {
+      telefonosProfesionales.set(profesionalUserId, await obtenerContactoTelefonicoUsuario(profesionalUserId));
     }
   }
 
@@ -252,9 +286,9 @@ export default async function CitasPage() {
                     </Link>
 
                     <div className="mt-3 text-sm">
-                      <ContactoTelefono
-                        verificado={telefonoPropioVerificado}
+                      <TelefonoDeContacto
                         telefono={telefonosClientes.get(cita.cliente_id) ?? null}
+                        mensajeAusente="El cliente no ha añadido un teléfono de contacto todavía."
                       />
                     </div>
                   </Card>
@@ -327,6 +361,9 @@ export default async function CitasPage() {
             {(citasCliente ?? []).map((cita) => {
               const tipoLabel = TIPOS_CITA.find((t) => t.value === cita.tipo)?.label ?? cita.tipo;
               const nombreProfesional = cita.profesionales?.nombre ?? "Profesional";
+              const contactoProfesional = cita.profesionales?.user_id
+                ? telefonosProfesionales.get(cita.profesionales.user_id)
+                : undefined;
 
               return (
                 <Card key={cita.id} className="p-6">
@@ -383,14 +420,11 @@ export default async function CitasPage() {
                           {formatearFecha(cita.fecha)} · {cita.hora_inicio.slice(0, 5)}
                           {cita.hora_fin && `–${cita.hora_fin.slice(0, 5)}`}
                         </p>
-                        <ContactoTelefono
-                          verificado={telefonoPropioVerificado}
-                          telefono={
-                            cita.profesionales?.user_id
-                              ? telefonosProfesionales.get(cita.profesionales.user_id) ?? null
-                              : null
-                          }
+                        <TelefonoProfesionalParaCliente
+                          verificado={contactoProfesional?.verificado ?? false}
+                          telefono={contactoProfesional?.telefono ?? null}
                         />
+                        <AvisoAnadirTelefonoPropio tieneTelefono={Boolean(telefonoPropio)} />
                       </div>
                     )}
 

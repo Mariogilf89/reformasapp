@@ -27,7 +27,7 @@ export async function solicitarCodigoTelefono(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (!user || user.user_metadata?.role !== "profesional") {
     return { error: "No autorizado." };
   }
 
@@ -80,7 +80,7 @@ export async function verificarCodigoTelefono(
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (!user || user.user_metadata?.role !== "profesional") {
     return { error: "No autorizado." };
   }
 
@@ -118,6 +118,45 @@ export async function verificarCodigoTelefono(
   }
 
   await supabase.from("codigos_verificacion_telefono").delete().eq("id", registro.id);
+
+  revalidatePath("/dashboard/verificar-telefono");
+  revalidatePath("/dashboard/citas");
+  return undefined;
+}
+
+/**
+ * Los clientes no pasan por el flujo de SMS: solo guardan un teléfono de
+ * contacto directamente en user_metadata, sin marcarlo como verificado.
+ */
+export async function guardarTelefonoCliente(
+  _prevState: VerificacionTelefonoFormState,
+  formData: FormData
+): Promise<VerificacionTelefonoFormState> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "No autorizado." };
+  }
+  if (user.user_metadata?.role === "profesional") {
+    return { error: "Los profesionales deben verificar su teléfono por SMS." };
+  }
+
+  const digitos = formData.get("telefono_local")?.toString().trim() ?? "";
+
+  if (!digitosValidos(digitos)) {
+    return { error: "Indica los 9 dígitos de tu número de teléfono." };
+  }
+
+  const telefono = `${PREFIJO_ESPANA}${digitos}`;
+
+  const { error } = await supabase.auth.updateUser({ data: { telefono } });
+
+  if (error) {
+    return { error: error.message };
+  }
 
   revalidatePath("/dashboard/verificar-telefono");
   revalidatePath("/dashboard/citas");

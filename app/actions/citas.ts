@@ -776,6 +776,9 @@ export type CitaCalendario = {
   // citas externas se edita libremente.
   localidad: string | null;
   calle: string | null;
+  // Solo aplica a citas externas: código hex opcional para el fondo del
+  // bloque en el calendario. NULL = gris fijo por defecto.
+  color: string | null;
   // Solo se rellena para estado="confirmada" && !origen_externo, reutilizando
   // la misma revelación de teléfono que ya usa /dashboard/citas.
   telefonoCliente: string | null;
@@ -807,7 +810,7 @@ export async function obtenerCitasCalendario(desde: string, hasta: string): Prom
   const { data } = await supabase
     .from("citas")
     .select(
-      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle"
+      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color"
     )
     .eq("profesional_id", profesionalId)
     .neq("estado", "cancelada")
@@ -859,7 +862,7 @@ export async function obtenerCitasExternasPendientes(): Promise<CitaCalendario[]
   const { data } = await supabase
     .from("citas")
     .select(
-      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle"
+      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color"
     )
     .eq("profesional_id", profesionalId)
     .eq("origen_externo", true)
@@ -1013,6 +1016,12 @@ export async function editarCitaExterna(
   const titulo = formData.get("titulo")?.toString().trim();
   const localidad = formData.get("localidad")?.toString().trim() || null;
   const calle = formData.get("calle")?.toString().trim() || null;
+  // Solo se toca si el formulario lo incluye explícitamente: el formulario de
+  // edición completo (CitaExternaCampos) no manda este campo y no debe borrar
+  // el color al guardar título/fecha/ubicación; el selector de color del modal
+  // de detalle sí lo manda siempre (con "" para volver a "sin color").
+  const colorProvisto = formData.has("color");
+  const color = formData.get("color")?.toString().trim() || null;
 
   if (!citaId) {
     return { error: "Cita inválida." };
@@ -1058,6 +1067,7 @@ export async function editarCitaExterna(
         estado: "pendiente",
         localidad,
         calle,
+        ...(colorProvisto ? { color } : {}),
       })
       .eq("id", citaId);
 
@@ -1095,6 +1105,7 @@ export async function editarCitaExterna(
       estado: "confirmada",
       localidad,
       calle,
+      ...(colorProvisto ? { color } : {}),
     })
     .eq("id", citaId);
 

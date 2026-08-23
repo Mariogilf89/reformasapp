@@ -1,19 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
 import { PROVINCIAS, type Provincia } from "@/lib/provincias";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SelectorFechaHora } from "./selector-fecha-hora";
-
-const MODOS = [
-  { value: "indiferente", label: "Indiferente" },
-  { value: "lo_antes_posible", label: "Lo antes posible" },
-  { value: "dia_hora", label: "Elegir día y hora" },
-] as const;
+import { SelectorModoBusqueda } from "./selector-modo-busqueda";
 
 export function FiltroBusqueda({
   categoriaInicial,
@@ -30,10 +23,6 @@ export function FiltroBusqueda({
   fechaInicial: string;
   horaInicial: string;
 }) {
-  const [modo, setModo] = useState(modoInicial);
-  const [fecha, setFecha] = useState(fechaInicial);
-  const [hora, setHora] = useState(horaInicial);
-
   return (
     <Card className="w-full max-w-5xl p-6">
       <form method="get" className="flex flex-col gap-4">
@@ -83,37 +72,11 @@ export function FiltroBusqueda({
           </div>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="modo" className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-            ¿Cuándo lo necesitas?
-          </label>
-          <Select
-            id="modo"
-            name="modo"
-            value={modo}
-            onChange={(e) => setModo(e.target.value)}
-            className="sm:max-w-xs"
-          >
-            {MODOS.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        {modo === "dia_hora" && (
-          <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-            <SelectorFechaHora
-              fecha={fecha}
-              hora={hora}
-              onSeleccionarFecha={setFecha}
-              onSeleccionarHora={setHora}
-            />
-            <input type="hidden" name="fecha" value={fecha} />
-            <input type="hidden" name="hora_inicio" value={hora} />
-          </div>
-        )}
+        <SelectorModoBusqueda
+          modoInicial={modoInicial}
+          fechaInicial={fechaInicial}
+          horaInicial={horaInicial}
+        />
 
         <Button type="submit" className="self-start">
           Buscar

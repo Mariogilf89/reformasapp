@@ -398,7 +398,12 @@ export function CalendarioCitas({
       </div>
 
       {citaSeleccionada && (
-        <DetalleCitaModal cita={citaSeleccionada} onClose={cerrarDetalle} onExito={trasExitoDetalle} />
+        <DetalleCitaModal
+          cita={citaSeleccionada}
+          onClose={cerrarDetalle}
+          onExito={trasExitoDetalle}
+          onCambio={() => refrescar(anchor, vista)}
+        />
       )}
 
       {mostrarFormExterna && (

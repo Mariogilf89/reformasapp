@@ -1,8 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { CitaCalendario } from "@/app/actions/citas";
-import { cancelarCitaExterna, proponerOtroHorario, proponerCambioCitaConfirmada } from "@/app/actions/citas";
+import {
+  cancelarCitaExterna,
+  editarCitaExterna,
+  proponerOtroHorario,
+  proponerCambioCitaConfirmada,
+} from "@/app/actions/citas";
 import { TIPOS_CITA } from "@/lib/citas";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
@@ -19,6 +24,96 @@ function formatearFecha(fecha: string) {
     day: "numeric",
     month: "long",
   });
+}
+
+const COLORES_CITA_EXTERNA: { valor: string | null; etiqueta: string }[] = [
+  { valor: "#CFE8D8", etiqueta: "Verde suave" },
+  { valor: "#CFE0F0", etiqueta: "Azul suave" },
+  { valor: "#DDD3EE", etiqueta: "Lavanda" },
+  { valor: "#F3DCC8", etiqueta: "Melocotón" },
+  { valor: "#F1D4DC", etiqueta: "Rosa" },
+  { valor: "#F3E8C4", etiqueta: "Amarillo suave" },
+  { valor: "#DCE0E3", etiqueta: "Gris" },
+  { valor: null, etiqueta: "Sin color" },
+];
+
+function SelectorColorCitaExterna({ cita, onCambio }: { cita: CitaCalendario; onCambio: () => void }) {
+  const [colorActual, setColorActual] = useState(cita.color);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setColorActual(cita.color);
+  }, [cita.id, cita.color]);
+
+  async function handleSeleccionar(color: string | null) {
+    if (guardando || color === colorActual) return;
+
+    const anterior = colorActual;
+    setError(null);
+    setColorActual(color);
+    setGuardando(true);
+
+    const formData = new FormData();
+    formData.set("id", cita.id);
+    formData.set("titulo", cita.titulo_externo ?? "");
+    if (cita.fecha) formData.set("fecha", cita.fecha);
+    if (cita.hora_inicio) formData.set("hora_inicio", cita.hora_inicio.slice(0, 5));
+    if (cita.hora_fin) formData.set("hora_fin", cita.hora_fin.slice(0, 5));
+    if (cita.localidad) formData.set("localidad", cita.localidad);
+    if (cita.calle) formData.set("calle", cita.calle);
+    formData.set("color", color ?? "");
+
+    const resultado = await editarCitaExterna(undefined, formData);
+    setGuardando(false);
+
+    if (resultado?.error) {
+      setColorActual(anterior);
+      setError(resultado.error);
+      return;
+    }
+    onCambio();
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-3">
+        {COLORES_CITA_EXTERNA.map(({ valor, etiqueta }) => {
+          const seleccionado = valor === colorActual;
+          return (
+            <button
+              key={valor ?? "sin-color"}
+              type="button"
+              aria-label={etiqueta}
+              title={etiqueta}
+              disabled={guardando}
+              onClick={() => handleSeleccionar(valor)}
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 disabled:opacity-60 ${
+                seleccionado
+                  ? "border-neutral-900 dark:border-neutral-100"
+                  : "border-neutral-300 dark:border-neutral-700"
+              }`}
+              style={valor ? { backgroundColor: valor } : undefined}
+            >
+              {!valor && (
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4 text-neutral-500 dark:text-neutral-400"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                >
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+    </div>
+  );
 }
 
 function EditarFechaHoraCitaReal({
@@ -109,10 +204,12 @@ export function DetalleCitaModal({
   cita,
   onClose,
   onExito,
+  onCambio,
 }: {
   cita: CitaCalendario;
   onClose: () => void;
   onExito: () => void;
+  onCambio?: () => void;
 }) {
   const [editando, setEditando] = useState(false);
   const [cancelando, setCancelando] = useState(false);
@@ -168,6 +265,10 @@ export function DetalleCitaModal({
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{ubicacion}</p>
           )}
         </div>
+
+        {cita.origen_externo && (
+          <SelectorColorCitaExterna cita={cita} onCambio={() => onCambio?.()} />
+        )}
 
         {cita.comentario && (
           <p className="text-sm text-neutral-600 dark:text-neutral-400">

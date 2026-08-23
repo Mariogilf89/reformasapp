@@ -73,13 +73,20 @@ const RAYADO: CSSProperties = {
  * Estilo visual del bloque según las reglas:
  * confirmada = verde sólido; pendiente+propuesto por el profesional = ámbar
  * rayado (esperando al cliente); pendiente+propuesto por el cliente = ámbar
- * sólido (esperando respuesta del profesional); externa = gris sólido
+ * sólido (esperando respuesta del profesional); externa = gris sólido por
+ * defecto, o el color personalizado del bloqueo si tiene uno asignado
  * (siempre, sea cual sea el estado).
  */
 export function estiloCita(
-  cita: Pick<CitaCalendario, "origen_externo" | "estado" | "propuesto_por">
+  cita: Pick<CitaCalendario, "origen_externo" | "estado" | "propuesto_por" | "color">
 ): { className: string; style?: CSSProperties } {
   if (cita.origen_externo) {
+    if (cita.color) {
+      return {
+        className: "border-neutral-400 dark:border-neutral-500",
+        style: { backgroundColor: cita.color, color: "#1F2937" },
+      };
+    }
     return {
       className:
         "border-neutral-400 bg-neutral-100 text-neutral-700 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300",

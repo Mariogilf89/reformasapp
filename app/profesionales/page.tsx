@@ -8,6 +8,7 @@ import {
 } from "@/app/actions/profesionales";
 import { Card } from "@/components/ui/card";
 import { VerificadoBadge } from "@/components/ui/verificado-badge";
+import { ListaEsperaForm } from "@/components/lista-espera-form";
 import { FiltroBusqueda } from "./filtro-busqueda";
 
 type ValoracionResumen = { profesional_id: string; puntuacion: number };
@@ -97,9 +98,17 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
 
       <div className="grid w-full max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {profesionales.length === 0 && (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400 sm:col-span-2 lg:col-span-3">
-            No hay profesionales que coincidan con tu búsqueda.
-          </p>
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-neutral-200 p-6 text-center dark:border-neutral-800 sm:col-span-2 lg:col-span-3">
+            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              No hay profesionales que coincidan con tu búsqueda todavía. Avísanos cuando
+              lleguemos a tu zona.
+            </p>
+            <ListaEsperaForm
+              categoria={categoria}
+              provinciaInicial={provincia}
+              className="flex w-full max-w-md flex-col items-stretch gap-3 sm:flex-row sm:items-start"
+            />
+          </div>
         )}
 
         {profesionales.map((profesional) => {

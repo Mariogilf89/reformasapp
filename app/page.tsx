@@ -3,6 +3,9 @@ import type { SVGProps } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PublicHeader } from "@/components/public-header";
+import { IconUbicacion } from "@/components/ui/icon-ubicacion";
+import { ListaEsperaCTA } from "@/components/lista-espera-cta";
+import { BuscadorHero } from "./buscador-hero";
 
 function IconPintura(props: SVGProps<SVGSVGElement>) {
   return (
@@ -57,28 +60,20 @@ function IconOtros(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function IconEstrella(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="m12 3.5 2.5 5.2 5.7.8-4.1 4 1 5.7-5.1-2.7-5.1 2.7 1-5.7-4.1-4 5.7-.8L12 3.5Z" />
-    </svg>
-  );
-}
-
-function IconOjo(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-      <circle cx="12" cy="12" r="2.6" />
-    </svg>
-  );
-}
-
 function IconCalendario(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" {...props}>
       <rect x="3.5" y="5" width="17" height="15" rx="2" />
       <path d="M3.5 9.5h17M8 3v4M16 3v4M12 13v3l2 1.2" />
+    </svg>
+  );
+}
+
+function IconEscudoVerificado(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 3.5 19 6.5v5c0 5-3 8.2-7 9.5-4-1.3-7-4.5-7-9.5v-5L12 3.5Z" />
+      <path d="m9 12 2 2 4-4.2" />
     </svg>
   );
 }
@@ -113,21 +108,21 @@ const PASOS = [
   },
 ];
 
-const CONFIANZA = [
+const DIFERENCIACION = [
   {
-    titulo: "Valoraciones verificadas",
-    descripcion: "Solo puntúan los clientes que han tenido una solicitud real con el profesional.",
-    Icon: IconEstrella,
-  },
-  {
-    titulo: "Sin intermediarios ocultos",
-    descripcion: "Hablas directamente con el profesional, sin comisiones escondidas en el proceso.",
-    Icon: IconOjo,
-  },
-  {
-    titulo: "Perfiles y disponibilidad reales",
-    descripcion: "Cada profesional gestiona su propio calendario, así que las citas se ajustan a su agenda real.",
+    titulo: "Agenda real, no solo un lead",
+    descripcion: "Reserva una cita en el calendario del profesional, no un simple contacto que puede quedar sin respuesta.",
     Icon: IconCalendario,
+  },
+  {
+    titulo: "Identidad verificada",
+    descripcion: "Comprobamos la identidad de cada profesional antes de que pueda recibir solicitudes.",
+    Icon: IconEscudoVerificado,
+  },
+  {
+    titulo: "Cerca de ti",
+    descripcion: "Filtra por provincia y localidad para encontrar profesionales que realmente cubren tu zona.",
+    Icon: IconUbicacion,
   },
 ];
 
@@ -151,35 +146,28 @@ export default function Home() {
               necesitas y compara propuestas reales antes de decidir.
             </p>
 
-            <Card className="mt-4 w-full max-w-lg p-6 shadow-sm">
-              <form
-                action="/profesionales"
-                method="get"
-                className="flex flex-col items-stretch gap-3 sm:flex-row"
-              >
-                <label htmlFor="categoria-hero" className="sr-only">
-                  ¿Qué necesitas?
-                </label>
-                <select
-                  id="categoria-hero"
-                  name="categoria"
-                  defaultValue=""
-                  className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
-                >
-                  <option value="" disabled>
-                    ¿Qué necesitas?
-                  </option>
-                  {CATEGORIAS_HOME.map((categoria) => (
-                    <option key={categoria.value} value={categoria.value}>
-                      {categoria.label}
-                    </option>
-                  ))}
-                </select>
-                <Button type="submit" className="whitespace-nowrap">
-                  Buscar profesionales
-                </Button>
-              </form>
-            </Card>
+            <BuscadorHero />
+          </div>
+        </section>
+
+        {/* Diferenciación */}
+        <section className="bg-white px-4 py-16 dark:bg-neutral-950">
+          <div className="mx-auto w-full max-w-5xl">
+            <div className="grid gap-6 sm:grid-cols-3">
+              {DIFERENCIACION.map(({ titulo, descripcion, Icon }) => (
+                <div key={titulo} className="flex flex-col items-start gap-3">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="font-medium text-neutral-900 dark:text-neutral-50">
+                    {titulo}
+                  </h3>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    {descripcion}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -207,7 +195,7 @@ export default function Home() {
         </section>
 
         {/* Cómo funciona */}
-        <section className="bg-white px-4 py-16 dark:bg-neutral-950">
+        <section className="bg-primary-50 px-4 py-16 dark:bg-neutral-900">
           <div className="mx-auto w-full max-w-5xl">
             <h2 className="text-center text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
               Cómo funciona
@@ -230,27 +218,30 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Confianza */}
-        <section className="bg-primary-50 px-4 py-16 dark:bg-neutral-900">
+        {/* Para profesionales */}
+        <section className="px-4 py-16">
           <div className="mx-auto w-full max-w-5xl">
-            <h2 className="text-center text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
-              Pensado para dar confianza, a ambos lados
-            </h2>
-            <div className="mt-10 grid gap-6 sm:grid-cols-3">
-              {CONFIANZA.map(({ titulo, descripcion, Icon }) => (
-                <div key={titulo} className="flex flex-col items-start gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-primary-700 dark:bg-neutral-800 dark:text-primary-300">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <h3 className="font-medium text-neutral-900 dark:text-neutral-50">
-                    {titulo}
-                  </h3>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                    {descripcion}
-                  </p>
-                </div>
-              ))}
-            </div>
+            <Card className="flex flex-col items-center gap-4 border-primary-200 bg-primary-50 px-6 py-10 text-center dark:border-primary-900 dark:bg-primary-950/30 sm:flex-row sm:justify-between sm:text-left">
+              <div>
+                <h2 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+                  ¿Eres profesional de reformas?
+                </h2>
+                <p className="mt-2 max-w-xl text-neutral-600 dark:text-neutral-400">
+                  Gestiona tu agenda, recibe solicitudes reales de tu zona y haz crecer tu
+                  negocio sin intermediarios.
+                </p>
+              </div>
+              <Link href="/register?role=profesional" className="shrink-0">
+                <Button className="whitespace-nowrap">Regístrate como profesional</Button>
+              </Link>
+            </Card>
+          </div>
+        </section>
+
+        {/* Lista de espera por zona */}
+        <section className="px-4 pb-16">
+          <div className="mx-auto w-full max-w-5xl">
+            <ListaEsperaCTA />
           </div>
         </section>
       </main>

@@ -8,7 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-export function RegisterForm({ redirectTo }: { redirectTo?: string }) {
+export function RegisterForm({
+  redirectTo,
+  roleInicial = "cliente",
+}: {
+  redirectTo?: string;
+  roleInicial?: "cliente" | "profesional";
+}) {
   const [state, action, pending] = useActionState(signUp, undefined);
 
   return (
@@ -29,7 +35,7 @@ export function RegisterForm({ redirectTo }: { redirectTo?: string }) {
               type="radio"
               name="role"
               value="cliente"
-              defaultChecked
+              defaultChecked={roleInicial === "cliente"}
               className="accent-primary-600"
             />
             Cliente
@@ -39,6 +45,7 @@ export function RegisterForm({ redirectTo }: { redirectTo?: string }) {
               type="radio"
               name="role"
               value="profesional"
+              defaultChecked={roleInicial === "profesional"}
               className="accent-primary-600"
             />
             Profesional

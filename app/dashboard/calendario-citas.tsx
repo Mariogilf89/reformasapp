@@ -282,9 +282,6 @@ export function CalendarioCitas({
           >
             →
           </button>
-          {cargando && (
-            <span className="text-xs text-neutral-500 dark:text-neutral-500">Cargando...</span>
-          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -350,7 +347,28 @@ export function CalendarioCitas({
       {errorRango && <p className="text-sm text-red-600 dark:text-red-400">{errorRango}</p>}
       {errorArrastre && <p className="text-sm text-red-600 dark:text-red-400">{errorArrastre}</p>}
 
-      <div className="flex w-full items-start gap-4">
+      <div className="relative flex w-full items-start gap-4">
+        {cargando && (
+          <div
+            role="status"
+            aria-label="Actualizando calendario"
+            className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-white/60 backdrop-blur-sm dark:bg-neutral-950/60"
+          >
+            <svg
+              className="h-8 w-8 animate-spin text-primary-600"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+          </div>
+        )}
         {vista === "semana" ? (
           <VistaSemana
             anchor={anchor}

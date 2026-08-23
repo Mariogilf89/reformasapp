@@ -11,6 +11,7 @@ import {
   rangoHoraTexto,
   tituloCita,
   type ArrastreEstado,
+  type RedimensionEstado,
 } from "@/lib/calendario-geometria";
 import { fechaISO, inicioSemana, sumarDias } from "@/lib/fechas";
 import { IconUbicacion } from "@/components/ui/icon-ubicacion";
@@ -25,6 +26,11 @@ type BloquePosicionado = CitaConFecha & {
   columna: number;
   totalColumnas: number;
 };
+
+/** Última fecha del bloqueo (fecha_fin si es una cita externa de varios días, si no la propia fecha). */
+function fechaFinEfectiva(cita: Pick<CitaCalendario, "fecha" | "fecha_fin" | "origen_externo">) {
+  return cita.origen_externo && cita.fecha_fin ? cita.fecha_fin : cita.fecha!;
+}
 
 /** Agrupa citas solapadas en clusters y les asigna columna (greedy). */
 function calcularColumnas(
@@ -87,9 +93,13 @@ export function VistaSemana({
   horaFin,
   gridRef,
   arrastre,
+  redimension,
   onPointerDownCita,
   onPointerMoveArrastre,
   onPointerUpArrastre,
+  onPointerDownRedimensionar,
+  onPointerMoveRedimensionar,
+  onPointerUpRedimensionar,
 }: {
   anchor: Date;
   citas: CitaCalendario[];
@@ -97,9 +107,17 @@ export function VistaSemana({
   horaFin: number;
   gridRef: RefObject<HTMLDivElement | null>;
   arrastre: ArrastreEstado | null;
+  redimension: RedimensionEstado | null;
   onPointerDownCita: (e: ReactPointerEvent<HTMLButtonElement>, cita: CitaCalendario) => void;
   onPointerMoveArrastre: (e: ReactPointerEvent<HTMLButtonElement>) => void;
   onPointerUpArrastre: (e: ReactPointerEvent<HTMLButtonElement>) => void;
+  onPointerDownRedimensionar: (
+    e: ReactPointerEvent<HTMLDivElement>,
+    cita: CitaCalendario,
+    borde: "inicio" | "fin"
+  ) => void;
+  onPointerMoveRedimensionar: (e: ReactPointerEvent<HTMLDivElement>) => void;
+  onPointerUpRedimensionar: (e: ReactPointerEvent<HTMLDivElement>) => void;
 }) {
   const minutosInicio = horaInicio * 60;
   const minutosFin = horaFin * 60;
@@ -120,11 +138,26 @@ export function VistaSemana({
     (c): c is CitaConFecha => c.fecha !== null && c.hora_inicio !== null
   );
 
+  // Una cita externa con fecha_fin ocupa el mismo hueco horario en todos los
+  // días visibles del rango [fecha, fecha_fin], no solo en "fecha". El resto
+  // de tipos de cita siguen siendo de un solo día en esta tanda.
   const citasPorDia = new Map<string, CitaConFecha[]>();
   for (const cita of citasConFecha) {
-    const lista = citasPorDia.get(cita.fecha) ?? [];
-    lista.push(cita);
-    citasPorDia.set(cita.fecha, lista);
+    const finRango = fechaFinEfectiva(cita);
+    if (finRango <= cita.fecha) {
+      const lista = citasPorDia.get(cita.fecha) ?? [];
+      lista.push(cita);
+      citasPorDia.set(cita.fecha, lista);
+      continue;
+    }
+    for (const dia of dias) {
+      const fechaDia = fechaISO(dia);
+      if (fechaDia >= cita.fecha && fechaDia <= finRango) {
+        const lista = citasPorDia.get(fechaDia) ?? [];
+        lista.push(cita);
+        citasPorDia.set(fechaDia, lista);
+      }
+    }
   }
 
   const horas = Array.from({ length: horaFin - horaInicio }, (_, i) => horaInicio + i);
@@ -205,6 +238,16 @@ export function VistaSemana({
                 const esArrastrada =
                   arrastre?.moved && !arrastre.origenPanel && arrastre.citaId === bloque.id;
 
+                const esMultiDia = fechaFinEfectiva(bloque) > bloque.fecha;
+                const esPrimerDia = fecha === bloque.fecha;
+                const esUltimoDia = fecha === fechaFinEfectiva(bloque);
+
+                const esRedimensionada =
+                  redimension?.moved &&
+                  redimension.citaId === bloque.id &&
+                  ((redimension.borde === "inicio" && esPrimerDia) ||
+                    (redimension.borde === "fin" && esUltimoDia));
+
                 let top: number;
                 let height: number;
                 let left: number;
@@ -215,6 +258,14 @@ export function VistaSemana({
                   height = Math.max(18, (arrastre.duracionMin / 60) * ALTURA_HORA_PX);
                   left = (arrastre.diaIndex / 7) * 100;
                   width = `calc(${100 / 7}% - 2px)`;
+                } else if (esRedimensionada && redimension) {
+                  const inicioLive = redimension.borde === "inicio" ? redimension.inicioMin : bloque.inicioMin;
+                  const finLive = redimension.borde === "fin" ? redimension.finMin : bloque.finMin;
+                  top = ((inicioLive - minutosInicio) / 60) * ALTURA_HORA_PX;
+                  height = Math.max(18, ((finLive - inicioLive) / 60) * ALTURA_HORA_PX);
+                  const anchoColumna = 100 / 7 / bloque.totalColumnas;
+                  left = (diaIndex / 7) * 100 + bloque.columna * anchoColumna;
+                  width = `calc(${anchoColumna}% - 2px)`;
                 } else {
                   top = ((bloque.inicioMin - minutosInicio) / 60) * ALTURA_HORA_PX;
                   height = Math.max(18, ((bloque.finMin - bloque.inicioMin) / 60) * ALTURA_HORA_PX);
@@ -225,15 +276,29 @@ export function VistaSemana({
 
                 const estilo = estiloCita(bloque);
 
+                // Tratamiento visual sencillo de continuidad entre días: el
+                // lado que conecta con el día anterior/siguiente pierde su
+                // esquina redondeada.
+                const radioClase = !esMultiDia
+                  ? "rounded-md"
+                  : [esPrimerDia ? "rounded-l-md" : "", esUltimoDia ? "rounded-r-md" : ""]
+                      .filter(Boolean)
+                      .join(" ");
+
+                const horaTextoLive =
+                  esRedimensionada && redimension
+                    ? `${horaDesdeMinutos(redimension.borde === "inicio" ? redimension.inicioMin : bloque.inicioMin)}–${horaDesdeMinutos(redimension.borde === "fin" ? redimension.finMin : bloque.finMin)}`
+                    : null;
+
                 return (
                   <button
-                    key={bloque.id}
+                    key={`${bloque.id}-${fecha}`}
                     type="button"
                     onPointerDown={(e) => onPointerDownCita(e, bloque)}
                     onPointerMove={onPointerMoveArrastre}
                     onPointerUp={onPointerUpArrastre}
-                    className={`absolute cursor-grab overflow-hidden rounded-md border px-1.5 py-0.5 text-left text-[11px] leading-tight active:cursor-grabbing ${estilo.className} ${
-                      esArrastrada ? "shadow-lg ring-2 ring-primary-500" : ""
+                    className={`absolute cursor-grab overflow-hidden border px-1.5 py-0.5 text-left text-[11px] leading-tight active:cursor-grabbing ${radioClase} ${estilo.className} ${
+                      esArrastrada || esRedimensionada ? "shadow-lg ring-2 ring-primary-500" : ""
                     }`}
                     style={{
                       ...estilo.style,
@@ -242,13 +307,13 @@ export function VistaSemana({
                       left: `${left}%`,
                       width,
                       touchAction: "none",
-                      zIndex: esArrastrada ? 10 : undefined,
+                      zIndex: esArrastrada || esRedimensionada ? 10 : undefined,
                     }}
                   >
                     <span className="block font-medium">
                       {esArrastrada && arrastre
                         ? `${horaDesdeMinutos(arrastre.inicioMin)}–${horaDesdeMinutos(arrastre.inicioMin + arrastre.duracionMin)}`
-                        : rangoHoraTexto(bloque.hora_inicio, bloque.hora_fin)}
+                        : (horaTextoLive ?? rangoHoraTexto(bloque.hora_inicio, bloque.hora_fin))}
                     </span>
                     <span className="block truncate">{tituloCita(bloque)}</span>
 
@@ -274,6 +339,47 @@ export function VistaSemana({
                           <span className="truncate">{bloque.localidad || bloque.calle}</span>
                         </span>
                       )}
+
+                    {/* Asas de redimensionado: separadas del gesto de mover, que sigue
+                        colgando del cuerpo del botón. Solo en el día que representa ese
+                        extremo del bloqueo (el primero para hora_inicio, el último para
+                        hora_fin), para no confundir en un bloque de varios días. */}
+                    {esPrimerDia && (
+                      <div
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          onPointerDownRedimensionar(e, bloque, "inicio");
+                        }}
+                        onPointerMove={(e) => {
+                          e.stopPropagation();
+                          onPointerMoveRedimensionar(e);
+                        }}
+                        onPointerUp={(e) => {
+                          e.stopPropagation();
+                          onPointerUpRedimensionar(e);
+                        }}
+                        className="absolute inset-x-0 top-0 h-1.5 cursor-ns-resize"
+                        style={{ touchAction: "none" }}
+                      />
+                    )}
+                    {esUltimoDia && (
+                      <div
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          onPointerDownRedimensionar(e, bloque, "fin");
+                        }}
+                        onPointerMove={(e) => {
+                          e.stopPropagation();
+                          onPointerMoveRedimensionar(e);
+                        }}
+                        onPointerUp={(e) => {
+                          e.stopPropagation();
+                          onPointerUpRedimensionar(e);
+                        }}
+                        className="absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize"
+                        style={{ touchAction: "none" }}
+                      />
+                    )}
                   </button>
                 );
               });

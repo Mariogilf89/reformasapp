@@ -779,6 +779,12 @@ export type CitaCalendario = {
   // Solo aplica a citas externas: código hex opcional para el fondo del
   // bloque en el calendario. NULL = gris fijo por defecto.
   color: string | null;
+  // Solo aplica a citas externas: fin del rango de días del bloqueo. NULL =
+  // un solo día (el de "fecha").
+  fecha_fin: string | null;
+  // Solo aplica a citas externas: datos de contacto opcionales del bloqueo.
+  contacto_nombre: string | null;
+  contacto_telefono: string | null;
   // Solo se rellena para estado="confirmada" && !origen_externo, reutilizando
   // la misma revelación de teléfono que ya usa /dashboard/citas.
   telefonoCliente: string | null;
@@ -810,7 +816,7 @@ export async function obtenerCitasCalendario(desde: string, hasta: string): Prom
   const { data } = await supabase
     .from("citas")
     .select(
-      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color"
+      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color, fecha_fin, contacto_nombre, contacto_telefono"
     )
     .eq("profesional_id", profesionalId)
     .neq("estado", "cancelada")
@@ -862,7 +868,7 @@ export async function obtenerCitasExternasPendientes(): Promise<CitaCalendario[]
   const { data } = await supabase
     .from("citas")
     .select(
-      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color"
+      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color, fecha_fin, contacto_nombre, contacto_telefono"
     )
     .eq("profesional_id", profesionalId)
     .eq("origen_externo", true)
@@ -914,9 +920,12 @@ export async function crearCitaExterna(
   const fecha = formData.get("fecha")?.toString() || null;
   const horaInicio = formData.get("hora_inicio")?.toString() || null;
   const horaFin = formData.get("hora_fin")?.toString() || null;
+  const fechaFin = formData.get("fecha_fin")?.toString() || null;
   const titulo = formData.get("titulo")?.toString().trim();
   const localidad = formData.get("localidad")?.toString().trim() || null;
   const calle = formData.get("calle")?.toString().trim() || null;
+  const contactoNombre = formData.get("contacto_nombre")?.toString().trim() || null;
+  const contactoTelefono = formData.get("contacto_telefono")?.toString().trim() || null;
 
   if (!titulo) {
     return { error: "Indica un título para la cita." };
@@ -928,6 +937,9 @@ export async function crearCitaExterna(
       error:
         "Indica fecha y horas completas, o déjalas todas vacías para guardarla como pendiente de agendar.",
     };
+  }
+  if (estadoFechaHora === "completo" && fechaFin && fechaFin < fecha!) {
+    return { error: "La fecha de fin no puede ser anterior a la fecha de inicio." };
   }
 
   const profesionalId = await propioProfesionalId(supabase, user.id);
@@ -944,11 +956,14 @@ export async function crearCitaExterna(
       fecha: null,
       hora_inicio: null,
       hora_fin: null,
+      fecha_fin: null,
       estado: "pendiente",
       origen_externo: true,
       titulo_externo: titulo,
       localidad,
       calle,
+      contacto_nombre: contactoNombre,
+      contacto_telefono: contactoTelefono,
     });
 
     if (error) {
@@ -976,11 +991,14 @@ export async function crearCitaExterna(
     fecha,
     hora_inicio: horaInicio,
     hora_fin: horaFin,
+    fecha_fin: fechaFin && fechaFin > fecha! ? fechaFin : null,
     estado: "confirmada",
     origen_externo: true,
     titulo_externo: titulo,
     localidad,
     calle,
+    contacto_nombre: contactoNombre,
+    contacto_telefono: contactoTelefono,
   });
 
   if (error) {
@@ -1013,9 +1031,12 @@ export async function editarCitaExterna(
   const fecha = formData.get("fecha")?.toString() || null;
   const horaInicio = formData.get("hora_inicio")?.toString() || null;
   const horaFin = formData.get("hora_fin")?.toString() || null;
+  const fechaFin = formData.get("fecha_fin")?.toString() || null;
   const titulo = formData.get("titulo")?.toString().trim();
   const localidad = formData.get("localidad")?.toString().trim() || null;
   const calle = formData.get("calle")?.toString().trim() || null;
+  const contactoNombre = formData.get("contacto_nombre")?.toString().trim() || null;
+  const contactoTelefono = formData.get("contacto_telefono")?.toString().trim() || null;
   // Solo se toca si el formulario lo incluye explícitamente: el formulario de
   // edición completo (CitaExternaCampos) no manda este campo y no debe borrar
   // el color al guardar título/fecha/ubicación; el selector de color del modal
@@ -1036,6 +1057,9 @@ export async function editarCitaExterna(
       error:
         "Indica fecha y horas completas, o déjalas todas vacías para guardarla como pendiente de agendar.",
     };
+  }
+  if (estadoFechaHora === "completo" && fechaFin && fechaFin < fecha!) {
+    return { error: "La fecha de fin no puede ser anterior a la fecha de inicio." };
   }
 
   const profesionalId = await propioProfesionalId(supabase, user.id);
@@ -1064,9 +1088,12 @@ export async function editarCitaExterna(
         fecha: null,
         hora_inicio: null,
         hora_fin: null,
+        fecha_fin: null,
         estado: "pendiente",
         localidad,
         calle,
+        contacto_nombre: contactoNombre,
+        contacto_telefono: contactoTelefono,
         ...(colorProvisto ? { color } : {}),
       })
       .eq("id", citaId);
@@ -1102,9 +1129,12 @@ export async function editarCitaExterna(
       fecha,
       hora_inicio: horaInicio,
       hora_fin: horaFin,
+      fecha_fin: fechaFin && fechaFin > fecha! ? fechaFin : null,
       estado: "confirmada",
       localidad,
       calle,
+      contacto_nombre: contactoNombre,
+      contacto_telefono: contactoTelefono,
       ...(colorProvisto ? { color } : {}),
     })
     .eq("id", citaId);
@@ -1140,6 +1170,12 @@ export async function moverCitaExterna(
   const fecha = formData.get("fecha")?.toString();
   const horaInicio = formData.get("hora_inicio")?.toString();
   const horaFin = formData.get("hora_fin")?.toString();
+  // Solo la envía el arrastre de un bloqueo de varios días, para desplazar
+  // fecha_fin el mismo número de días que fecha y conservar la duración del
+  // rango; el resto de llamadas (redimensionar horas, agendar desde el panel
+  // de pendientes) no la mandan y fecha_fin se queda como estaba.
+  const fechaFinProvista = formData.has("fecha_fin");
+  const fechaFin = formData.get("fecha_fin")?.toString() || null;
 
   if (!citaId) {
     return { error: "Cita inválida." };
@@ -1183,7 +1219,13 @@ export async function moverCitaExterna(
 
   const { error } = await supabase
     .from("citas")
-    .update({ fecha, hora_inicio: horaInicio, hora_fin: horaFin, estado: "confirmada" })
+    .update({
+      fecha,
+      hora_inicio: horaInicio,
+      hora_fin: horaFin,
+      estado: "confirmada",
+      ...(fechaFinProvista ? { fecha_fin: fechaFin } : {}),
+    })
     .eq("id", citaId);
 
   if (error) {

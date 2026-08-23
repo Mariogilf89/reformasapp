@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { CitaCalendario } from "@/app/actions/citas";
 import {
   cancelarCitaExterna,
@@ -42,9 +42,15 @@ function SelectorColorCitaExterna({ cita, onCambio }: { cita: CitaCalendario; on
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Recoloca colorActual cuando cambia la cita (otra distinta, o la misma
+  // tras refrescar desde fuera) sin useEffect: ajustar el estado durante el
+  // render, comparando con lo visto en el render anterior, es el patrón que
+  // recomienda React en vez de sincronizarlo en un efecto aparte.
+  const [ultimaCita, setUltimaCita] = useState({ id: cita.id, color: cita.color });
+  if (ultimaCita.id !== cita.id || ultimaCita.color !== cita.color) {
+    setUltimaCita({ id: cita.id, color: cita.color });
     setColorActual(cita.color);
-  }, [cita.id, cita.color]);
+  }
 
   async function handleSeleccionar(color: string | null) {
     if (guardando || color === colorActual) return;
@@ -62,6 +68,9 @@ function SelectorColorCitaExterna({ cita, onCambio }: { cita: CitaCalendario; on
     if (cita.hora_fin) formData.set("hora_fin", cita.hora_fin.slice(0, 5));
     if (cita.localidad) formData.set("localidad", cita.localidad);
     if (cita.calle) formData.set("calle", cita.calle);
+    if (cita.fecha_fin) formData.set("fecha_fin", cita.fecha_fin);
+    if (cita.contacto_nombre) formData.set("contacto_nombre", cita.contacto_nombre);
+    if (cita.contacto_telefono) formData.set("contacto_telefono", cita.contacto_telefono);
     formData.set("color", color ?? "");
 
     const resultado = await editarCitaExterna(undefined, formData);
@@ -212,6 +221,7 @@ export function DetalleCitaModal({
   onCambio?: () => void;
 }) {
   const [editando, setEditando] = useState(false);
+  const [duplicando, setDuplicando] = useState(false);
   const [cancelando, setCancelando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -251,7 +261,11 @@ export function DetalleCitaModal({
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
             {cita.fecha && cita.hora_inicio ? (
               <>
-                {formatearFecha(cita.fecha)} · {cita.hora_inicio.slice(0, 5)}
+                {formatearFecha(cita.fecha)}
+                {cita.origen_externo && cita.fecha_fin && cita.fecha_fin > cita.fecha && (
+                  <> – {formatearFecha(cita.fecha_fin)}</>
+                )}{" "}
+                · {cita.hora_inicio.slice(0, 5)}
                 {cita.hora_fin && `–${cita.hora_fin.slice(0, 5)}`}
               </>
             ) : (
@@ -263,6 +277,17 @@ export function DetalleCitaModal({
           )}
           {ubicacion && (
             <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{ubicacion}</p>
+          )}
+          {cita.origen_externo && (cita.contacto_nombre || cita.contacto_telefono) && (
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              {cita.contacto_nombre}
+              {cita.contacto_nombre && cita.contacto_telefono && " · "}
+              {cita.contacto_telefono && (
+                <a href={`tel:${cita.contacto_telefono}`} className="text-primary-700 hover:underline dark:text-primary-400">
+                  {cita.contacto_telefono}
+                </a>
+              )}
+            </p>
           )}
         </div>
 
@@ -298,6 +323,12 @@ export function DetalleCitaModal({
               onCancelar={() => setEditando(false)}
             />
           )
+        ) : duplicando ? (
+          <CitaExternaCampos
+            duplicarDesde={cita}
+            onExito={onExito}
+            onCancelar={() => setDuplicando(false)}
+          />
         ) : (
           <div className="flex flex-col gap-3">
             {cita.estado === "pendiente" && !cita.origen_externo && (
@@ -315,15 +346,20 @@ export function DetalleCitaModal({
                 Editar
               </Button>
               {cita.origen_externo && (
-                <Button
-                  type="button"
-                  variant="danger"
-                  size="xs"
-                  disabled={cancelando}
-                  onClick={handleCancelarExterna}
-                >
-                  {cancelando ? "Anulando..." : "Anular bloqueo"}
-                </Button>
+                <>
+                  <Button type="button" variant="secondary" size="xs" onClick={() => setDuplicando(true)}>
+                    Duplicar
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    size="xs"
+                    disabled={cancelando}
+                    onClick={handleCancelarExterna}
+                  >
+                    {cancelando ? "Eliminando..." : "Eliminar"}
+                  </Button>
+                </>
               )}
             </div>
           </div>

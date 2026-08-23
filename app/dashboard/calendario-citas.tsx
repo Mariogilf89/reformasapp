@@ -10,15 +10,18 @@ import {
   type CitaCalendario,
 } from "@/app/actions/citas";
 import { actualizarRangoHorarioCalendario } from "@/app/actions/profesionales";
-import { fechaISO, inicioSemana, sumarDias } from "@/lib/fechas";
+import { fechaISO, fechaLocal, inicioSemana, sumarDias } from "@/lib/fechas";
 import {
   UMBRAL_ARRASTRE_PX,
+  INTERVALO_SNAP_MIN,
   horaDesdeMinutos,
   minutosDesdeHora,
   finEfectivoMinutos,
   posicionDesdePuntero,
+  minutoDesdePunteroY,
   tituloCita,
   type ArrastreEstado,
+  type RedimensionEstado,
 } from "@/lib/calendario-geometria";
 import { Button } from "@/components/ui/button";
 import { VistaSemana } from "./vista-semana";
@@ -96,6 +99,7 @@ export function CalendarioCitas({
 
   const [arrastre, setArrastre] = useState<ArrastreEstado | null>(null);
   const [errorArrastre, setErrorArrastre] = useState<string | null>(null);
+  const [redimension, setRedimension] = useState<RedimensionEstado | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   function refrescar(nuevoAnchor: Date, nuevaVista: Vista) {
@@ -240,6 +244,91 @@ export function CalendarioCitas({
     formData.set("hora_inicio", nuevaHoraInicio);
     formData.set("hora_fin", nuevaHoraFin);
 
+    // Un bloqueo externo de varios días conserva su duración: fecha_fin se
+    // desplaza el mismo número de días que fecha, para no dejar un rango
+    // invertido (fecha_fin anterior a la nueva fecha).
+    if (cita.origen_externo && cita.fecha_fin && cita.fecha) {
+      const spanDias = Math.round(
+        (fechaLocal(cita.fecha_fin).getTime() - fechaLocal(cita.fecha).getTime()) / 86400000
+      );
+      formData.set("fecha_fin", fechaISO(sumarDias(fechaLocal(nuevaFecha), spanDias)));
+    }
+
+    setErrorArrastre(null);
+
+    let resultado: { error?: string } | undefined;
+    if (cita.origen_externo) {
+      resultado = await moverCitaExterna(undefined, formData);
+    } else if (cita.estado === "pendiente") {
+      formData.set("comentario", "Horario actualizado desde el calendario.");
+      resultado = await proponerOtroHorario(undefined, formData);
+    } else if (cita.estado === "confirmada") {
+      resultado = await proponerCambioCitaConfirmada(undefined, formData);
+    }
+
+    if (resultado?.error) {
+      setErrorArrastre(resultado.error);
+    }
+
+    refrescar(anchor, vista);
+  }
+
+  function iniciarRedimension(
+    e: ReactPointerEvent<HTMLElement>,
+    cita: CitaCalendario,
+    borde: "inicio" | "fin"
+  ) {
+    if (!cita.hora_inicio) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+
+    setRedimension({
+      citaId: cita.id,
+      pointerId: e.pointerId,
+      borde,
+      inicioMin: minutosDesdeHora(cita.hora_inicio),
+      finMin: finEfectivoMinutos(cita.hora_inicio, cita.hora_fin),
+      moved: false,
+    });
+  }
+
+  function moverRedimension(e: ReactPointerEvent<HTMLElement>) {
+    setRedimension((prev) => {
+      if (!prev || prev.pointerId !== e.pointerId || !gridRef.current) return prev;
+
+      const rect = gridRef.current.getBoundingClientRect();
+      const minuto = minutoDesdePunteroY(e.clientY, rect.top, horaInicio * 60, horaFin * 60);
+
+      if (prev.borde === "inicio") {
+        const inicioMin = Math.min(minuto, prev.finMin - INTERVALO_SNAP_MIN);
+        return { ...prev, inicioMin, moved: true };
+      }
+      const finMin = Math.max(minuto, prev.inicioMin + INTERVALO_SNAP_MIN);
+      return { ...prev, finMin, moved: true };
+    });
+  }
+
+  async function soltarRedimension(e: ReactPointerEvent<HTMLElement>) {
+    const actual = redimension;
+    if (!actual || actual.pointerId !== e.pointerId) {
+      return;
+    }
+
+    setRedimension(null);
+    if (!actual.moved) {
+      return;
+    }
+
+    const cita = citas.find((c) => c.id === actual.citaId);
+    if (!cita || !cita.fecha) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("id", cita.id);
+    formData.set("fecha", cita.fecha);
+    formData.set("hora_inicio", horaDesdeMinutos(actual.inicioMin));
+    formData.set("hora_fin", horaDesdeMinutos(actual.finMin));
+
     setErrorArrastre(null);
 
     let resultado: { error?: string } | undefined;
@@ -377,9 +466,13 @@ export function CalendarioCitas({
             horaFin={horaFin}
             gridRef={gridRef}
             arrastre={arrastre}
+            redimension={redimension}
             onPointerDownCita={(e, cita) => iniciarArrastre(e, cita, false)}
             onPointerMoveArrastre={moverArrastre}
             onPointerUpArrastre={soltarArrastre}
+            onPointerDownRedimensionar={iniciarRedimension}
+            onPointerMoveRedimensionar={moverRedimension}
+            onPointerUpRedimensionar={soltarRedimension}
           />
         ) : (
           <VistaMes anchor={anchor} citas={citas} onSeleccionarDia={(dia) => navegar(dia, "semana")} />

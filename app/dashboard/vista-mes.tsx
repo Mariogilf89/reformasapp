@@ -1,5 +1,5 @@
 import type { CitaCalendario } from "@/app/actions/citas";
-import { fechaISO } from "@/lib/fechas";
+import { fechaISO, fechaLocal, sumarDias } from "@/lib/fechas";
 
 const DIAS_CABECERA = ["L", "M", "X", "J", "V", "S", "D"];
 const MAX_PUNTOS = 4;
@@ -27,12 +27,19 @@ export function VistaMes({
   const mes = anchor.getMonth() + 1;
   const hoyISO = fechaISO(new Date());
 
+  // Las citas externas de varios días (fecha_fin) suman su punto en cada día
+  // del rango, no solo en "fecha"; el resto de tipos de cita siguen siendo
+  // de un solo día en esta tanda.
   const citasPorFecha = new Map<string, CitaCalendario[]>();
   for (const cita of citas) {
     if (!cita.fecha) continue;
-    const lista = citasPorFecha.get(cita.fecha) ?? [];
-    lista.push(cita);
-    citasPorFecha.set(cita.fecha, lista);
+    const fechaFinCita = cita.origen_externo && cita.fecha_fin ? cita.fecha_fin : cita.fecha;
+    for (let cursor = fechaLocal(cita.fecha); fechaISO(cursor) <= fechaFinCita; cursor = sumarDias(cursor, 1)) {
+      const key = fechaISO(cursor);
+      const lista = citasPorFecha.get(key) ?? [];
+      lista.push(cita);
+      citasPorFecha.set(key, lista);
+    }
   }
 
   const diasEnMes = new Date(anio, mes, 0).getDate();
@@ -52,57 +59,59 @@ export function VistaMes({
   }
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-neutral-500">
-        {DIAS_CABECERA.map((letra, index) => (
-          <div key={index}>{letra}</div>
+    <div className="w-full overflow-x-auto">
+      <div className="flex min-w-[720px] flex-1 flex-col gap-2">
+        <div className="grid grid-cols-7 gap-2 text-center text-sm font-medium text-neutral-500">
+          {DIAS_CABECERA.map((letra, index) => (
+            <div key={index}>{letra}</div>
+          ))}
+        </div>
+
+        {semanas.map((semana, indexSemana) => (
+          <div key={indexSemana} className="grid grid-cols-7 gap-2">
+            {semana.map((dia, columna) => {
+              if (!dia) {
+                return <div key={columna} />;
+              }
+
+              const fecha = fechaISO(dia);
+              const citasDelDia = citasPorFecha.get(fecha) ?? [];
+              const esHoy = fecha === hoyISO;
+
+              return (
+                <button
+                  key={fecha}
+                  type="button"
+                  disabled={citasDelDia.length === 0}
+                  onClick={() => onSeleccionarDia(dia)}
+                  className={`flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border text-lg disabled:cursor-default ${
+                    esHoy
+                      ? "border-primary-600 font-medium text-primary-700 dark:text-primary-400"
+                      : "border-neutral-200 text-neutral-900 dark:border-neutral-800 dark:text-neutral-100"
+                  }`}
+                >
+                  <span>{dia.getDate()}</span>
+                  {citasDelDia.length > 0 && (
+                    <span className="flex items-center gap-1">
+                      {citasDelDia.slice(0, MAX_PUNTOS).map((cita) => (
+                        <span
+                          key={cita.id}
+                          className={`h-2.5 w-2.5 rounded-full ${colorPunto(cita)}`}
+                        />
+                      ))}
+                      {citasDelDia.length > MAX_PUNTOS && (
+                        <span className="text-sm text-neutral-500">
+                          +{citasDelDia.length - MAX_PUNTOS}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         ))}
       </div>
-
-      {semanas.map((semana, indexSemana) => (
-        <div key={indexSemana} className="grid grid-cols-7 gap-1">
-          {semana.map((dia, columna) => {
-            if (!dia) {
-              return <div key={columna} />;
-            }
-
-            const fecha = fechaISO(dia);
-            const citasDelDia = citasPorFecha.get(fecha) ?? [];
-            const esHoy = fecha === hoyISO;
-
-            return (
-              <button
-                key={fecha}
-                type="button"
-                disabled={citasDelDia.length === 0}
-                onClick={() => onSeleccionarDia(dia)}
-                className={`flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border text-sm disabled:cursor-default ${
-                  esHoy
-                    ? "border-primary-600 font-medium text-primary-700 dark:text-primary-400"
-                    : "border-neutral-200 text-neutral-900 dark:border-neutral-800 dark:text-neutral-100"
-                }`}
-              >
-                <span>{dia.getDate()}</span>
-                {citasDelDia.length > 0 && (
-                  <span className="flex items-center gap-0.5">
-                    {citasDelDia.slice(0, MAX_PUNTOS).map((cita) => (
-                      <span
-                        key={cita.id}
-                        className={`h-1.5 w-1.5 rounded-full ${colorPunto(cita)}`}
-                      />
-                    ))}
-                    {citasDelDia.length > MAX_PUNTOS && (
-                      <span className="text-[10px] text-neutral-500">
-                        +{citasDelDia.length - MAX_PUNTOS}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      ))}
     </div>
   );
 }

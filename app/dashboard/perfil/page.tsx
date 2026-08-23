@@ -109,7 +109,6 @@ export default async function PerfilProfesionalPage() {
         {/* Columna izquierda */}
         <div className="flex flex-col gap-8">
           <DescripcionSection descripcionInicial={perfil?.descripcion} />
-          <CategoriasSection categoriasIniciales={perfil?.categorias} />
           {perfil && <FotosForm userId={user.id} fotosIniciales={perfil.fotos ?? []} />}
         </div>
 
@@ -210,6 +209,7 @@ export default async function PerfilProfesionalPage() {
 
         {/* Columna derecha */}
         <div className="flex flex-col gap-8">
+          <CategoriasSection categoriasIniciales={perfil?.categorias} />
           <ProvinciasSection provinciasIniciales={perfil?.provincias} />
           <ZonaGuardarSection zonaInicial={perfil?.zona} />
         </div>

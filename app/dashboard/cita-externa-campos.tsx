@@ -8,15 +8,22 @@ import { Button } from "@/components/ui/button";
 
 export function CitaExternaCampos({
   citaExistente,
+  duplicarDesde,
   onExito,
   onCancelar,
 }: {
   citaExistente?: CitaCalendario;
+  // Cita de la que se copian título, duración, ubicación y contacto al abrir
+  // el formulario de creación desde "Duplicar" (fecha y fecha_fin quedan
+  // vacías a propósito para que el profesional elija el nuevo día).
+  duplicarDesde?: CitaCalendario;
   onExito: () => void;
   onCancelar?: () => void;
 }) {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const plantilla = citaExistente ?? duplicarDesde;
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -24,6 +31,7 @@ export function CitaExternaCampos({
     const fecha = formData.get("fecha")?.toString();
     const horaInicio = formData.get("hora_inicio")?.toString();
     const horaFin = formData.get("hora_fin")?.toString();
+    const fechaFin = formData.get("fecha_fin")?.toString();
     const todosVacios = !fecha && !horaInicio && !horaFin;
     const todosCompletos = Boolean(fecha && horaInicio && horaFin);
 
@@ -31,6 +39,10 @@ export function CitaExternaCampos({
       setError(
         "Indica fecha y horas completas, o déjalas todas vacías para guardarla como pendiente de agendar."
       );
+      return;
+    }
+    if (fechaFin && !fecha) {
+      setError('Indica una fecha de inicio para poder indicar "Hasta".');
       return;
     }
 
@@ -56,7 +68,7 @@ export function CitaExternaCampos({
       {!citaExistente && (
         <>
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
-            Cita externa
+            {duplicarDesde ? "Duplicar cita externa" : "Cita externa"}
           </h2>
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
             Bloquea un hueco en tu calendario que no pasa por la negociación con clientes (por
@@ -72,14 +84,25 @@ export function CitaExternaCampos({
           name="titulo"
           type="text"
           required
-          defaultValue={citaExistente?.titulo_externo ?? ""}
+          defaultValue={plantilla?.titulo_externo ?? ""}
           placeholder="Ej. Trabajo en Vigo"
         />
       </div>
 
-      <div className="flex flex-col gap-1">
-        <Label htmlFor="fecha">Fecha</Label>
-        <Input id="fecha" name="fecha" type="date" defaultValue={citaExistente?.fecha ?? ""} />
+      <div className="flex gap-2">
+        <div className="flex flex-1 flex-col gap-1">
+          <Label htmlFor="fecha">Fecha</Label>
+          <Input id="fecha" name="fecha" type="date" defaultValue={citaExistente?.fecha ?? ""} />
+        </div>
+        <div className="flex flex-1 flex-col gap-1">
+          <Label htmlFor="fecha_fin">Hasta (opcional)</Label>
+          <Input
+            id="fecha_fin"
+            name="fecha_fin"
+            type="date"
+            defaultValue={citaExistente?.fecha_fin ?? ""}
+          />
+        </div>
       </div>
 
       <div className="flex gap-2">
@@ -89,7 +112,7 @@ export function CitaExternaCampos({
             id="hora_inicio"
             name="hora_inicio"
             type="time"
-            defaultValue={citaExistente?.hora_inicio?.slice(0, 5) ?? ""}
+            defaultValue={plantilla?.hora_inicio?.slice(0, 5) ?? ""}
           />
         </div>
         <div className="flex flex-1 flex-col gap-1">
@@ -98,7 +121,7 @@ export function CitaExternaCampos({
             id="hora_fin"
             name="hora_fin"
             type="time"
-            defaultValue={citaExistente?.hora_fin?.slice(0, 5) ?? ""}
+            defaultValue={plantilla?.hora_fin?.slice(0, 5) ?? ""}
           />
         </div>
       </div>
@@ -109,7 +132,7 @@ export function CitaExternaCampos({
           id="localidad"
           name="localidad"
           type="text"
-          defaultValue={citaExistente?.localidad ?? ""}
+          defaultValue={plantilla?.localidad ?? ""}
           placeholder="Ej. Vigo"
         />
       </div>
@@ -120,9 +143,32 @@ export function CitaExternaCampos({
           id="calle"
           name="calle"
           type="text"
-          defaultValue={citaExistente?.calle ?? ""}
+          defaultValue={plantilla?.calle ?? ""}
           placeholder="Ej. Rúa do Príncipe 12"
         />
+      </div>
+
+      <div className="flex gap-2">
+        <div className="flex flex-1 flex-col gap-1">
+          <Label htmlFor="contacto_nombre">Nombre de contacto (opcional)</Label>
+          <Input
+            id="contacto_nombre"
+            name="contacto_nombre"
+            type="text"
+            defaultValue={plantilla?.contacto_nombre ?? ""}
+            placeholder="Ej. Ana Pérez"
+          />
+        </div>
+        <div className="flex flex-1 flex-col gap-1">
+          <Label htmlFor="contacto_telefono">Teléfono de contacto (opcional)</Label>
+          <Input
+            id="contacto_telefono"
+            name="contacto_telefono"
+            type="tel"
+            defaultValue={plantilla?.contacto_telefono ?? ""}
+            placeholder="Ej. 600 123 456"
+          />
+        </div>
       </div>
 
       {!citaExistente && (

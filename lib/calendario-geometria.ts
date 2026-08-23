@@ -57,6 +57,19 @@ export function posicionDesdePuntero(params: {
   return { diaIndex, inicioMin };
 }
 
+/**
+ * A partir de la posición vertical del puntero y la parte superior del
+ * grid, calcula el minuto correspondiente con el mismo snap que
+ * posicionDesdePuntero. Lo usa el redimensionado (estirar el borde superior
+ * o inferior de un bloque), que solo necesita el eje Y.
+ */
+export function minutoDesdePunteroY(clientY: number, rectTop: number, minutosInicio: number, minutosFin: number) {
+  const yRel = Math.max(0, clientY - rectTop);
+  const minutosBrutos = minutosInicio + (yRel / ALTURA_HORA_PX) * 60;
+  const snap = Math.round(minutosBrutos / INTERVALO_SNAP_MIN) * INTERVALO_SNAP_MIN;
+  return Math.min(minutosFin, Math.max(minutosInicio, snap));
+}
+
 export function tituloCita(cita: Pick<CitaCalendario, "origen_externo" | "titulo_externo" | "tipo">) {
   if (cita.origen_externo) {
     return cita.titulo_externo ?? "Bloqueo";
@@ -122,4 +135,14 @@ export type ArrastreEstado = {
   moved: boolean;
   diaIndex: number;
   inicioMin: number;
+};
+
+/** Redimensionado vertical de un bloque (estirar hora_inicio u hora_fin). */
+export type RedimensionEstado = {
+  citaId: string;
+  pointerId: number;
+  borde: "inicio" | "fin";
+  inicioMin: number;
+  finMin: number;
+  moved: boolean;
 };

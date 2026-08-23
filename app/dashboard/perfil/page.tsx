@@ -13,6 +13,7 @@ import { FotosForm } from "./fotos-form";
 import { VerificacionForm } from "./verificacion-form";
 import { DisponibilidadForm } from "./disponibilidad-form";
 import { ExcepcionDisponibilidadForm } from "./excepcion-disponibilidad-form";
+import { AvisoCambiosSinGuardar } from "./aviso-cambios-sin-guardar";
 
 type Tramo = {
   id: string;
@@ -98,6 +99,8 @@ export default async function PerfilProfesionalPage() {
 
   return (
     <div className="flex flex-1 flex-col items-center gap-10 px-4 py-16">
+      <AvisoCambiosSinGuardar />
+
       <div className="flex w-full max-w-6xl items-center gap-3">
         <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
           Mi perfil profesional

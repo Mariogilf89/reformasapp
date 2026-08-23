@@ -116,49 +116,57 @@ export default async function SolicitudesDisponiblesPage(
     ? searchParams.ocultar_contactadas === "1"
     : true;
 
-  // RLS ya limita el resultado a solicitudes abiertas que coinciden con
-  // alguna de las categorías del perfil del profesional autenticado.
-  let query = supabase
-    .from("solicitudes")
-    .select("id, categoria, zona, descripcion, provincia, modo_tiempo, creado_en")
-    .eq("estado", "abierta");
+  // No se busca nada hasta que el profesional pulse "Filtrar" al menos una
+  // vez (formularioEnviado): la primera visita a la página no debe mostrar
+  // todas las solicitudes por defecto.
+  let solicitudes: SolicitudDisponible[] = [];
+  const contactadas = new Set<string>();
 
-  if (categoria) query = query.eq("categoria", categoria);
-  if (provincia) query = query.eq("provincia", provincia);
-  if (modo) query = query.eq("modo_tiempo", modo);
+  if (formularioEnviado) {
+    // RLS ya limita el resultado a solicitudes abiertas que coinciden con
+    // alguna de las categorías del perfil del profesional autenticado.
+    let query = supabase
+      .from("solicitudes")
+      .select("id, categoria, zona, descripcion, provincia, modo_tiempo, creado_en")
+      .eq("estado", "abierta");
 
-  const { data } = await query
-    .order("creado_en", { ascending: false })
-    .returns<SolicitudDisponible[]>();
+    if (categoria) query = query.eq("categoria", categoria);
+    if (provincia) query = query.eq("provincia", provincia);
+    if (modo) query = query.eq("modo_tiempo", modo);
 
-  let solicitudes = data ?? [];
+    const { data } = await query
+      .order("creado_en", { ascending: false })
+      .returns<SolicitudDisponible[]>();
 
-  // Solicitudes que este profesional ya ha contactado: al menos un mensaje
-  // propio (remitente_id = yo) en esa solicitud.
-  const solicitudIds = solicitudes.map((s) => s.id);
-  const { data: mensajesPropios } = solicitudIds.length
-    ? await supabase
-        .from("mensajes")
-        .select("solicitud_id")
-        .eq("remitente_id", user.id)
-        .in("solicitud_id", solicitudIds)
-        .returns<{ solicitud_id: string }[]>()
-    : { data: [] as { solicitud_id: string }[] };
+    solicitudes = data ?? [];
 
-  const contactadas = new Set((mensajesPropios ?? []).map((m) => m.solicitud_id));
+    // Solicitudes que este profesional ya ha contactado: al menos un mensaje
+    // propio (remitente_id = yo) en esa solicitud.
+    const solicitudIds = solicitudes.map((s) => s.id);
+    const { data: mensajesPropios } = solicitudIds.length
+      ? await supabase
+          .from("mensajes")
+          .select("solicitud_id")
+          .eq("remitente_id", user.id)
+          .in("solicitud_id", solicitudIds)
+          .returns<{ solicitud_id: string }[]>()
+      : { data: [] as { solicitud_id: string }[] };
 
-  if (ocultarContactadas) {
-    solicitudes = solicitudes.filter((s) => !contactadas.has(s.id));
-  }
+    (mensajesPropios ?? []).forEach((m) => contactadas.add(m.solicitud_id));
 
-  if (orden === "encaje" && profesional) {
-    const huecosProximos = await tieneHuecosProximos(profesional.id);
-    if (huecosProximos) {
-      solicitudes = [...solicitudes].sort((a, b) => {
-        const diff = prioridadModoTiempo(a.modo_tiempo) - prioridadModoTiempo(b.modo_tiempo);
-        if (diff !== 0) return diff;
-        return b.creado_en.localeCompare(a.creado_en);
-      });
+    if (ocultarContactadas) {
+      solicitudes = solicitudes.filter((s) => !contactadas.has(s.id));
+    }
+
+    if (orden === "encaje" && profesional) {
+      const huecosProximos = await tieneHuecosProximos(profesional.id);
+      if (huecosProximos) {
+        solicitudes = [...solicitudes].sort((a, b) => {
+          const diff = prioridadModoTiempo(a.modo_tiempo) - prioridadModoTiempo(b.modo_tiempo);
+          if (diff !== 0) return diff;
+          return b.creado_en.localeCompare(a.creado_en);
+        });
+      }
     }
   }
 
@@ -183,7 +191,13 @@ export default async function SolicitudesDisponiblesPage(
       />
 
       <div className="w-full max-w-lg flex flex-col gap-4">
-        {solicitudes.length === 0 && (
+        {!formularioEnviado && (
+          <p className="text-neutral-600 dark:text-neutral-400">
+            Usa los filtros para buscar solicitudes.
+          </p>
+        )}
+
+        {formularioEnviado && solicitudes.length === 0 && (
           <p className="text-neutral-600 dark:text-neutral-400">
             No hay solicitudes disponibles con estos filtros por ahora.
           </p>

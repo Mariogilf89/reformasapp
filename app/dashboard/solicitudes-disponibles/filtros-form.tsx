@@ -66,11 +66,11 @@ export function FiltrosSolicitudesDisponibles({
         <input type="hidden" name="f" value="1" />
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex flex-1 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <label htmlFor="categoria" className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
               Categoría
             </label>
-            <Select id="categoria" name="categoria" defaultValue={categoriaInicial}>
+            <Select id="categoria" name="categoria" defaultValue={categoriaInicial} className="w-full">
               <option value="">Todas mis categorías</option>
               {categoriasProfesional.map((cat) => (
                 <option key={cat} value={cat}>
@@ -80,11 +80,11 @@ export function FiltrosSolicitudesDisponibles({
             </Select>
           </div>
 
-          <div className="flex flex-1 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <label htmlFor="provincia" className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
               Provincia
             </label>
-            <Select id="provincia" name="provincia" defaultValue={provinciaInicial}>
+            <Select id="provincia" name="provincia" defaultValue={provinciaInicial} className="w-full">
               <option value="">Todas las provincias</option>
               {PROVINCIAS.map((p) => (
                 <option key={p.value} value={p.value}>
@@ -94,11 +94,11 @@ export function FiltrosSolicitudesDisponibles({
             </Select>
           </div>
 
-          <div className="flex flex-1 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <label htmlFor="modo" className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
               ¿Cuándo lo necesita?
             </label>
-            <Select id="modo" name="modo" defaultValue={modoInicial}>
+            <Select id="modo" name="modo" defaultValue={modoInicial} className="w-full">
               {MODOS_FILTRO.map((m) => (
                 <option key={m.value} value={m.value}>
                   {m.label}
@@ -109,11 +109,11 @@ export function FiltrosSolicitudesDisponibles({
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex flex-1 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <label htmlFor="orden" className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
               Ordenar por
             </label>
-            <Select id="orden" name="orden" defaultValue={ordenInicial}>
+            <Select id="orden" name="orden" defaultValue={ordenInicial} className="w-full">
               {ORDEN.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}

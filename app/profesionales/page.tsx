@@ -113,10 +113,17 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
 
         {profesionales.map((profesional) => {
           const resumen = resumenPorProfesional.get(profesional.id);
-          const href =
-            modo === "dia_hora" && fechaParam && horaParam
-              ? `/profesionales/${profesional.id}?fecha=${encodeURIComponent(fechaParam)}&hora_inicio=${encodeURIComponent(horaParam)}`
-              : `/profesionales/${profesional.id}`;
+          // Se pasa el modo/provincia de esta búsqueda al perfil del
+          // profesional para que, si el cliente contacta desde ahí, la
+          // solicitud creada quede con ese mismo modo_tiempo/provincia.
+          const paramsDetalle = new URLSearchParams();
+          paramsDetalle.set("modo", modo);
+          if (provincia) paramsDetalle.set("provincia", provincia);
+          if (modo === "dia_hora" && fechaParam && horaParam) {
+            paramsDetalle.set("fecha", fechaParam);
+            paramsDetalle.set("hora_inicio", horaParam);
+          }
+          const href = `/profesionales/${profesional.id}?${paramsDetalle.toString()}`;
 
           return (
             <Link key={profesional.id} href={href}>

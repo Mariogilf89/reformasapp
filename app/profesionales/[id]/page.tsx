@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
+import { isProvincia } from "@/lib/provincias";
 import { Card } from "@/components/ui/card";
 import { buttonClassName } from "@/components/ui/button";
 import { VerificadoBadge } from "@/components/ui/verificado-badge";
@@ -31,6 +32,14 @@ export default async function ProfesionalDetallePage(
   const fechaElegida = typeof searchParams.fecha === "string" ? searchParams.fecha : undefined;
   const horaInicioElegida =
     typeof searchParams.hora_inicio === "string" ? searchParams.hora_inicio : undefined;
+
+  const modoParam = typeof searchParams.modo === "string" ? searchParams.modo : "";
+  const modoElegido =
+    modoParam === "lo_antes_posible" || modoParam === "indiferente" || modoParam === "dia_hora"
+      ? modoParam
+      : undefined;
+  const provinciaParam = typeof searchParams.provincia === "string" ? searchParams.provincia : "";
+  const provinciaElegida = provinciaParam && isProvincia(provinciaParam) ? provinciaParam : undefined;
 
   const supabase = await createServerSupabaseClient();
   const {
@@ -128,6 +137,8 @@ export default async function ProfesionalDetallePage(
             categoriasProfesional={profesional.categorias}
             fechaElegida={fechaElegida}
             horaInicioElegida={horaInicioElegida}
+            modoElegido={modoElegido}
+            provinciaElegida={provinciaElegida}
           />
         ) : (
           <p className="text-sm text-neutral-500 dark:text-neutral-500">

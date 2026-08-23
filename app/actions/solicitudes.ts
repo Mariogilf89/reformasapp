@@ -4,7 +4,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { isCategoria, type Categoria } from "@/lib/profesionales";
+import { isProvincia } from "@/lib/provincias";
 import { crearCitaPendiente } from "@/app/actions/citas";
+import { notificarAlertasBusquedaTrabajos } from "@/app/actions/alertas-busqueda";
+
+function esModoTiempoValido(value: string): value is "lo_antes_posible" | "indiferente" | "dia_hora" {
+  return value === "lo_antes_posible" || value === "indiferente" || value === "dia_hora";
+}
 
 export type SolicitudFormState = { error?: string; success?: boolean } | undefined;
 
@@ -50,6 +56,10 @@ export async function crearSolicitud(
     return { error: error.message };
   }
 
+  // Esta solicitud no viene de una búsqueda en /profesionales, así que no
+  // hay modo_tiempo/provincia que asociarle (quedan NULL, por defecto).
+  await notificarAlertasBusquedaTrabajos({ categoria, zona, provincia: null, modoTiempo: null });
+
   revalidatePath("/dashboard/solicitudes");
   return { success: true };
 }
@@ -79,6 +89,14 @@ export async function crearSolicitudYContactar(
   const zona = formData.get("zona")?.toString().trim();
   const descripcion = formData.get("descripcion")?.toString().trim();
 
+  // Solo llegan si ContactarForm venía de una búsqueda en /profesionales con
+  // esos datos (ver modoElegido/provinciaElegida en profesionales/[id]); si
+  // no, quedan NULL en la solicitud.
+  const modoRaw = formData.get("modo_tiempo")?.toString() || null;
+  const provinciaRaw = formData.get("provincia")?.toString() || null;
+  const modoTiempo = modoRaw && esModoTiempoValido(modoRaw) ? modoRaw : null;
+  const provincia = provinciaRaw && isProvincia(provinciaRaw) ? provinciaRaw : null;
+
   if (!profesionalId) {
     return { error: "Profesional no válido." };
   }
@@ -104,13 +122,15 @@ export async function crearSolicitudYContactar(
 
   const { data: solicitud, error } = await supabase
     .from("solicitudes")
-    .insert({ cliente_id: user.id, categoria, zona, descripcion })
+    .insert({ cliente_id: user.id, categoria, zona, descripcion, modo_tiempo: modoTiempo, provincia })
     .select("id")
     .single<{ id: string }>();
 
   if (error || !solicitud) {
     return { error: error?.message ?? "No se pudo crear la solicitud." };
   }
+
+  await notificarAlertasBusquedaTrabajos({ categoria, zona, provincia, modoTiempo });
 
   // Si la búsqueda de profesionales ya traía una fecha/hora elegida (modo
   // "Elegir día y hora"), se propone directamente esa cita además de la

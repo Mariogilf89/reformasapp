@@ -56,3 +56,47 @@ export async function obtenerContactoTelefonicoUsuario(userId: string): Promise<
     verificado: metadata?.telefono_verificado === true,
   };
 }
+
+export type AlertaBusquedaCoincidente = { profesionalId: string; userId: string };
+
+/**
+ * Alertas guardadas (alertas_busqueda_trabajos) que encajan con una
+ * solicitud recién creada, con el user_id del profesional que la guardó ya
+ * resuelto para poder avisarle por email. Usa la service role porque la RLS
+ * de esa tabla es "solo mis propias alertas": la solicitud la crea un
+ * cliente, que no puede ver las alertas de ningún profesional.
+ */
+export async function buscarAlertasBusquedaCoincidentes(solicitud: {
+  categoria: string;
+  provincia: string | null;
+  modoTiempo: string | null;
+}): Promise<AlertaBusquedaCoincidente[]> {
+  const supabaseAdmin = createAdminSupabaseClient();
+  const { data, error } = await supabaseAdmin
+    .from("alertas_busqueda_trabajos")
+    .select("profesional_id, categoria, provincia, modo_tiempo, profesionales(user_id)")
+    .returns<
+      {
+        profesional_id: string;
+        categoria: string | null;
+        provincia: string | null;
+        modo_tiempo: string | null;
+        profesionales: { user_id: string } | null;
+      }[]
+    >();
+
+  if (error || !data) {
+    console.error("No se pudieron leer las alertas de búsqueda de trabajos", error);
+    return [];
+  }
+
+  return data
+    .filter(
+      (alerta) =>
+        alerta.profesionales &&
+        (alerta.categoria === null || alerta.categoria === solicitud.categoria) &&
+        (alerta.provincia === null || alerta.provincia === solicitud.provincia) &&
+        (alerta.modo_tiempo === null || alerta.modo_tiempo === solicitud.modoTiempo)
+    )
+    .map((alerta) => ({ profesionalId: alerta.profesional_id, userId: alerta.profesionales!.user_id }));
+}

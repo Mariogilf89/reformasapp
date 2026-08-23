@@ -23,11 +23,18 @@ export function ContactarForm({
   categoriasProfesional,
   fechaElegida,
   horaInicioElegida,
+  modoElegido,
+  provinciaElegida,
 }: {
   profesionalId: string;
   categoriasProfesional: Categoria[];
   fechaElegida?: string;
   horaInicioElegida?: string;
+  // Vienen de la búsqueda en /profesionales (categoria/provincia/modo del
+  // filtro), si el cliente llegó desde ahí; si no, quedan sin definir y la
+  // solicitud creada guarda modo_tiempo/provincia como NULL.
+  modoElegido?: string;
+  provinciaElegida?: string;
 }) {
   const proponeCita = Boolean(fechaElegida && horaInicioElegida);
   const [mostrar, setMostrar] = useState(proponeCita);
@@ -45,6 +52,8 @@ export function ContactarForm({
     <Card className="w-full p-6">
       <form action={action} className="flex flex-col gap-4">
         <input type="hidden" name="profesional_id" value={profesionalId} />
+        {modoElegido && <input type="hidden" name="modo_tiempo" value={modoElegido} />}
+        {provinciaElegida && <input type="hidden" name="provincia" value={provinciaElegida} />}
 
         <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
           Cuéntale al profesional lo que necesitas

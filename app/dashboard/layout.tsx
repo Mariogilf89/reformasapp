@@ -30,7 +30,10 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
       label: role === "profesional" ? "Verificar teléfono" : "Añade tu teléfono",
     },
     ...(role === "profesional"
-      ? [{ href: "/dashboard/solicitudes-disponibles", label: "Solicitudes disponibles" }]
+      ? [
+          { href: "/dashboard/solicitudes-disponibles", label: "Solicitudes disponibles" },
+          { href: "/dashboard/alertas-busqueda", label: "Mis alertas" },
+        ]
       : []),
     ...(role === "admin"
       ? [{ href: "/admin/verificaciones", label: "Verificaciones" }]

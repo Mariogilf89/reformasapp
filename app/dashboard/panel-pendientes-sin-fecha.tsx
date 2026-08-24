@@ -48,7 +48,7 @@ export function PanelPendientesSinFecha({
                 touchAction: "none",
                 opacity: citaArrastrandoId === cita.id ? 0.4 : 1,
               }}
-              className="cursor-grab select-none whitespace-nowrap rounded-md border border-neutral-300 bg-neutral-50 px-2 py-1.5 text-xs text-neutral-700 active:cursor-grabbing dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+              className="cursor-grab select-none whitespace-nowrap rounded-md border border-neutral-300 bg-neutral-50 px-3 py-2 text-sm text-neutral-700 active:cursor-grabbing dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
             >
               {cita.titulo_externo}
             </li>

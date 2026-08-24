@@ -8,7 +8,11 @@ import { enviarEmail } from "@/lib/email";
 
 export type Supabase = Awaited<ReturnType<typeof createServerSupabaseClient>>;
 
-export type CitaAccionFormState = { error?: string } | undefined;
+// solape: true solo lo devuelve crearCitaExterna cuando el error es
+// justamente un solapamiento con otra cita confirmada, para que el cliente
+// pueda distinguirlo de otros errores y ofrecer "continuar de todas formas"
+// (reenviando con permitir_solape=1) en vez de solo mostrarlo.
+export type CitaAccionFormState = { error?: string; solape?: boolean } | undefined;
 
 function aMinutos(hora: string) {
   const [h, m] = hora.slice(0, 5).split(":").map(Number);
@@ -145,15 +149,24 @@ async function obtenerCitasOcupadas(
   return (data ?? []) as CitaOcupada[];
 }
 
+/**
+ * fechaFin (último parámetro, opcional): fin del rango de días del bloqueo
+ * para citas externas de varios días. Sin esto, un bloqueo lunes->viernes
+ * solo comprobaba solapes el lunes: cualquier choque en días posteriores
+ * del propio rango pasaba desapercibido. Las citas reales (sin concepto de
+ * fecha_fin) simplemente no lo pasan y se comprueban solo en "fecha", como
+ * antes.
+ */
 async function haySolapeConConfirmadas(
   supabase: Supabase,
   profesionalId: string,
   fecha: string,
   horaInicio: string,
   horaFin: string | null,
-  excluirCitaId?: string
+  excluirCitaId?: string,
+  fechaFin?: string | null
 ) {
-  const ocupadas = await obtenerCitasOcupadas(supabase, profesionalId, fecha, fecha);
+  const ocupadas = await obtenerCitasOcupadas(supabase, profesionalId, fecha, fechaFin || fecha);
   const confirmadas = ocupadas.filter(
     (cita) => cita.estado === "confirmada" && cita.id !== excluirCitaId
   );
@@ -813,6 +826,11 @@ export async function obtenerCitasCalendario(desde: string, hasta: string): Prom
     return [];
   }
 
+  // Una cita externa de varios días ocupa [fecha, fecha_fin]; para que siga
+  // apareciendo en semanas/meses posteriores al de su fecha de inicio, hay
+  // que traer cualquier cita cuyo rango se solape con [desde, hasta], no
+  // solo las que empiezan dentro de esa ventana (fecha_fin es NULL en las
+  // citas de un solo día, que se comparan por su propia "fecha").
   const { data } = await supabase
     .from("citas")
     .select(
@@ -820,8 +838,8 @@ export async function obtenerCitasCalendario(desde: string, hasta: string): Prom
     )
     .eq("profesional_id", profesionalId)
     .neq("estado", "cancelada")
-    .gte("fecha", desde)
     .lte("fecha", hasta)
+    .or(`fecha_fin.gte.${desde},and(fecha_fin.is.null,fecha.gte.${desde})`)
     .order("fecha", { ascending: true })
     .order("hora_inicio", { ascending: true })
     .returns<Omit<CitaCalendario, "telefonoCliente">[]>();
@@ -978,9 +996,31 @@ export async function crearCitaExterna(
     return { error: "La hora de fin debe ser posterior a la hora de inicio." };
   }
 
-  const seSolapa = await haySolapeConConfirmadas(supabase, profesionalId, fecha!, horaInicio!, horaFin!);
-  if (seSolapa) {
-    return { error: "Ya tienes otra cita confirmada que se solapa con ese horario." };
+  // Un bloqueo de varios días (fecha_fin) debe comprobarse en todo su rango,
+  // no solo en "fecha": si no, un choque en un día posterior del propio
+  // rango pasaba desapercibido.
+  const fechaFinEfectiva = fechaFin && fechaFin > fecha! ? fechaFin : null;
+
+  // El solapamiento ya no bloquea la creación: se avisa (solape: true) para
+  // que el formulario muestre una confirmación, y solo se salta esta
+  // comprobación si el profesional ya confirmó que quiere seguir adelante.
+  const permitirSolape = formData.get("permitir_solape") === "1";
+  if (!permitirSolape) {
+    const seSolapa = await haySolapeConConfirmadas(
+      supabase,
+      profesionalId,
+      fecha!,
+      horaInicio!,
+      horaFin!,
+      undefined,
+      fechaFinEfectiva
+    );
+    if (seSolapa) {
+      return {
+        error: "Ya tienes otra cita confirmada que se solapa con ese horario.",
+        solape: true,
+      };
+    }
   }
 
   const { error } = await supabase.from("citas").insert({
@@ -991,7 +1031,7 @@ export async function crearCitaExterna(
     fecha,
     hora_inicio: horaInicio,
     hora_fin: horaFin,
-    fecha_fin: fechaFin && fechaFin > fecha! ? fechaFin : null,
+    fecha_fin: fechaFinEfectiva,
     estado: "confirmada",
     origen_externo: true,
     titulo_externo: titulo,
@@ -1110,13 +1150,16 @@ export async function editarCitaExterna(
     return { error: "La hora de fin debe ser posterior a la hora de inicio." };
   }
 
+  const fechaFinEfectiva = fechaFin && fechaFin > fecha! ? fechaFin : null;
+
   const seSolapa = await haySolapeConConfirmadas(
     supabase,
     profesionalId,
     fecha!,
     horaInicio!,
     horaFin!,
-    citaId
+    citaId,
+    fechaFinEfectiva
   );
   if (seSolapa) {
     return { error: "Ya tienes otra cita confirmada que se solapa con ese horario." };
@@ -1129,7 +1172,7 @@ export async function editarCitaExterna(
       fecha,
       hora_inicio: horaInicio,
       hora_fin: horaFin,
-      fecha_fin: fechaFin && fechaFin > fecha! ? fechaFin : null,
+      fecha_fin: fechaFinEfectiva,
       estado: "confirmada",
       localidad,
       calle,
@@ -1211,7 +1254,8 @@ export async function moverCitaExterna(
     fecha,
     horaInicio,
     horaFin,
-    cita.id
+    cita.id,
+    fechaFin
   );
   if (seSolapa) {
     return { error: "Ya tienes otra cita confirmada que se solapa con ese horario." };

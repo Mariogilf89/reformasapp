@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, type FormEvent } from "react";
 import { crearCitaExterna, editarCitaExterna, type CitaCalendario } from "@/app/actions/citas";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Modal } from "@/components/ui/modal";
 
 export function CitaExternaCampos({
   citaExistente,
@@ -20,13 +21,34 @@ export function CitaExternaCampos({
   onExito: () => void;
   onCancelar?: () => void;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // FormData ya validada que se quedó pendiente de que el profesional
+  // confirme el aviso de solapamiento (ver handleSubmit). Su sola presencia
+  // controla si se muestra ese modal de confirmación.
+  const [formPendienteSolape, setFormPendienteSolape] = useState<FormData | null>(null);
 
   const plantilla = citaExistente ?? duplicarDesde;
 
-  async function handleSubmit(formData: FormData) {
+  async function enviar(formData: FormData) {
+    return citaExistente
+      ? await editarCitaExterna(undefined, formData)
+      : await crearCitaExterna(undefined, formData);
+  }
+
+  // Se usa onSubmit + preventDefault (en vez de pasar esta función como
+  // `action` del <form>) a propósito: con `action`, React resetea los campos
+  // no controlados en cuanto la función termina, sea cual sea el resultado,
+  // así que un error de validación/solape se veía acompañado de un
+  // formulario vacío. Con onSubmit no hay reset automático, así que los
+  // valores tecleados se conservan tal cual hasta que el profesional los
+  // corrija o la cita se guarde con éxito.
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError(null);
+
+    const formData = new FormData(e.currentTarget);
 
     const fecha = formData.get("fecha")?.toString();
     const horaInicio = formData.get("hora_inicio")?.toString();
@@ -51,10 +73,28 @@ export function CitaExternaCampos({
     }
 
     setEnviando(true);
-    const resultado = citaExistente
-      ? await editarCitaExterna(undefined, formData)
-      : await crearCitaExterna(undefined, formData);
+    const resultado = await enviar(formData);
     setEnviando(false);
+
+    if (resultado?.solape) {
+      setFormPendienteSolape(formData);
+      return;
+    }
+    if (resultado?.error) {
+      setError(resultado.error);
+      return;
+    }
+    onExito();
+  }
+
+  async function confirmarSolape() {
+    if (!formPendienteSolape) return;
+    formPendienteSolape.set("permitir_solape", "1");
+
+    setEnviando(true);
+    const resultado = await enviar(formPendienteSolape);
+    setEnviando(false);
+    setFormPendienteSolape(null);
 
     if (resultado?.error) {
       setError(resultado.error);
@@ -64,7 +104,7 @@ export function CitaExternaCampos({
   }
 
   return (
-    <form action={handleSubmit} className="flex flex-col gap-4">
+    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
       {!citaExistente && (
         <>
           <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
@@ -196,6 +236,33 @@ export function CitaExternaCampos({
           </Button>
         )}
       </div>
+
+      {formPendienteSolape && (
+        <Modal onClose={() => setFormPendienteSolape(null)}>
+          <div className="flex flex-col gap-4">
+            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+              Cita solapada
+            </h2>
+            <p className="text-sm text-neutral-700 dark:text-neutral-300">
+              Estás creando una cita que se solapa con otra ya existente en tu calendario. Si
+              continúas, aparecerán dos citas simultáneas. ¿Quieres continuar o cancelar?
+            </p>
+            <div className="flex items-center gap-3">
+              <Button type="button" onClick={confirmarSolape} disabled={enviando}>
+                {enviando ? "Guardando..." : "Continuar"}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setFormPendienteSolape(null)}
+                disabled={enviando}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </form>
   );
 }

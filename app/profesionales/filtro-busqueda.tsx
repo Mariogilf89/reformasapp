@@ -14,14 +14,16 @@ export function FiltroBusqueda({
   zonaInicial,
   modoInicial,
   fechaInicial,
-  horaInicial,
+  horaInicioInicial,
+  horaFinInicial,
 }: {
   categoriaInicial: Categoria | "";
   provinciaInicial: Provincia | "";
   zonaInicial: string;
   modoInicial: string;
   fechaInicial: string;
-  horaInicial: string;
+  horaInicioInicial: string;
+  horaFinInicial: string;
 }) {
   return (
     <Card className="w-full max-w-5xl p-6">
@@ -75,7 +77,8 @@ export function FiltroBusqueda({
         <SelectorModoBusqueda
           modoInicial={modoInicial}
           fechaInicial={fechaInicial}
-          horaInicial={horaInicial}
+          horaInicioInicial={horaInicioInicial}
+          horaFinInicial={horaFinInicial}
         />
 
         <Button type="submit" className="self-start">

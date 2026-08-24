@@ -51,7 +51,9 @@ export default async function DashboardPage() {
 
   const { data: perfil } = await supabase
     .from("profesionales")
-    .select("id, nombre, categorias, zona, verificado, calendario_hora_inicio, calendario_hora_fin")
+    .select(
+      "id, nombre, categorias, zona, verificado, calendario_hora_inicio, calendario_hora_fin, calendario_dia_inicio, calendario_dia_fin"
+    )
     .eq("user_id", user.id)
     .maybeSingle<{
       id: string;
@@ -61,6 +63,8 @@ export default async function DashboardPage() {
       verificado: boolean;
       calendario_hora_inicio: number;
       calendario_hora_fin: number;
+      calendario_dia_inicio: number;
+      calendario_dia_fin: number;
     }>();
 
   if (!perfil) {
@@ -109,6 +113,8 @@ export default async function DashboardPage() {
           anchorInicial={hoy}
           horaInicioInicial={perfil.calendario_hora_inicio}
           horaFinInicial={perfil.calendario_hora_fin}
+          diaInicioInicial={perfil.calendario_dia_inicio}
+          diaFinInicial={perfil.calendario_dia_fin}
         />
       </div>
     </div>

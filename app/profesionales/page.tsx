@@ -42,6 +42,7 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
 
   const fechaParam = typeof searchParams.fecha === "string" ? searchParams.fecha : "";
   const horaParam = typeof searchParams.hora_inicio === "string" ? searchParams.hora_inicio : "";
+  const horaFinParam = typeof searchParams.hora_fin === "string" ? searchParams.hora_fin : "";
 
   const resultados = await obtenerProfesionalesDisponibles({
     categoria,
@@ -49,6 +50,7 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
     modo,
     fecha: modo === "dia_hora" ? fechaParam : undefined,
     horaInicio: modo === "dia_hora" ? horaParam : undefined,
+    horaFin: modo === "dia_hora" ? horaFinParam : undefined,
   });
 
   const profesionales = zonaParam
@@ -93,7 +95,8 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
         zonaInicial={zonaParam}
         modoInicial={modo}
         fechaInicial={fechaParam}
-        horaInicial={horaParam}
+        horaInicioInicial={horaParam}
+        horaFinInicial={horaFinParam}
       />
 
       <div className="grid w-full max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">

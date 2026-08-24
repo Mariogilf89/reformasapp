@@ -18,18 +18,6 @@ const NOMBRES_MES = [
   "diciembre",
 ];
 
-function generarHorasFijas() {
-  const horas: string[] = [];
-  for (let minutos = 8 * 60; minutos < 20 * 60; minutos += 30) {
-    const h = Math.floor(minutos / 60);
-    const m = minutos % 60;
-    horas.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
-  }
-  return horas;
-}
-
-const HORAS_FIJAS = generarHorasFijas();
-
 function fechaISOLocal(fecha: Date) {
   const y = fecha.getFullYear();
   const m = String(fecha.getMonth() + 1).padStart(2, "0");
@@ -48,22 +36,27 @@ function inicioDeHoy() {
 }
 
 /**
- * Calendario genérico para elegir fecha/hora en la búsqueda de
- * profesionales: mismo estilo visual que CalendarioHuecos (mes navegable +
- * botones de hora), pero sin conocer la disponibilidad de nadie en
- * concreto todavía (aquí solo se busca, no se ha fijado profesional). Solo
- * bloquea fechas ya pasadas; las horas son una lista fija cada 30 minutos.
+ * Calendario genérico para elegir fecha/rango horario en la búsqueda de
+ * profesionales: mismo estilo visual que CalendarioHuecos (mes navegable),
+ * pero sin conocer la disponibilidad de nadie en concreto todavía (aquí solo
+ * se busca, no se ha fijado profesional). Solo bloquea fechas ya pasadas; el
+ * rango horario (Desde/Hasta) cubre las 24 horas, ya que algunos
+ * profesionales trabajan también en horario nocturno.
  */
 export function SelectorFechaHora({
   fecha,
-  hora,
+  horaInicio,
+  horaFin,
   onSeleccionarFecha,
-  onSeleccionarHora,
+  onSeleccionarHoraInicio,
+  onSeleccionarHoraFin,
 }: {
   fecha: string;
-  hora: string;
+  horaInicio: string;
+  horaFin: string;
   onSeleccionarFecha: (fecha: string) => void;
-  onSeleccionarHora: (hora: string) => void;
+  onSeleccionarHoraInicio: (hora: string) => void;
+  onSeleccionarHoraFin: (hora: string) => void;
 }) {
   const hoy = inicioDeHoy();
   const inicial = fecha ? fechaLocal(fecha) : hoy;
@@ -169,24 +162,42 @@ export function SelectorFechaHora({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Hora</p>
-        <div className="flex flex-wrap gap-2">
-          {HORAS_FIJAS.map((h) => (
-            <button
-              key={h}
-              type="button"
-              onClick={() => onSeleccionarHora(h)}
-              className={
-                "rounded-full border px-3 py-1.5 text-xs font-medium " +
-                (h === hora
-                  ? "border-primary-600 bg-primary-600 text-white"
-                  : "border-neutral-300 text-neutral-700 dark:border-neutral-700 dark:text-neutral-300")
-              }
-            >
-              {h}
-            </button>
-          ))}
+      <div className="flex gap-3">
+        <div className="flex flex-1 flex-col gap-1">
+          <label
+            htmlFor="selector-hora-desde"
+            className="text-sm font-medium text-neutral-900 dark:text-neutral-100"
+          >
+            Desde
+          </label>
+          <input
+            id="selector-hora-desde"
+            type="time"
+            step={900}
+            min="00:00"
+            max="23:59"
+            value={horaInicio}
+            onChange={(evento) => onSeleccionarHoraInicio(evento.target.value)}
+            className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+          />
+        </div>
+        <div className="flex flex-1 flex-col gap-1">
+          <label
+            htmlFor="selector-hora-hasta"
+            className="text-sm font-medium text-neutral-900 dark:text-neutral-100"
+          >
+            Hasta
+          </label>
+          <input
+            id="selector-hora-hasta"
+            type="time"
+            step={900}
+            min="00:00"
+            max="23:59"
+            value={horaFin}
+            onChange={(evento) => onSeleccionarHoraFin(evento.target.value)}
+            className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+          />
         </div>
       </div>
     </div>

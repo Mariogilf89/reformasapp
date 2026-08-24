@@ -91,6 +91,7 @@ export function VistaSemana({
   citas,
   horaInicio,
   horaFin,
+  diasVisibles,
   gridRef,
   arrastre,
   redimension,
@@ -105,6 +106,8 @@ export function VistaSemana({
   citas: CitaCalendario[];
   horaInicio: number;
   horaFin: number;
+  /** Offsets desde el lunes (0=lunes ... 6=domingo) de los días a mostrar. */
+  diasVisibles: number[];
   gridRef: RefObject<HTMLDivElement | null>;
   arrastre: ArrastreEstado | null;
   redimension: RedimensionEstado | null;
@@ -124,7 +127,8 @@ export function VistaSemana({
   const alturaGridPx = (horaFin - horaInicio) * ALTURA_HORA_PX;
 
   const lunes = inicioSemana(anchor);
-  const dias = Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i));
+  const dias = diasVisibles.map((offset) => sumarDias(lunes, offset));
+  const numDias = dias.length;
   const hoyISO = fechaISO(new Date());
 
   // El bloque que se está arrastrando (si es uno ya existente del propio
@@ -189,7 +193,10 @@ export function VistaSemana({
         </div>
 
         <div className="flex-1">
-          <div className="grid h-10 grid-cols-7 border-b border-neutral-200 dark:border-neutral-800">
+          <div
+            className="grid h-10 border-b border-neutral-200 dark:border-neutral-800"
+            style={{ gridTemplateColumns: `repeat(${numDias}, minmax(0, 1fr))` }}
+          >
             {dias.map((dia) => {
               const fecha = fechaISO(dia);
               const esHoy = fecha === hoyISO;
@@ -211,8 +218,8 @@ export function VistaSemana({
 
           <div
             ref={gridRef}
-            className="relative grid grid-cols-7"
-            style={{ height: `${alturaGridPx}px` }}
+            className="relative grid"
+            style={{ height: `${alturaGridPx}px`, gridTemplateColumns: `repeat(${numDias}, minmax(0, 1fr))` }}
           >
             {dias.map((dia, i) => (
               <div
@@ -229,9 +236,8 @@ export function VistaSemana({
               />
             ))}
 
-            {dias.map((dia) => {
+            {dias.map((dia, diaIndex) => {
               const fecha = fechaISO(dia);
-              const diaIndex = (dia.getDay() + 6) % 7;
               const bloques = calcularColumnas(citasPorDia.get(fecha) ?? [], minutosInicio, minutosFin);
 
               return bloques.map((bloque) => {
@@ -256,21 +262,21 @@ export function VistaSemana({
                 if (esArrastrada && arrastre) {
                   top = ((arrastre.inicioMin - minutosInicio) / 60) * ALTURA_HORA_PX;
                   height = Math.max(18, (arrastre.duracionMin / 60) * ALTURA_HORA_PX);
-                  left = (arrastre.diaIndex / 7) * 100;
-                  width = `calc(${100 / 7}% - 2px)`;
+                  left = (arrastre.diaIndex / numDias) * 100;
+                  width = `calc(${100 / numDias}% - 2px)`;
                 } else if (esRedimensionada && redimension) {
                   const inicioLive = redimension.borde === "inicio" ? redimension.inicioMin : bloque.inicioMin;
                   const finLive = redimension.borde === "fin" ? redimension.finMin : bloque.finMin;
                   top = ((inicioLive - minutosInicio) / 60) * ALTURA_HORA_PX;
                   height = Math.max(18, ((finLive - inicioLive) / 60) * ALTURA_HORA_PX);
-                  const anchoColumna = 100 / 7 / bloque.totalColumnas;
-                  left = (diaIndex / 7) * 100 + bloque.columna * anchoColumna;
+                  const anchoColumna = 100 / numDias / bloque.totalColumnas;
+                  left = (diaIndex / numDias) * 100 + bloque.columna * anchoColumna;
                   width = `calc(${anchoColumna}% - 2px)`;
                 } else {
                   top = ((bloque.inicioMin - minutosInicio) / 60) * ALTURA_HORA_PX;
                   height = Math.max(18, ((bloque.finMin - bloque.inicioMin) / 60) * ALTURA_HORA_PX);
-                  const anchoColumna = 100 / 7 / bloque.totalColumnas;
-                  left = (diaIndex / 7) * 100 + bloque.columna * anchoColumna;
+                  const anchoColumna = 100 / numDias / bloque.totalColumnas;
+                  left = (diaIndex / numDias) * 100 + bloque.columna * anchoColumna;
                   width = `calc(${anchoColumna}% - 2px)`;
                 }
 
@@ -391,8 +397,8 @@ export function VistaSemana({
                 style={{
                   top: `${((arrastre.inicioMin - minutosInicio) / 60) * ALTURA_HORA_PX}px`,
                   height: `${Math.max(18, (arrastre.duracionMin / 60) * ALTURA_HORA_PX)}px`,
-                  left: `${(arrastre.diaIndex / 7) * 100}%`,
-                  width: `calc(${100 / 7}% - 2px)`,
+                  left: `${(arrastre.diaIndex / numDias) * 100}%`,
+                  width: `calc(${100 / numDias}% - 2px)`,
                 }}
               >
                 <span className="block font-medium">

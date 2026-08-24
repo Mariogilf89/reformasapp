@@ -17,10 +17,13 @@ function colorPunto(cita: CitaCalendario) {
 export function VistaMes({
   anchor,
   citas,
+  diasVisibles,
   onSeleccionarDia,
 }: {
   anchor: Date;
   citas: CitaCalendario[];
+  /** Offsets desde el lunes (0=lunes ... 6=domingo) de las columnas a mostrar. */
+  diasVisibles: number[];
   onSeleccionarDia: (dia: Date) => void;
 }) {
   const anio = anchor.getFullYear();
@@ -58,17 +61,31 @@ export function VistaMes({
     semanas.push(celdas.slice(i, i + 7));
   }
 
+  // Cada fila de `semanas` está indexada 0=lunes...6=domingo, el mismo
+  // criterio que diasVisibles: filtrar por esos índices basta para ocultar
+  // las columnas de los días no seleccionados.
+  const semanasVisibles = semanas.map((semana) => diasVisibles.map((offset) => semana[offset]));
+  const cabeceraVisible = diasVisibles.map((offset) => DIAS_CABECERA[offset]);
+  const numDias = diasVisibles.length;
+
   return (
     <div className="w-full overflow-x-auto">
       <div className="flex min-w-[720px] flex-1 flex-col gap-2">
-        <div className="grid grid-cols-7 gap-2 text-center text-sm font-medium text-neutral-500">
-          {DIAS_CABECERA.map((letra, index) => (
+        <div
+          className="grid gap-2 text-center text-sm font-medium text-neutral-500"
+          style={{ gridTemplateColumns: `repeat(${numDias}, minmax(0, 1fr))` }}
+        >
+          {cabeceraVisible.map((letra, index) => (
             <div key={index}>{letra}</div>
           ))}
         </div>
 
-        {semanas.map((semana, indexSemana) => (
-          <div key={indexSemana} className="grid grid-cols-7 gap-2">
+        {semanasVisibles.map((semana, indexSemana) => (
+          <div
+            key={indexSemana}
+            className="grid gap-2"
+            style={{ gridTemplateColumns: `repeat(${numDias}, minmax(0, 1fr))` }}
+          >
             {semana.map((dia, columna) => {
               if (!dia) {
                 return <div key={columna} />;

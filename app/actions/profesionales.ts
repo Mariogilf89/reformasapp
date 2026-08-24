@@ -98,6 +98,45 @@ export async function actualizarRangoHorarioCalendario(
   return undefined;
 }
 
+/**
+ * Guarda el rango de días visibles del calendario (numeración ISO: 1=lunes
+ * ... 7=domingo). Misma forma de uso que actualizarRangoHorarioCalendario,
+ * llamada directamente desde los <select> de "Qué días ver" en
+ * calendario-citas.tsx.
+ */
+export async function actualizarRangoDiasCalendario(
+  diaInicio: number,
+  diaFin: number
+): Promise<RangoHorarioFormState> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.user_metadata?.role !== "profesional") {
+    return { error: "No autorizado." };
+  }
+
+  if (!Number.isInteger(diaInicio) || !Number.isInteger(diaFin)) {
+    return { error: "Rango de días inválido." };
+  }
+  if (diaInicio < 1 || diaInicio > 7 || diaFin < 1 || diaFin > 7 || diaFin < diaInicio) {
+    return { error: "El día de fin debe ser igual o posterior al de inicio." };
+  }
+
+  const { error } = await supabase
+    .from("profesionales")
+    .update({ calendario_dia_inicio: diaInicio, calendario_dia_fin: diaFin })
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/dashboard");
+  return undefined;
+}
+
 // Extrae la ruta dentro del bucket (userId/archivo.ext) de una URL pública,
 // verificando que la foto pertenece a la carpeta del propio usuario.
 function extraerRutaStorage(url: string, userId: string): string | null {
@@ -204,6 +243,10 @@ export type ProfesionalBusqueda = {
 
 const MESES_BUSQUEDA_LO_ANTES_POSIBLE = 3;
 
+// Misma rejilla de 30 minutos que usa obtenerHuecosDisponibles (app/actions/citas.ts)
+// para generar dia.horas.
+const INTERVALO_MINUTOS_HUECOS = 30;
+
 function minutosDesdeHoraCorta(hora: string) {
   const [h, m] = hora.split(":").map(Number);
   return h * 60 + m;
@@ -214,6 +257,25 @@ function horasFuturas(dia: HuecosDia, hoyISO: string, ahoraMinutos: number): str
   if (dia.fecha < hoyISO) return [];
   if (dia.fecha > hoyISO) return dia.horas;
   return dia.horas.filter((hora) => minutosDesdeHoraCorta(hora) > ahoraMinutos);
+}
+
+/**
+ * ¿Está el profesional libre durante todo el rango [horaInicio, horaFin)?
+ * Comprueba, igual que se hacía para un único instante, que cada franja de
+ * 30 minutos de la rejilla de huecos que solapa con el rango solicitado
+ * está presente entre las horas libres del día.
+ */
+function libreEnRango(horasLibres: string[], horaInicio: string, horaFin: string): boolean {
+  const inicioMinutos = minutosDesdeHoraCorta(horaInicio);
+  const finMinutos = minutosDesdeHoraCorta(horaFin);
+  if (finMinutos <= inicioMinutos) return false;
+
+  const disponibles = new Set(horasLibres.map(minutosDesdeHoraCorta));
+  const inicioRejilla = Math.floor(inicioMinutos / INTERVALO_MINUTOS_HUECOS) * INTERVALO_MINUTOS_HUECOS;
+  for (let minutos = inicioRejilla; minutos < finMinutos; minutos += INTERVALO_MINUTOS_HUECOS) {
+    if (!disponibles.has(minutos)) return false;
+  }
+  return true;
 }
 
 /**
@@ -228,10 +290,11 @@ export async function obtenerProfesionalesDisponibles(params: {
   modo: ModoBusquedaDisponibilidad;
   fecha?: string;
   horaInicio?: string;
+  horaFin?: string;
 }): Promise<ProfesionalBusqueda[]> {
-  const { categoria, provincia, modo, fecha, horaInicio } = params;
+  const { categoria, provincia, modo, fecha, horaInicio, horaFin } = params;
 
-  if (modo === "dia_hora" && (!fecha || !horaInicio)) {
+  if (modo === "dia_hora" && (!fecha || !horaInicio || !horaFin)) {
     return [];
   }
 
@@ -273,7 +336,9 @@ export async function obtenerProfesionalesDisponibles(params: {
       candidatos.map(async (candidato): Promise<ProfesionalBusqueda | null> => {
         const dias = await obtenerHuecosDisponibles(candidato.id, anio, mes);
         const dia = dias.find((d) => d.fecha === fecha);
-        const libre = Boolean(dia && horasFuturas(dia, hoyISO, ahoraMinutos).includes(horaInicio!));
+        const libre = Boolean(
+          dia && libreEnRango(horasFuturas(dia, hoyISO, ahoraMinutos), horaInicio!, horaFin!)
+        );
         return libre
           ? { ...candidato, primerHueco: { fecha: fecha!, hora: horaInicio! } }
           : null;

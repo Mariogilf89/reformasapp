@@ -11,23 +11,27 @@ const MODOS = [
 
 /**
  * "¿Cuándo lo necesitas?": tres botones toggle + (si se elige "Elegir día y
- * hora") el mismo selector de fecha/hora de SelectorFechaHora. Expone modo,
- * fecha y hora_inicio como inputs ocultos para que cualquier <form
- * method="get"> que lo contenga (la búsqueda del hero o el filtro de
- * /profesionales) los mande igual que hacía el <select> que sustituye.
+ * hora") el mismo selector de fecha/rango horario de SelectorFechaHora.
+ * Expone modo, fecha, hora_inicio y hora_fin como inputs ocultos para que
+ * cualquier <form method="get"> que lo contenga (la búsqueda del hero o el
+ * filtro de /profesionales) los mande igual que hacía el <select> que
+ * sustituye.
  */
 export function SelectorModoBusqueda({
   modoInicial,
   fechaInicial,
-  horaInicial,
+  horaInicioInicial,
+  horaFinInicial,
 }: {
   modoInicial: string;
   fechaInicial: string;
-  horaInicial: string;
+  horaInicioInicial: string;
+  horaFinInicial: string;
 }) {
   const [modo, setModo] = useState(modoInicial);
   const [fecha, setFecha] = useState(fechaInicial);
-  const [hora, setHora] = useState(horaInicial);
+  const [horaInicio, setHoraInicio] = useState(horaInicioInicial);
+  const [horaFin, setHoraFin] = useState(horaFinInicial);
 
   return (
     <div className="flex flex-col gap-2">
@@ -57,12 +61,15 @@ export function SelectorModoBusqueda({
         <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
           <SelectorFechaHora
             fecha={fecha}
-            hora={hora}
+            horaInicio={horaInicio}
+            horaFin={horaFin}
             onSeleccionarFecha={setFecha}
-            onSeleccionarHora={setHora}
+            onSeleccionarHoraInicio={setHoraInicio}
+            onSeleccionarHoraFin={setHoraFin}
           />
           <input type="hidden" name="fecha" value={fecha} />
-          <input type="hidden" name="hora_inicio" value={hora} />
+          <input type="hidden" name="hora_inicio" value={horaInicio} />
+          <input type="hidden" name="hora_fin" value={horaFin} />
         </div>
       )}
     </div>

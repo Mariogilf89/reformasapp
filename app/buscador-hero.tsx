@@ -49,7 +49,12 @@ export function BuscadorHero() {
           </div>
         </div>
 
-        <SelectorModoBusqueda modoInicial="indiferente" fechaInicial="" horaInicial="" />
+        <SelectorModoBusqueda
+          modoInicial="indiferente"
+          fechaInicial=""
+          horaInicioInicial=""
+          horaFinInicial=""
+        />
 
         <Button type="submit" className="whitespace-nowrap">
           Buscar profesionales

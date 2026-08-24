@@ -34,8 +34,10 @@ export function finEfectivoMinutos(horaInicio: string, horaFin: string | null) {
 
 /**
  * A partir de la posición del puntero y el rect del contenedor compartido
- * de la vista semanal (7 días de ancho), calcula a qué día/minuto
- * corresponde, con snap a INTERVALO_SNAP_MIN.
+ * de la vista semanal (numDias días de ancho, el rango configurado por el
+ * profesional), calcula a qué día/minuto corresponde, con snap a
+ * INTERVALO_SNAP_MIN. diaIndex es un índice dentro del array de días
+ * visibles (0..numDias-1), no un día de la semana absoluto.
  */
 export function posicionDesdePuntero(params: {
   clientX: number;
@@ -43,11 +45,12 @@ export function posicionDesdePuntero(params: {
   rect: DOMRect;
   minutosInicio: number;
   minutosFin: number;
+  numDias: number;
 }) {
-  const { clientX, clientY, rect, minutosInicio, minutosFin } = params;
+  const { clientX, clientY, rect, minutosInicio, minutosFin, numDias } = params;
 
   const xRel = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
-  const diaIndex = Math.min(6, Math.max(0, Math.floor(xRel * 7)));
+  const diaIndex = Math.min(numDias - 1, Math.max(0, Math.floor(xRel * numDias)));
 
   const yRel = Math.min(rect.height, Math.max(0, clientY - rect.top));
   const minutosBrutos = minutosInicio + (yRel / ALTURA_HORA_PX) * 60;

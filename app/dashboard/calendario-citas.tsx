@@ -9,7 +9,10 @@ import {
   proponerCambioCitaConfirmada,
   type CitaCalendario,
 } from "@/app/actions/citas";
-import { actualizarRangoHorarioCalendario } from "@/app/actions/profesionales";
+import {
+  actualizarRangoHorarioCalendario,
+  actualizarRangoDiasCalendario,
+} from "@/app/actions/profesionales";
 import { fechaISO, fechaLocal, inicioSemana, sumarDias } from "@/lib/fechas";
 import {
   UMBRAL_ARRASTRE_PX,
@@ -47,6 +50,19 @@ const NOMBRES_MES = [
 
 const HORAS_DIA = Array.from({ length: 24 }, (_, i) => i);
 
+// Numeración ISO (1=lunes ... 7=domingo). Distinta del dia_semana de
+// disponibilidad (que usa el criterio de Date.getDay(), domingo=0): aquí
+// domingo=7 para que el rango inicio->fin se compare sin casos especiales.
+const DIAS_SEMANA_CALENDARIO = [
+  { value: 1, label: "Lunes" },
+  { value: 2, label: "Martes" },
+  { value: 3, label: "Miércoles" },
+  { value: 4, label: "Jueves" },
+  { value: 5, label: "Viernes" },
+  { value: 6, label: "Sábado" },
+  { value: 7, label: "Domingo" },
+];
+
 type Vista = "semana" | "mes";
 
 function rangoSemana(anchor: Date) {
@@ -78,12 +94,16 @@ export function CalendarioCitas({
   anchorInicial,
   horaInicioInicial,
   horaFinInicial,
+  diaInicioInicial,
+  diaFinInicial,
 }: {
   citasIniciales: CitaCalendario[];
   citasPendientesIniciales: CitaCalendario[];
   anchorInicial: Date;
   horaInicioInicial: number;
   horaFinInicial: number;
+  diaInicioInicial: number;
+  diaFinInicial: number;
 }) {
   const [vista, setVista] = useState<Vista>("semana");
   const [anchor, setAnchor] = useState(anchorInicial);
@@ -96,6 +116,15 @@ export function CalendarioCitas({
   const [horaInicio, setHoraInicio] = useState(horaInicioInicial);
   const [horaFin, setHoraFin] = useState(horaFinInicial);
   const [errorRango, setErrorRango] = useState<string | null>(null);
+
+  const [diaInicio, setDiaInicio] = useState(diaInicioInicial);
+  const [diaFin, setDiaFin] = useState(diaFinInicial);
+  const [errorRangoDias, setErrorRangoDias] = useState<string | null>(null);
+
+  // Offsets desde el lunes (0=lunes ... 6=domingo) de los días visibles,
+  // derivados del rango ISO diaInicio/diaFin. dias[i] en VistaSemana y las
+  // columnas visibles de VistaMes usan este mismo índice.
+  const diasVisibles = Array.from({ length: diaFin - diaInicio + 1 }, (_, i) => diaInicio - 1 + i);
 
   const [arrastre, setArrastre] = useState<ArrastreEstado | null>(null);
   const [errorArrastre, setErrorArrastre] = useState<string | null>(null);
@@ -157,6 +186,21 @@ export function CalendarioCitas({
     }
   }
 
+  async function handleCambioRangoDias(nuevoInicio: number, nuevoFin: number) {
+    setErrorRangoDias(null);
+    const anteriorInicio = diaInicio;
+    const anteriorFin = diaFin;
+    setDiaInicio(nuevoInicio);
+    setDiaFin(nuevoFin);
+
+    const resultado = await actualizarRangoDiasCalendario(nuevoInicio, nuevoFin);
+    if (resultado?.error) {
+      setErrorRangoDias(resultado.error);
+      setDiaInicio(anteriorInicio);
+      setDiaFin(anteriorFin);
+    }
+  }
+
   const citaSeleccionada =
     citas.find((c) => c.id === citaSeleccionadaId) ??
     citasPendientes.find((c) => c.id === citaSeleccionadaId) ??
@@ -203,6 +247,7 @@ export function CalendarioCitas({
         rect,
         minutosInicio: horaInicio * 60,
         minutosFin: horaFin * 60,
+        numDias: diasVisibles.length,
       });
       const inicioMinClamped = Math.min(
         Math.max(inicioMin, horaInicio * 60),
@@ -234,7 +279,7 @@ export function CalendarioCitas({
     }
 
     const lunes = inicioSemana(anchor);
-    const nuevaFecha = fechaISO(sumarDias(lunes, actual.diaIndex));
+    const nuevaFecha = fechaISO(sumarDias(lunes, diasVisibles[actual.diaIndex]));
     const nuevaHoraInicio = horaDesdeMinutos(actual.inicioMin);
     const nuevaHoraFin = horaDesdeMinutos(actual.inicioMin + actual.duracionMin);
 
@@ -402,6 +447,34 @@ export function CalendarioCitas({
             </select>
           </div>
 
+          <div className="flex items-center gap-1 text-xs text-neutral-600 dark:text-neutral-400">
+            <select
+              aria-label="Primer día visible del calendario"
+              value={diaInicio}
+              onChange={(e) => handleCambioRangoDias(Number(e.target.value), diaFin)}
+              className="rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              {DIAS_SEMANA_CALENDARIO.map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+            <span>–</span>
+            <select
+              aria-label="Último día visible del calendario"
+              value={diaFin}
+              onChange={(e) => handleCambioRangoDias(diaInicio, Number(e.target.value))}
+              className="rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+            >
+              {DIAS_SEMANA_CALENDARIO.map((d) => (
+                <option key={d.value} value={d.value}>
+                  {d.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex overflow-hidden rounded-full border border-neutral-300 dark:border-neutral-700">
             <button
               type="button"
@@ -434,9 +507,19 @@ export function CalendarioCitas({
       </div>
 
       {errorRango && <p className="text-sm text-red-600 dark:text-red-400">{errorRango}</p>}
+      {errorRangoDias && <p className="text-sm text-red-600 dark:text-red-400">{errorRangoDias}</p>}
       {errorArrastre && <p className="text-sm text-red-600 dark:text-red-400">{errorArrastre}</p>}
 
-      <div className="relative flex w-full items-start gap-4">
+      <PanelPendientesSinFecha
+        citas={citasPendientes}
+        citaArrastrandoId={arrastre?.origenPanel ? arrastre.citaId : null}
+        onAbrirFormulario={() => setMostrarFormExterna(true)}
+        onPointerDownCita={(e, cita) => iniciarArrastre(e, cita, true)}
+        onPointerMoveArrastre={moverArrastre}
+        onPointerUpArrastre={soltarArrastre}
+      />
+
+      <div className="relative w-full">
         {cargando && (
           <div
             role="status"
@@ -464,6 +547,7 @@ export function CalendarioCitas({
             citas={citas}
             horaInicio={horaInicio}
             horaFin={horaFin}
+            diasVisibles={diasVisibles}
             gridRef={gridRef}
             arrastre={arrastre}
             redimension={redimension}
@@ -475,17 +559,11 @@ export function CalendarioCitas({
             onPointerUpRedimensionar={soltarRedimension}
           />
         ) : (
-          <VistaMes anchor={anchor} citas={citas} onSeleccionarDia={(dia) => navegar(dia, "semana")} />
-        )}
-
-        {vista === "semana" && (
-          <PanelPendientesSinFecha
-            citas={citasPendientes}
-            citaArrastrandoId={arrastre?.origenPanel ? arrastre.citaId : null}
-            onAbrirFormulario={() => setMostrarFormExterna(true)}
-            onPointerDownCita={(e, cita) => iniciarArrastre(e, cita, true)}
-            onPointerMoveArrastre={moverArrastre}
-            onPointerUpArrastre={soltarArrastre}
+          <VistaMes
+            anchor={anchor}
+            citas={citas}
+            diasVisibles={diasVisibles}
+            onSeleccionarDia={(dia) => navegar(dia, "semana")}
           />
         )}
       </div>

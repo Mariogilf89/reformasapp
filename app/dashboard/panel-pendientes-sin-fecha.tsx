@@ -21,8 +21,8 @@ export function PanelPendientesSinFecha({
   onPointerUpArrastre: (e: ReactPointerEvent<HTMLLIElement>) => void;
 }) {
   return (
-    <Card className="flex w-60 shrink-0 flex-col gap-3 p-4">
-      <div className="flex items-center justify-between gap-2">
+    <Card className="flex w-full flex-wrap items-center gap-3 p-3">
+      <div className="flex shrink-0 items-center gap-2">
         <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
           Citas externas
         </h2>
@@ -36,28 +36,24 @@ export function PanelPendientesSinFecha({
           No tienes citas externas pendientes de agendar.
         </p>
       ) : (
-        <>
-          <p className="text-xs text-neutral-500 dark:text-neutral-500">
-            Arrastra una al calendario para asignarle fecha y hora.
-          </p>
-          <ul className="flex flex-col gap-2">
-            {citas.map((cita) => (
-              <li
-                key={cita.id}
-                onPointerDown={(e) => onPointerDownCita(e, cita)}
-                onPointerMove={onPointerMoveArrastre}
-                onPointerUp={onPointerUpArrastre}
-                style={{
-                  touchAction: "none",
-                  opacity: citaArrastrandoId === cita.id ? 0.4 : 1,
-                }}
-                className="cursor-grab select-none rounded-md border border-neutral-300 bg-neutral-50 px-2 py-1.5 text-xs text-neutral-700 active:cursor-grabbing dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
-              >
-                {cita.titulo_externo}
-              </li>
-            ))}
-          </ul>
-        </>
+        <ul className="flex flex-1 flex-wrap items-center gap-2">
+          {citas.map((cita) => (
+            <li
+              key={cita.id}
+              onPointerDown={(e) => onPointerDownCita(e, cita)}
+              onPointerMove={onPointerMoveArrastre}
+              onPointerUp={onPointerUpArrastre}
+              title="Arrastra al calendario para asignarle fecha y hora"
+              style={{
+                touchAction: "none",
+                opacity: citaArrastrandoId === cita.id ? 0.4 : 1,
+              }}
+              className="cursor-grab select-none whitespace-nowrap rounded-md border border-neutral-300 bg-neutral-50 px-2 py-1.5 text-xs text-neutral-700 active:cursor-grabbing dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+            >
+              {cita.titulo_externo}
+            </li>
+          ))}
+        </ul>
       )}
     </Card>
   );

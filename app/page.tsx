@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { SVGProps } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { PublicHeader } from "@/components/public-header";
 import { IconUbicacion } from "@/components/ui/icon-ubicacion";
 import { ListaEsperaCTA } from "@/components/lista-espera-cta";
 import { BuscadorHero } from "./buscador-hero";
+import { BusquedasPopulares } from "./busquedas-populares";
 
 function IconPintura(props: SVGProps<SVGSVGElement>) {
   return (
@@ -50,12 +52,40 @@ function IconLimpieza(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-function IconOtros(props: SVGProps<SVGSVGElement>) {
+function IconAlbanileria(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" {...props}>
-      <circle cx="6" cy="12" r="1.6" />
-      <circle cx="12" cy="12" r="1.6" />
-      <circle cx="18" cy="12" r="1.6" />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="3" y="4" width="8" height="4" rx="0.5" />
+      <rect x="13" y="4" width="8" height="4" rx="0.5" />
+      <rect x="7" y="10" width="8" height="4" rx="0.5" />
+      <rect x="3" y="16" width="8" height="4" rx="0.5" />
+      <rect x="13" y="16" width="8" height="4" rx="0.5" />
+    </svg>
+  );
+}
+
+function IconCerrajeria(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <rect x="5" y="11" width="14" height="9" rx="2" />
+      <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      <path d="M12 15v2" />
+    </svg>
+  );
+}
+
+function IconClimatizacion(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M12 3v18M4.5 7.5l15 9M19.5 7.5l-15 9" />
+    </svg>
+  );
+}
+
+function IconVerTodas(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M5 12h14M13 6l6 6-6 6" />
     </svg>
   );
 }
@@ -79,12 +109,54 @@ function IconEscudoVerificado(props: SVGProps<SVGSVGElement>) {
 }
 
 const CATEGORIAS_HOME = [
-  { value: "pintura", label: "Pintura", Icon: IconPintura },
-  { value: "electricidad", label: "Electricidad", Icon: IconElectricidad },
-  { value: "fontaneria", label: "Fontanería", Icon: IconFontaneria },
-  { value: "carpinteria", label: "Carpintería", Icon: IconCarpinteria },
-  { value: "limpieza", label: "Limpieza", Icon: IconLimpieza },
-  { value: "otros", label: "Otros", Icon: IconOtros },
+  {
+    value: "pintura",
+    label: "Pintura",
+    descripcion: "Interiores, fachadas y acabados",
+    Icon: IconPintura,
+  },
+  {
+    value: "electricidad",
+    label: "Electricidad",
+    descripcion: "Instalaciones y averías",
+    Icon: IconElectricidad,
+  },
+  {
+    value: "fontaneria",
+    label: "Fontanería",
+    descripcion: "Fugas, grifos y tuberías",
+    Icon: IconFontaneria,
+  },
+  {
+    value: "carpinteria",
+    label: "Carpintería",
+    descripcion: "Muebles, puertas y persianas",
+    Icon: IconCarpinteria,
+  },
+  {
+    value: "albanileria",
+    label: "Albañilería",
+    descripcion: "Reformas y obra nueva",
+    Icon: IconAlbanileria,
+  },
+  {
+    value: "cerrajeria",
+    label: "Cerrajería",
+    descripcion: "Cerraduras y aperturas",
+    Icon: IconCerrajeria,
+  },
+  {
+    value: "climatizacion",
+    label: "Climatización",
+    descripcion: "Aire acondicionado y calefacción",
+    Icon: IconClimatizacion,
+  },
+  {
+    value: "limpieza",
+    label: "Limpieza",
+    descripcion: "Hogar y fin de obra",
+    Icon: IconLimpieza,
+  },
 ];
 
 const PASOS = [
@@ -133,20 +205,35 @@ export default function Home() {
 
       <main className="flex flex-1 flex-col">
         {/* Hero */}
-        <section className="px-4 py-20">
-          <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 text-center">
-            <span className="text-sm font-medium uppercase tracking-wide text-primary-700 dark:text-primary-400">
-              Reformas y servicios del hogar en Galicia
-            </span>
-            <h1 className="text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl dark:text-neutral-50">
-              Encuentra al profesional de confianza para tu próxima reforma
-            </h1>
-            <p className="max-w-xl text-lg text-neutral-600 dark:text-neutral-400">
-              Pintores, electricistas, fontaneros y más, cerca de ti. Publica lo que
-              necesitas y compara propuestas reales antes de decidir.
-            </p>
+        <section className="px-4 py-16 sm:py-20">
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-14">
+            <div className="flex flex-col items-center gap-6 text-center lg:items-start lg:text-left">
+              <span className="text-sm font-medium uppercase tracking-wide text-primary-700 dark:text-primary-400">
+                Reformas y servicios del hogar en Galicia
+              </span>
+              <h1 className="text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl dark:text-neutral-50">
+                Encuentra al profesional de confianza para tu próxima reforma
+              </h1>
+              <p className="max-w-xl text-lg text-neutral-600 dark:text-neutral-400">
+                Pintores, electricistas, fontaneros y más, cerca de ti. Publica lo que
+                necesitas y compara propuestas reales antes de decidir.
+              </p>
 
-            <BuscadorHero />
+              <BuscadorHero />
+
+              <BusquedasPopulares />
+            </div>
+
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-neutral-200 shadow-sm lg:aspect-square dark:border-neutral-800">
+              <Image
+                src="/images/hero-cocina-reformada.jpg"
+                alt="Cocina reformada"
+                fill
+                priority
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
+              />
+            </div>
           </div>
         </section>
 
@@ -177,19 +264,35 @@ export default function Home() {
             <h2 className="text-center text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
               Explora por categoría
             </h2>
-            <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
-              {CATEGORIAS_HOME.map(({ value, label, Icon }) => (
+            <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {CATEGORIAS_HOME.map(({ value, label, descripcion, Icon }) => (
                 <Link key={value} href={`/profesionales?categoria=${value}`}>
-                  <Card className="flex flex-col items-center gap-3 px-3 py-6 text-center transition-colors hover:border-primary-300">
+                  <Card className="flex h-full flex-col items-start gap-3 px-4 py-5 text-left transition-colors hover:border-primary-300">
                     <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                       <Icon className="h-5 w-5" />
                     </span>
-                    <span className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
-                      {label}
-                    </span>
+                    <div>
+                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                        {label}
+                      </p>
+                      <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-500">
+                        {descripcion}
+                      </p>
+                    </div>
                   </Card>
                 </Link>
               ))}
+
+              <Link href="/profesionales">
+                <Card className="flex h-full flex-col items-start justify-center gap-3 px-4 py-5 text-left transition-colors hover:border-primary-300">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                    <IconVerTodas className="h-5 w-5" />
+                  </span>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                    Ver todas
+                  </p>
+                </Card>
+              </Link>
             </div>
           </div>
         </section>

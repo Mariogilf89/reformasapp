@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { useCompletarMinutos } from "@/lib/completar-minutos";
 
 export function CitaExternaCampos({
   citaExistente,
@@ -30,6 +31,9 @@ export function CitaExternaCampos({
   const [formPendienteSolape, setFormPendienteSolape] = useState<FormData | null>(null);
 
   const plantilla = citaExistente ?? duplicarDesde;
+
+  const completarMinutosInicio = useCompletarMinutos();
+  const completarMinutosFin = useCompletarMinutos();
 
   async function enviar(formData: FormData) {
     return citaExistente
@@ -153,6 +157,7 @@ export function CitaExternaCampos({
             name="hora_inicio"
             type="time"
             defaultValue={plantilla?.hora_inicio?.slice(0, 5) ?? ""}
+            {...completarMinutosInicio}
           />
         </div>
         <div className="flex flex-1 flex-col gap-1">
@@ -162,6 +167,7 @@ export function CitaExternaCampos({
             name="hora_fin"
             type="time"
             defaultValue={plantilla?.hora_fin?.slice(0, 5) ?? ""}
+            {...completarMinutosFin}
           />
         </div>
       </div>

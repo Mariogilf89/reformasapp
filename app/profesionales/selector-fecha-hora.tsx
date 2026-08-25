@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useCompletarMinutos } from "@/lib/completar-minutos";
 
 const DIAS_CABECERA = ["L", "M", "X", "J", "V", "S", "D"];
 const NOMBRES_MES = [
@@ -80,6 +81,9 @@ export function SelectorFechaHora({
   }
 
   const noSePuedeRetroceder = anio * 12 + mes <= hoy.getFullYear() * 12 + (hoy.getMonth() + 1);
+
+  const completarMinutosInicio = useCompletarMinutos(onSeleccionarHoraInicio);
+  const completarMinutosFin = useCompletarMinutos(onSeleccionarHoraFin);
 
   function irMesAnterior() {
     if (mes === 1) {
@@ -178,6 +182,7 @@ export function SelectorFechaHora({
             max="23:59"
             value={horaInicio}
             onChange={(evento) => onSeleccionarHoraInicio(evento.target.value)}
+            {...completarMinutosInicio}
             className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
           />
         </div>
@@ -196,6 +201,7 @@ export function SelectorFechaHora({
             max="23:59"
             value={horaFin}
             onChange={(evento) => onSeleccionarHoraFin(evento.target.value)}
+            {...completarMinutosFin}
             className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
           />
         </div>

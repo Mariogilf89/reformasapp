@@ -207,7 +207,18 @@ export default function Home() {
         {/* Hero */}
         <section className="px-4 py-16 sm:py-20">
           <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-14">
-            <div className="flex flex-col items-center gap-6 text-center lg:items-start lg:text-left">
+            <div className="relative order-2 aspect-[4/3] w-full lg:order-1 lg:aspect-square">
+              <Image
+                src="/images/logo-completo.png"
+                alt="Faenia — Profesionales. Citas. Sin complicaciones."
+                fill
+                priority
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-contain"
+              />
+            </div>
+
+            <div className="order-1 flex flex-col items-center gap-6 text-center lg:order-2 lg:items-start lg:text-left">
               <span className="text-sm font-medium uppercase tracking-wide text-primary-700 dark:text-primary-400">
                 Reformas y servicios del hogar en Galicia
               </span>
@@ -222,17 +233,6 @@ export default function Home() {
               <BuscadorHero />
 
               <BusquedasPopulares />
-            </div>
-
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-neutral-200 shadow-sm lg:aspect-square dark:border-neutral-800">
-              <Image
-                src="/images/hero-cocina-reformada.jpg"
-                alt="Cocina reformada"
-                fill
-                priority
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-cover"
-              />
             </div>
           </div>
         </section>
@@ -260,39 +260,51 @@ export default function Home() {
 
         {/* Categorías */}
         <section className="px-4 py-16">
-          <div className="mx-auto w-full max-w-5xl">
-            <h2 className="text-center text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
-              Explora por categoría
-            </h2>
-            <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {CATEGORIAS_HOME.map(({ value, label, descripcion, Icon }) => (
-                <Link key={value} href={`/profesionales?categoria=${value}`}>
-                  <Card className="flex h-full flex-col items-start gap-3 px-4 py-5 text-left transition-colors hover:border-primary-300">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-                      <Icon className="h-5 w-5" />
+          <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-14">
+            <div className="relative order-2 aspect-[4/3] w-full overflow-hidden rounded-2xl border border-neutral-200 shadow-sm lg:order-1 lg:aspect-square dark:border-neutral-800">
+              <Image
+                src="/images/hero-cocina-reformada.jpg"
+                alt="Cocina reformada"
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
+              />
+            </div>
+
+            <div className="order-1 flex flex-col gap-6 lg:order-2">
+              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+                Explora por categoría
+              </h2>
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                {CATEGORIAS_HOME.map(({ value, label, descripcion, Icon }) => (
+                  <Link key={value} href={`/profesionales?categoria=${value}`}>
+                    <Card className="flex h-full flex-col items-start gap-3 px-4 py-5 text-left transition-colors hover:border-primary-300">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                          {label}
+                        </p>
+                        <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-500">
+                          {descripcion}
+                        </p>
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
+
+                <Link href="/profesionales">
+                  <Card className="flex h-full flex-col items-start justify-center gap-3 px-4 py-5 text-left transition-colors hover:border-primary-300">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                      <IconVerTodas className="h-5 w-5" />
                     </span>
-                    <div>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                        {label}
-                      </p>
-                      <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-500">
-                        {descripcion}
-                      </p>
-                    </div>
+                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      Ver todas
+                    </p>
                   </Card>
                 </Link>
-              ))}
-
-              <Link href="/profesionales">
-                <Card className="flex h-full flex-col items-start justify-center gap-3 px-4 py-5 text-left transition-colors hover:border-primary-300">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
-                    <IconVerTodas className="h-5 w-5" />
-                  </span>
-                  <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                    Ver todas
-                  </p>
-                </Card>
-              </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -351,7 +363,16 @@ export default function Home() {
 
       <footer className="border-t border-neutral-200 bg-white px-4 py-10 dark:border-neutral-800 dark:bg-neutral-950">
         <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-4 text-sm text-neutral-600 sm:flex-row dark:text-neutral-400">
-          <p>© 2026 ReformasApp. Marketplace de reformas y servicios del hogar en Galicia.</p>
+          <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
+            <Image
+              src="/images/logo-completo.png"
+              alt="Faenia — Profesionales. Citas. Sin complicaciones."
+              width={61}
+              height={56}
+              className="shrink-0"
+            />
+            <p>© 2026 Faenia. Marketplace de reformas y servicios del hogar en Galicia.</p>
+          </div>
           <p>
             ¿Eres profesional de la reforma?{" "}
             <Link

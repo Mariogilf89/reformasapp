@@ -85,7 +85,7 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
           Encuentra un profesional
         </h1>
         <p className="mt-1 text-neutral-600 dark:text-neutral-400">
-          Explora los profesionales registrados en ReformasApp.
+          Explora los profesionales registrados en Faenia.
         </p>
       </div>
 

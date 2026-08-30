@@ -7,7 +7,7 @@ export default function PrivacidadPage() {
       <LegalSection titulo="1. Responsable del tratamiento">
         <p>
           El responsable del tratamiento de los datos personales recogidos a través de
-          ReformasApp es [Denominación social pendiente de completar], con NIF/CIF [pendiente de
+          Faenia es [Denominación social pendiente de completar], con NIF/CIF [pendiente de
           completar] y domicilio en [dirección pendiente de completar]. Para cualquier cuestión
           relacionada con el tratamiento de sus datos puede contactar en [email de contacto
           pendiente de completar].

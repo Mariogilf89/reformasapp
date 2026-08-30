@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { signOut } from "@/app/actions/auth";
@@ -48,11 +49,8 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
     <div className="flex flex-1 flex-col">
       <header className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4">
-          <Link
-            href="/"
-            className="text-lg font-semibold text-primary-700 dark:text-primary-400"
-          >
-            ReformasApp
+          <Link href="/" className="shrink-0">
+            <Image src="/logo-horizontal.png" alt="Faenia" width={100} height={40} priority />
           </Link>
 
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium">

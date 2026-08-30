@@ -9,7 +9,7 @@ export default function AvisoLegalPage() {
           En cumplimiento del deber de información recogido en el artículo 10 de la Ley 34/2002,
           de 11 de julio, de Servicios de la Sociedad de la Información y de Comercio Electrónico
           (LSSI-CE), se informa de los siguientes datos: el titular de este sitio web y de la
-          plataforma ReformasApp es [Denominación social pendiente de completar], con NIF/CIF
+          plataforma Faenia es [Denominación social pendiente de completar], con NIF/CIF
           [pendiente de completar], domicilio social en [dirección pendiente de completar],
           inscrita en [datos registrales pendientes de completar]. Para cualquier consulta puede
           contactar a través de [email de contacto pendiente de completar].
@@ -18,7 +18,7 @@ export default function AvisoLegalPage() {
 
       <LegalSection titulo="2. Objeto y ámbito de aplicación">
         <p>
-          ReformasApp es una plataforma en línea (en adelante, la &quot;Plataforma&quot;) que actúa
+          Faenia es una plataforma en línea (en adelante, la &quot;Plataforma&quot;) que actúa
           como intermediaria, poniendo en contacto a particulares y administradores de fincas que
           necesitan servicios del hogar (reformas, pintura, electricidad, fontanería,
           carpintería, limpieza y similares) con profesionales que ofrecen dichos servicios. El

@@ -81,7 +81,7 @@ export function VerificacionForm({
 
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
           Sube una foto o escaneado de tu DNI/NIF/CIF para verificar tu identidad. Un
-          administrador revisará el documento manualmente. Solo tú y el equipo de ReformasApp
+          administrador revisará el documento manualmente. Solo tú y el equipo de Faenia
           podéis verlo.
         </p>
 

@@ -6,7 +6,7 @@ export default function TerminosPage() {
     <LegalPage titulo="Términos y condiciones">
       <LegalSection titulo="1. Objeto y aceptación">
         <p>
-          Los presentes Términos y Condiciones regulan el acceso y uso de ReformasApp (en
+          Los presentes Términos y Condiciones regulan el acceso y uso de Faenia (en
           adelante, la &quot;Plataforma&quot;), operada por [Denominación social pendiente de
           completar]. El registro y uso de la Plataforma implica la aceptación íntegra de estos
           Términos, del Aviso Legal y de la Política de Privacidad.
@@ -15,7 +15,7 @@ export default function TerminosPage() {
 
       <LegalSection titulo="2. Naturaleza del servicio">
         <p>
-          ReformasApp es una plataforma de intermediación (marketplace) que pone en contacto a
+          Faenia es una plataforma de intermediación (marketplace) que pone en contacto a
           particulares y administradores de fincas (en adelante, &quot;Clientes&quot;) con
           profesionales de servicios del hogar (en adelante, &quot;Profesionales&quot;). La
           Plataforma no presta, ejecuta ni supervisa los servicios de reforma, mantenimiento o
@@ -50,16 +50,16 @@ export default function TerminosPage() {
           El contrato de prestación de servicios (presupuesto, ejecución del trabajo, plazos,
           precio, garantías) se formaliza directamente entre el Cliente y el Profesional, al
           margen de la Plataforma, que actúa exclusivamente como canal de puesta en contacto.
-          ReformasApp no interviene en la negociación, ejecución ni cumplimiento de dichos
+          Faenia no interviene en la negociación, ejecución ni cumplimiento de dichos
           acuerdos.
         </p>
       </LegalSection>
 
       <LegalSection titulo="6. Limitación de responsabilidad">
         <p>
-          ReformasApp no garantiza la calidad, seguridad, licitud, idoneidad ni resultado de los
+          Faenia no garantiza la calidad, seguridad, licitud, idoneidad ni resultado de los
           trabajos realizados por los Profesionales, ni la veracidad de los perfiles, valoraciones
-          o disponibilidad publicados. En consecuencia, ReformasApp no asume responsabilidad
+          o disponibilidad publicados. En consecuencia, Faenia no asume responsabilidad
           alguna por daños, perjuicios, incumplimientos, defectos de ejecución o cualquier otra
           controversia derivada de los servicios prestados por los Profesionales a los Clientes,
           siendo dichas cuestiones responsabilidad exclusiva de las partes que hayan contratado
@@ -71,7 +71,7 @@ export default function TerminosPage() {
       <LegalSection titulo="7. Valoraciones y contenido generado por usuarios">
         <p>
           Los Clientes pueden valorar a los Profesionales tras una solicitud realizada a través de
-          la Plataforma. Las valoraciones deben ser veraces y respetuosas. ReformasApp podrá
+          la Plataforma. Las valoraciones deben ser veraces y respetuosas. Faenia podrá
           retirar contenidos que incumplan estos Términos o la normativa vigente, sin que ello
           genere derecho a indemnización alguna.
         </p>
@@ -79,7 +79,7 @@ export default function TerminosPage() {
 
       <LegalSection titulo="8. Suspensión y baja de cuentas">
         <p>
-          ReformasApp podrá suspender o cancelar la cuenta de un usuario que incumpla estos
+          Faenia podrá suspender o cancelar la cuenta de un usuario que incumpla estos
           Términos, proporcione información falsa o haga un uso indebido de la Plataforma, previa
           comunicación cuando sea posible.
         </p>
@@ -87,7 +87,7 @@ export default function TerminosPage() {
 
       <LegalSection titulo="9. Modificación de los términos">
         <p>
-          ReformasApp podrá modificar estos Términos y Condiciones en cualquier momento. Las
+          Faenia podrá modificar estos Términos y Condiciones en cualquier momento. Las
           modificaciones se comunicarán a través de la Plataforma y entrarán en vigor desde su
           publicación, sin perjuicio del derecho del usuario a darse de baja si no está conforme.
         </p>

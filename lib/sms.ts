@@ -30,6 +30,6 @@ export async function enviarCodigoVerificacion(telefono: string, codigo: string)
   await cliente.messages.create({
     from: process.env.TWILIO_PHONE_NUMBER,
     to: telefono,
-    body: `Tu código de verificación de ReformasApp es: ${codigo}`,
+    body: `Tu código de verificación de Faenia es: ${codigo}`,
   });
 }

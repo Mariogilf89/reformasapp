@@ -8,7 +8,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ReformasApp",
+  title: "Faenia",
   description: "Marketplace que conecta particulares con profesionales de la reforma",
 };
 

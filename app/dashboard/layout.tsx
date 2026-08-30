@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { signOut } from "@/app/actions/auth";
+import { obtenerNotificaciones } from "@/app/actions/notificaciones";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "./notification-bell";
 
 export default async function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
   const supabase = await createServerSupabaseClient();
@@ -13,6 +15,8 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   if (!user) {
     redirect("/login");
   }
+
+  const notificaciones = await obtenerNotificaciones();
 
   const role = user.user_metadata?.role ?? "cliente";
 
@@ -63,11 +67,14 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
             ))}
           </nav>
 
-          <form action={signOut}>
-            <Button type="submit" variant="secondary">
-              Cerrar sesión
-            </Button>
-          </form>
+          <div className="flex items-center gap-3">
+            <NotificationBell notificacionesIniciales={notificaciones} />
+            <form action={signOut}>
+              <Button type="submit" variant="secondary">
+                Cerrar sesión
+              </Button>
+            </form>
+          </div>
         </div>
       </header>
 

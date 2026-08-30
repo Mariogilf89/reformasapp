@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
+import { useRouter } from "next/navigation";
 import {
   obtenerCitasCalendario,
   obtenerCitasExternasPendientes,
@@ -92,6 +93,7 @@ export function CalendarioCitas({
   citasIniciales,
   citasPendientesIniciales,
   anchorInicial,
+  citaIdInicial,
   horaInicioInicial,
   horaFinInicial,
   diaInicioInicial,
@@ -100,11 +102,13 @@ export function CalendarioCitas({
   citasIniciales: CitaCalendario[];
   citasPendientesIniciales: CitaCalendario[];
   anchorInicial: Date;
+  citaIdInicial?: string | null;
   horaInicioInicial: number;
   horaFinInicial: number;
   diaInicioInicial: number;
   diaFinInicial: number;
 }) {
+  const router = useRouter();
   const [vista, setVista] = useState<Vista>("semana");
   const [anchor, setAnchor] = useState(anchorInicial);
   const [citas, setCitas] = useState(citasIniciales);
@@ -112,6 +116,33 @@ export function CalendarioCitas({
   const [citaSeleccionadaId, setCitaSeleccionadaId] = useState<string | null>(null);
   const [mostrarFormExterna, setMostrarFormExterna] = useState(false);
   const [cargando, startTransition] = useTransition();
+
+  // Al llegar desde el enlace de una notificación (?citaId=...) mientras
+  // CalendarioCitas ya está montado (p.ej. la campana está en el layout, que
+  // persiste entre navegaciones dentro de /dashboard), Next.js no remonta
+  // este componente: solo le pasa props nuevas. Los useState de arriba solo
+  // leen su valor inicial en el primer montaje, así que anchorInicial y
+  // citasIniciales nuevos se ignoraban en silencio. Se sincroniza a mano
+  // durante el render (patrón "ajustar estado cuando cambia una prop" de
+  // React, ya usado en SelectorColorCitaExterna) en vez de en un efecto,
+  // comparando con el último citaIdInicial visto para no repetirlo en cada
+  // render.
+  const [ultimoCitaIdInicial, setUltimoCitaIdInicial] = useState<string | null | undefined>(undefined);
+  if (citaIdInicial && citaIdInicial !== ultimoCitaIdInicial) {
+    setUltimoCitaIdInicial(citaIdInicial);
+    setAnchor(anchorInicial);
+    setCitas(citasIniciales);
+    setCitasPendientes(citasPendientesIniciales);
+    setCitaSeleccionadaId(citaIdInicial);
+  }
+
+  // La limpieza de la URL sí es un efecto legítimo (navegación, no estado):
+  // evita que refrescar la página reabra el modal solo.
+  useEffect(() => {
+    if (citaIdInicial) {
+      router.replace("/dashboard");
+    }
+  }, [citaIdInicial, router]);
 
   const [horaInicio, setHoraInicio] = useState(horaInicioInicial);
   const [horaFin, setHoraFin] = useState(horaFinInicial);

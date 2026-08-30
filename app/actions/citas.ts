@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { TIPOS_CITA, type TipoCita, type EstadoCita, type PropuestoPor } from "@/lib/citas";
-import { obtenerEmailUsuario, obtenerContactoTelefonicoUsuario } from "@/lib/supabase-admin";
+import {
+  obtenerEmailUsuario,
+  obtenerContactoTelefonicoUsuario,
+  crearNotificacion,
+} from "@/lib/supabase-admin";
 import { enviarEmail } from "@/lib/email";
 
 export type Supabase = Awaited<ReturnType<typeof createServerSupabaseClient>>;
@@ -112,7 +116,7 @@ async function notificarCambioCita(destinatario: string | null, asunto: string, 
   }
 }
 
-async function obtenerUserIdProfesional(supabase: Supabase, profesionalId: string) {
+export async function obtenerUserIdProfesional(supabase: Supabase, profesionalId: string) {
   const { data } = await supabase
     .from("profesionales")
     .select("user_id")
@@ -373,22 +377,37 @@ export async function crearCitaPendiente(
     .eq("id", solicitudId)
     .maybeSingle<{ localidad: string | null; calle: string | null }>();
 
-  const { error } = await supabase.from("citas").insert({
-    solicitud_id: solicitudId,
-    profesional_id: profesionalId,
-    cliente_id: clienteId,
-    fecha,
-    hora_inicio: horaInicio,
-    hora_fin: null,
-    tipo,
-    estado: "pendiente",
-    propuesto_por: "cliente",
-    localidad: solicitud?.localidad ?? null,
-    calle: solicitud?.calle ?? null,
-  });
+  const { data: citaCreada, error } = await supabase
+    .from("citas")
+    .insert({
+      solicitud_id: solicitudId,
+      profesional_id: profesionalId,
+      cliente_id: clienteId,
+      fecha,
+      hora_inicio: horaInicio,
+      hora_fin: null,
+      tipo,
+      estado: "pendiente",
+      propuesto_por: "cliente",
+      localidad: solicitud?.localidad ?? null,
+      calle: solicitud?.calle ?? null,
+    })
+    .select("id")
+    .single<{ id: string }>();
 
   if (error) {
     return { error: error.message };
+  }
+
+  const profesionalUserId = await obtenerUserIdProfesional(supabase, profesionalId);
+  if (profesionalUserId) {
+    await crearNotificacion(
+      profesionalUserId,
+      "cita_propuesta",
+      "Nueva cita propuesta",
+      `${formatearFechaLarga(fecha)} · ${aHoraTexto(inicioMinutos)}`,
+      `/dashboard?citaId=${citaCreada.id}`
+    );
   }
 
   return {};
@@ -708,6 +727,13 @@ export async function aceptarCitaCliente(formData: FormData) {
       tipo: cita.tipo,
     });
     await notificarCambioCita(emailProfesional, "Cita confirmada", cuerpo);
+    await crearNotificacion(
+      profesionalUserId,
+      "cita_confirmada",
+      "Cita confirmada",
+      `${formatearFechaLarga(cita.fecha)} · ${formatearHoraCorta(cita.hora_inicio)}`,
+      `/dashboard?citaId=${cita.id}`
+    );
   }
 }
 
@@ -765,6 +791,13 @@ export async function anularCitaCliente(
         motivo: comentario,
       });
       await notificarCambioCita(emailProfesional, "Cita cancelada", cuerpo);
+      await crearNotificacion(
+        profesionalUserId,
+        "cita_cancelada",
+        "Cita cancelada",
+        comentario ?? `${formatearFechaLarga(cita.fecha)} · ${formatearHoraCorta(cita.hora_inicio)}`,
+        `/dashboard?citaId=${cita.id}`
+      );
     }
   }
 
@@ -896,6 +929,50 @@ export async function obtenerCitasExternasPendientes(): Promise<CitaCalendario[]
     .returns<Omit<CitaCalendario, "telefonoCliente">[]>();
 
   return (data ?? []).map((cita) => ({ ...cita, telefonoCliente: null }));
+}
+
+/**
+ * Una cita concreta del profesional autenticado, sin el filtro "no
+ * cancelada" de obtenerCitasCalendario: la usa el enlace de las
+ * notificaciones (?citaId=...) para poder abrir el modal de detalle aunque
+ * la cita ya no aparezca en la vista normal del calendario (p.ej. si se
+ * canceló entre que se generó la notificación y se pulsó).
+ */
+export async function obtenerCitaPorId(citaId: string): Promise<CitaCalendario | null> {
+  const supabase = await createServerSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const profesionalId = await propioProfesionalId(supabase, user.id);
+  if (!profesionalId) {
+    return null;
+  }
+
+  const { data: cita } = await supabase
+    .from("citas")
+    .select(
+      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color, fecha_fin, contacto_nombre, contacto_telefono"
+    )
+    .eq("id", citaId)
+    .eq("profesional_id", profesionalId)
+    .maybeSingle<Omit<CitaCalendario, "telefonoCliente">>();
+
+  if (!cita) {
+    return null;
+  }
+
+  let telefonoCliente: string | null = null;
+  if (cita.estado === "confirmada" && !cita.origen_externo && cita.cliente_id) {
+    const contacto = await obtenerContactoTelefonicoUsuario(cita.cliente_id);
+    telefonoCliente = contacto.telefono;
+  }
+
+  return { ...cita, telefonoCliente };
 }
 
 /**

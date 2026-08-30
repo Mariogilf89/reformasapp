@@ -5,15 +5,19 @@ import {
   caducarCitasPendientes,
   obtenerCitasCalendario,
   obtenerCitasExternasPendientes,
+  obtenerCitaPorId,
 } from "@/app/actions/citas";
-import { fechaISO, inicioSemana, sumarDias } from "@/lib/fechas";
+import { fechaISO, fechaLocal, inicioSemana, sumarDias } from "@/lib/fechas";
 import type { Categoria } from "@/lib/profesionales";
 import { Card } from "@/components/ui/card";
 import { buttonClassName } from "@/components/ui/button";
 import { CabeceraProfesional } from "./cabecera-profesional";
 import { CalendarioCitas } from "./calendario-citas";
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: PageProps<"/dashboard">) {
+  const searchParams = await props.searchParams;
+  const citaIdParam = typeof searchParams.citaId === "string" ? searchParams.citaId : undefined;
+
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -88,12 +92,25 @@ export default async function DashboardPage() {
   const telefono = (user.user_metadata?.telefono as string | undefined) ?? null;
   const telefonoVerificado = user.user_metadata?.telefono_verificado === true;
 
+  // Si venimos del enlace de una notificación (?citaId=...), el ancla del
+  // calendario pasa a ser la semana de esa cita en vez de la semana actual,
+  // para que el profesional no tenga que buscarla a mano. Se pide sin el
+  // filtro "no cancelada" de obtenerCitasCalendario porque la notificación
+  // puede apuntar a una cita ya cancelada.
+  const citaDestacada = citaIdParam ? await obtenerCitaPorId(citaIdParam) : null;
   const hoy = new Date();
-  const lunes = inicioSemana(hoy);
-  const [citasIniciales, citasPendientesIniciales] = await Promise.all([
+  const anchorInicial = citaDestacada?.fecha ? fechaLocal(citaDestacada.fecha) : hoy;
+  const lunes = inicioSemana(anchorInicial);
+
+  const [citasSemana, citasPendientesIniciales] = await Promise.all([
     obtenerCitasCalendario(fechaISO(lunes), fechaISO(sumarDias(lunes, 6))),
     obtenerCitasExternasPendientes(),
   ]);
+
+  const citasIniciales =
+    citaDestacada && !citasSemana.some((c) => c.id === citaDestacada.id)
+      ? [...citasSemana, citaDestacada]
+      : citasSemana;
 
   return (
     <div className="flex flex-1 flex-col items-center gap-6 px-4 py-10">
@@ -110,7 +127,8 @@ export default async function DashboardPage() {
         <CalendarioCitas
           citasIniciales={citasIniciales}
           citasPendientesIniciales={citasPendientesIniciales}
-          anchorInicial={hoy}
+          anchorInicial={anchorInicial}
+          citaIdInicial={citaDestacada?.id ?? null}
           horaInicioInicial={perfil.calendario_hora_inicio}
           horaFinInicial={perfil.calendario_hora_fin}
           diaInicioInicial={perfil.calendario_dia_inicio}

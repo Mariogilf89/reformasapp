@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { isCategoria, type Categoria } from "@/lib/profesionales";
 import { isProvincia } from "@/lib/provincias";
-import { crearCitaPendiente } from "@/app/actions/citas";
+import { crearCitaPendiente, obtenerUserIdProfesional } from "@/app/actions/citas";
 import { notificarAlertasBusquedaTrabajos } from "@/app/actions/alertas-busqueda";
+import { crearNotificacion } from "@/lib/supabase-admin";
 
 function esModoTiempoValido(value: string): value is "lo_antes_posible" | "indiferente" | "dia_hora" {
   return value === "lo_antes_posible" || value === "indiferente" || value === "dia_hora";
@@ -131,6 +132,17 @@ export async function crearSolicitudYContactar(
   }
 
   await notificarAlertasBusquedaTrabajos({ categoria, zona, provincia, modoTiempo });
+
+  const profesionalUserId = await obtenerUserIdProfesional(supabase, profesionalId);
+  if (profesionalUserId) {
+    await crearNotificacion(
+      profesionalUserId,
+      "mensaje_cliente",
+      "Nuevo mensaje de un cliente",
+      descripcion,
+      `/dashboard/solicitudes/${solicitud.id}`
+    );
+  }
 
   // Si la búsqueda de profesionales ya traía una fecha/hora elegida (modo
   // "Elegir día y hora"), se propone directamente esa cita además de la

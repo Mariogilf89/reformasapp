@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
+import type { TipoNotificacion } from "@/lib/notificaciones";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY!;
@@ -55,6 +56,33 @@ export async function obtenerContactoTelefonicoUsuario(userId: string): Promise<
     telefono: metadata?.telefono ?? null,
     verificado: metadata?.telefono_verificado === true,
   };
+}
+
+/**
+ * Crea una notificación in-app para un usuario. Usa la service role porque
+ * quien dispara el evento (p.ej. un cliente aceptando una cita) casi nunca
+ * es el destinatario, y la RLS de "notificaciones" solo deja insertar/leer
+ * las propias.
+ */
+export async function crearNotificacion(
+  usuarioId: string,
+  tipo: TipoNotificacion,
+  titulo: string,
+  cuerpo?: string | null,
+  url?: string | null
+): Promise<void> {
+  const supabaseAdmin = createAdminSupabaseClient();
+  const { error } = await supabaseAdmin.from("notificaciones").insert({
+    usuario_id: usuarioId,
+    tipo,
+    titulo,
+    cuerpo: cuerpo ?? null,
+    url: url ?? null,
+  });
+
+  if (error) {
+    console.error("No se pudo crear la notificación", usuarioId, tipo, error);
+  }
 }
 
 export type AlertaBusquedaCoincidente = { profesionalId: string; userId: string };

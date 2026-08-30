@@ -160,6 +160,13 @@ export function CalendarioCitas({
   const [errorArrastre, setErrorArrastre] = useState<string | null>(null);
   const [redimension, setRedimension] = useState<RedimensionEstado | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  // Contenedor con overflow-x-auto de VistaSemana (en móvil solo caben ~2
+  // días y el resto requiere scroll horizontal). Durante un arrastre, el
+  // dedo/puntero queda capturado por el bloque que se mueve, así que el
+  // navegador no desplaza este contenedor por sí solo aunque el puntero esté
+  // pegado a su borde: hace falta el auto-scroll de abajo.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const punteroRef = useRef<{ x: number; y: number } | null>(null);
 
   function refrescar(nuevoAnchor: Date, nuevaVista: Vista) {
     const { desde, hasta } = nuevaVista === "semana" ? rangoSemana(nuevoAnchor) : rangoMes(nuevoAnchor);
@@ -258,35 +265,88 @@ export function CalendarioCitas({
     });
   }
 
-  function moverArrastre(e: ReactPointerEvent<HTMLElement>) {
+  /** Recalcula día/minuto del arrastre en curso a partir de la posición del
+   * puntero. La usan tanto moverArrastre (con las coordenadas del evento)
+   * como el auto-scroll de abajo (con las últimas coordenadas conocidas,
+   * mientras el contenido se desplaza bajo un dedo que no se ha movido). */
+  function actualizarPosicionArrastre(clientX: number, clientY: number) {
+    if (!gridRef.current) return;
+
+    const rect = gridRef.current.getBoundingClientRect();
+    const { diaIndex, inicioMin } = posicionDesdePuntero({
+      clientX,
+      clientY,
+      rect,
+      minutosInicio: horaInicio * 60,
+      minutosFin: horaFin * 60,
+      numDias: diasVisibles.length,
+    });
+
     setArrastre((prev) => {
-      if (!prev || prev.pointerId !== e.pointerId) return prev;
-
-      const dx = e.clientX - prev.startX;
-      const dy = e.clientY - prev.startY;
-      const moved = prev.moved || Math.hypot(dx, dy) > UMBRAL_ARRASTRE_PX;
-
-      if (!moved || !gridRef.current) {
-        return prev.moved === moved ? prev : { ...prev, moved };
-      }
-
-      const rect = gridRef.current.getBoundingClientRect();
-      const { diaIndex, inicioMin } = posicionDesdePuntero({
-        clientX: e.clientX,
-        clientY: e.clientY,
-        rect,
-        minutosInicio: horaInicio * 60,
-        minutosFin: horaFin * 60,
-        numDias: diasVisibles.length,
-      });
+      if (!prev || !prev.moved) return prev;
       const inicioMinClamped = Math.min(
         Math.max(inicioMin, horaInicio * 60),
         Math.max(horaInicio * 60, horaFin * 60 - prev.duracionMin)
       );
-
-      return { ...prev, moved: true, diaIndex, inicioMin: inicioMinClamped };
+      return { ...prev, diaIndex, inicioMin: inicioMinClamped };
     });
   }
+
+  function moverArrastre(e: ReactPointerEvent<HTMLElement>) {
+    punteroRef.current = { x: e.clientX, y: e.clientY };
+
+    setArrastre((prev) => {
+      if (!prev || prev.pointerId !== e.pointerId) return prev;
+      const dx = e.clientX - prev.startX;
+      const dy = e.clientY - prev.startY;
+      const moved = prev.moved || Math.hypot(dx, dy) > UMBRAL_ARRASTRE_PX;
+      return prev.moved === moved ? prev : { ...prev, moved };
+    });
+
+    actualizarPosicionArrastre(e.clientX, e.clientY);
+  }
+
+  // Auto-scroll del contenedor horizontal de VistaSemana mientras se arrastra
+  // una cita cerca de su borde izquierdo o derecho, para poder soltarla en un
+  // día que no estaba visible al empezar el gesto (p.ej. mover del lunes al
+  // viernes en móvil, donde solo caben ~2 días en pantalla). Corre en un
+  // bucle de rAF -no solo en pointermove- porque en touch, si el dedo se
+  // queda quieto pegado al borde, no llegan más eventos de movimiento pero el
+  // contenido sigue debiendo desplazarse.
+  useEffect(() => {
+    if (!arrastre?.moved) return;
+
+    const ZONA_PX = 56;
+    const VELOCIDAD_MAX_PX = 16;
+
+    let frameId: number;
+    const tick = () => {
+      const contenedor = scrollRef.current;
+      const puntero = punteroRef.current;
+      if (contenedor && puntero) {
+        const rect = contenedor.getBoundingClientRect();
+        const distIzq = puntero.x - rect.left;
+        const distDer = rect.right - puntero.x;
+
+        let delta = 0;
+        if (distIzq < ZONA_PX) {
+          delta = -(1 - Math.max(0, distIzq) / ZONA_PX) * VELOCIDAD_MAX_PX;
+        } else if (distDer < ZONA_PX) {
+          delta = (1 - Math.max(0, distDer) / ZONA_PX) * VELOCIDAD_MAX_PX;
+        }
+
+        if (delta !== 0) {
+          contenedor.scrollLeft += delta;
+          actualizarPosicionArrastre(puntero.x, puntero.y);
+        }
+      }
+      frameId = requestAnimationFrame(tick);
+    };
+    frameId = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(frameId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arrastre?.moved]);
 
   async function soltarArrastre(e: ReactPointerEvent<HTMLElement>) {
     const actual = arrastre;
@@ -575,6 +635,7 @@ export function CalendarioCitas({
             horaFin={horaFin}
             diasVisibles={diasVisibles}
             gridRef={gridRef}
+            scrollRef={scrollRef}
             arrastre={arrastre}
             redimension={redimension}
             onPointerDownCita={(e, cita) => iniciarArrastre(e, cita, false)}

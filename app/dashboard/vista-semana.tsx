@@ -93,6 +93,7 @@ export function VistaSemana({
   horaFin,
   diasVisibles,
   gridRef,
+  scrollRef,
   arrastre,
   redimension,
   onPointerDownCita,
@@ -109,6 +110,8 @@ export function VistaSemana({
   /** Offsets desde el lunes (0=lunes ... 6=domingo) de los días a mostrar. */
   diasVisibles: number[];
   gridRef: RefObject<HTMLDivElement | null>;
+  /** Contenedor con overflow-x-auto: lo usa el auto-scroll durante el arrastre. */
+  scrollRef: RefObject<HTMLDivElement | null>;
   arrastre: ArrastreEstado | null;
   redimension: RedimensionEstado | null;
   onPointerDownCita: (e: ReactPointerEvent<HTMLButtonElement>, cita: CitaCalendario) => void;
@@ -177,7 +180,7 @@ export function VistaSemana({
       : null;
 
   return (
-    <div className="flex w-full overflow-x-auto">
+    <div ref={scrollRef} className="flex w-full overflow-x-auto">
       <div className="flex min-w-[720px] flex-1">
         <div className="w-12 shrink-0">
           <div className="h-10" />

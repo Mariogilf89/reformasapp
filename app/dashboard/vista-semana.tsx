@@ -1,7 +1,6 @@
 import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
 import type { CitaCalendario } from "@/app/actions/citas";
 import {
-  ALTURA_HORA_PX,
   ALTURA_UBICACION_COMPACTA_PX,
   ALTURA_UBICACION_COMPLETA_PX,
   estiloCita,
@@ -91,6 +90,7 @@ export function VistaSemana({
   citas,
   horaInicio,
   horaFin,
+  alturaHoraPx,
   diasVisibles,
   gridRef,
   scrollRef,
@@ -107,10 +107,12 @@ export function VistaSemana({
   citas: CitaCalendario[];
   horaInicio: number;
   horaFin: number;
+  /** Altura en px de una hora, según el nivel de zoom elegido. */
+  alturaHoraPx: number;
   /** Offsets desde el lunes (0=lunes ... 6=domingo) de los días a mostrar. */
   diasVisibles: number[];
   gridRef: RefObject<HTMLDivElement | null>;
-  /** Contenedor con overflow-x-auto: lo usa el auto-scroll durante el arrastre. */
+  /** Contenedor con overflow-x-auto/overflow-y-auto: lo usa el auto-scroll durante el arrastre. */
   scrollRef: RefObject<HTMLDivElement | null>;
   arrastre: ArrastreEstado | null;
   redimension: RedimensionEstado | null;
@@ -127,7 +129,7 @@ export function VistaSemana({
 }) {
   const minutosInicio = horaInicio * 60;
   const minutosFin = horaFin * 60;
-  const alturaGridPx = (horaFin - horaInicio) * ALTURA_HORA_PX;
+  const alturaGridPx = (horaFin - horaInicio) * alturaHoraPx;
 
   const lunes = inicioSemana(anchor);
   const dias = diasVisibles.map((offset) => sumarDias(lunes, offset));
@@ -180,7 +182,7 @@ export function VistaSemana({
       : null;
 
   return (
-    <div ref={scrollRef} className="flex w-full overflow-x-auto">
+    <div ref={scrollRef} className="flex max-h-[65vh] w-full overflow-auto">
       <div className="flex min-w-[720px] flex-1">
         <div className="w-12 shrink-0">
           <div className="h-10" />
@@ -188,7 +190,7 @@ export function VistaSemana({
             <div
               key={h}
               className="relative text-right text-xs text-neutral-500"
-              style={{ height: `${ALTURA_HORA_PX}px` }}
+              style={{ height: `${alturaHoraPx}px` }}
             >
               <span className="absolute -top-2 right-1">{h}:00</span>
             </div>
@@ -235,7 +237,7 @@ export function VistaSemana({
               <div
                 key={h}
                 className="absolute inset-x-0 border-t border-neutral-100"
-                style={{ top: `${(h - horaInicio) * ALTURA_HORA_PX}px` }}
+                style={{ top: `${(h - horaInicio) * alturaHoraPx}px` }}
               />
             ))}
 
@@ -263,21 +265,21 @@ export function VistaSemana({
                 let width: string;
 
                 if (esArrastrada && arrastre) {
-                  top = ((arrastre.inicioMin - minutosInicio) / 60) * ALTURA_HORA_PX;
-                  height = Math.max(18, (arrastre.duracionMin / 60) * ALTURA_HORA_PX);
+                  top = ((arrastre.inicioMin - minutosInicio) / 60) * alturaHoraPx;
+                  height = Math.max(18, (arrastre.duracionMin / 60) * alturaHoraPx);
                   left = (arrastre.diaIndex / numDias) * 100;
                   width = `calc(${100 / numDias}% - 2px)`;
                 } else if (esRedimensionada && redimension) {
                   const inicioLive = redimension.borde === "inicio" ? redimension.inicioMin : bloque.inicioMin;
                   const finLive = redimension.borde === "fin" ? redimension.finMin : bloque.finMin;
-                  top = ((inicioLive - minutosInicio) / 60) * ALTURA_HORA_PX;
-                  height = Math.max(18, ((finLive - inicioLive) / 60) * ALTURA_HORA_PX);
+                  top = ((inicioLive - minutosInicio) / 60) * alturaHoraPx;
+                  height = Math.max(18, ((finLive - inicioLive) / 60) * alturaHoraPx);
                   const anchoColumna = 100 / numDias / bloque.totalColumnas;
                   left = (diaIndex / numDias) * 100 + bloque.columna * anchoColumna;
                   width = `calc(${anchoColumna}% - 2px)`;
                 } else {
-                  top = ((bloque.inicioMin - minutosInicio) / 60) * ALTURA_HORA_PX;
-                  height = Math.max(18, ((bloque.finMin - bloque.inicioMin) / 60) * ALTURA_HORA_PX);
+                  top = ((bloque.inicioMin - minutosInicio) / 60) * alturaHoraPx;
+                  height = Math.max(18, ((bloque.finMin - bloque.inicioMin) / 60) * alturaHoraPx);
                   const anchoColumna = 100 / numDias / bloque.totalColumnas;
                   left = (diaIndex / numDias) * 100 + bloque.columna * anchoColumna;
                   width = `calc(${anchoColumna}% - 2px)`;
@@ -352,7 +354,14 @@ export function VistaSemana({
                     {/* Asas de redimensionado: separadas del gesto de mover, que sigue
                         colgando del cuerpo del botón. Solo en el día que representa ese
                         extremo del bloqueo (el primero para hora_inicio, el último para
-                        hora_fin), para no confundir en un bloque de varios días. */}
+                        hora_fin), para no confundir en un bloque de varios días. Ocultas
+                        por debajo del breakpoint "sm" (mismo criterio que el resto de la
+                        app para distinguir móvil/escritorio, p.ej. login/register): en
+                        pantallas táctiles pequeñas el borde de 6px es difícil de agarrar
+                        con precisión y compite con el gesto de mover la cita entera, así
+                        que en móvil el cambio de hora se hace desde el formulario "Editar"
+                        del modal de detalle. `hidden` las saca del hit-testing, no solo de
+                        la vista, así que tampoco responden al arrastre por debajo de "sm". */}
                     {esPrimerDia && (
                       <div
                         onPointerDown={(e) => {
@@ -367,7 +376,7 @@ export function VistaSemana({
                           e.stopPropagation();
                           onPointerUpRedimensionar(e);
                         }}
-                        className="absolute inset-x-0 top-0 h-1.5 cursor-ns-resize"
+                        className="absolute inset-x-0 top-0 hidden h-1.5 cursor-ns-resize sm:block"
                         style={{ touchAction: "none" }}
                       />
                     )}
@@ -385,7 +394,7 @@ export function VistaSemana({
                           e.stopPropagation();
                           onPointerUpRedimensionar(e);
                         }}
-                        className="absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize"
+                        className="absolute inset-x-0 bottom-0 hidden h-1.5 cursor-ns-resize sm:block"
                         style={{ touchAction: "none" }}
                       />
                     )}
@@ -398,8 +407,8 @@ export function VistaSemana({
               <div
                 className={`pointer-events-none absolute overflow-hidden rounded-md border px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-lg ring-2 ring-primary-500 ${ghost.className}`}
                 style={{
-                  top: `${((arrastre.inicioMin - minutosInicio) / 60) * ALTURA_HORA_PX}px`,
-                  height: `${Math.max(18, (arrastre.duracionMin / 60) * ALTURA_HORA_PX)}px`,
+                  top: `${((arrastre.inicioMin - minutosInicio) / 60) * alturaHoraPx}px`,
+                  height: `${Math.max(18, (arrastre.duracionMin / 60) * alturaHoraPx)}px`,
                   left: `${(arrastre.diaIndex / numDias) * 100}%`,
                   width: `calc(${100 / numDias}% - 2px)`,
                 }}

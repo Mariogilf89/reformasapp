@@ -18,12 +18,15 @@ export function VistaMes({
   anchor,
   citas,
   diasVisibles,
+  tamanoCeldaPx,
   onSeleccionarDia,
 }: {
   anchor: Date;
   citas: CitaCalendario[];
   /** Offsets desde el lunes (0=lunes ... 6=domingo) de las columnas a mostrar. */
   diasVisibles: number[];
+  /** Tamaño en px (ancho = alto, las celdas son cuadradas) de cada celda de día, según el zoom. */
+  tamanoCeldaPx: number;
   onSeleccionarDia: (dia: Date) => void;
 }) {
   const anio = anchor.getFullYear();
@@ -68,9 +71,17 @@ export function VistaMes({
   const cabeceraVisible = diasVisibles.map((offset) => DIAS_CABECERA[offset]);
   const numDias = diasVisibles.length;
 
+  // A menor zoom, celdas más pequeñas: se reduce el texto y los puntos de
+  // citas para que sigan siendo legibles y no se desborden de la celda.
+  const textoClase = tamanoCeldaPx <= 72 ? "text-sm" : tamanoCeldaPx >= 160 ? "text-xl" : "text-lg";
+  const puntoClase = tamanoCeldaPx <= 72 ? "h-1.5 w-1.5" : tamanoCeldaPx >= 160 ? "h-3 w-3" : "h-2.5 w-2.5";
+
   return (
     <div className="w-full overflow-x-auto">
-      <div className="flex min-w-[720px] flex-1 flex-col gap-2">
+      <div
+        className="flex flex-1 flex-col gap-2"
+        style={{ minWidth: `${tamanoCeldaPx * numDias}px` }}
+      >
         <div
           className="grid gap-2 text-center text-sm font-medium text-neutral-500"
           style={{ gridTemplateColumns: `repeat(${numDias}, minmax(0, 1fr))` }}
@@ -101,7 +112,7 @@ export function VistaMes({
                   type="button"
                   disabled={citasDelDia.length === 0}
                   onClick={() => onSeleccionarDia(dia)}
-                  className={`flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border text-lg disabled:cursor-default ${
+                  className={`flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border disabled:cursor-default ${textoClase} ${
                     esHoy
                       ? "border-primary-600 font-medium text-primary-700"
                       : "border-neutral-200 text-neutral-900"
@@ -113,7 +124,7 @@ export function VistaMes({
                       {citasDelDia.slice(0, MAX_PUNTOS).map((cita) => (
                         <span
                           key={cita.id}
-                          className={`h-2.5 w-2.5 rounded-full ${colorPunto(cita)}`}
+                          className={`rounded-full ${puntoClase} ${colorPunto(cita)}`}
                         />
                       ))}
                       {citasDelDia.length > MAX_PUNTOS && (

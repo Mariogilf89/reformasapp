@@ -6,6 +6,16 @@ export const ALTURA_HORA_PX = 60;
 export const INTERVALO_SNAP_MIN = 15;
 export const UMBRAL_ARRASTRE_PX = 6;
 
+// Niveles de zoom de la vista semanal (px por hora) y de la vista mensual
+// (px por celda de día). El índice inicial de cada uno corresponde al
+// tamaño que tenía el calendario antes de existir el zoom, para no cambiar
+// el aspecto por defecto.
+export const NIVELES_ZOOM_SEMANA_PX = [40, 60, 90, 130] as const;
+export const ZOOM_SEMANA_INICIAL = 1;
+
+export const NIVELES_ZOOM_MES_PX = [72, 100, 136, 180] as const;
+export const ZOOM_MES_INICIAL = 1;
+
 export function minutosDesdeHora(hora: string) {
   const [h, m] = hora.slice(0, 5).split(":").map(Number);
   return h * 60 + m;
@@ -46,14 +56,15 @@ export function posicionDesdePuntero(params: {
   minutosInicio: number;
   minutosFin: number;
   numDias: number;
+  alturaHoraPx: number;
 }) {
-  const { clientX, clientY, rect, minutosInicio, minutosFin, numDias } = params;
+  const { clientX, clientY, rect, minutosInicio, minutosFin, numDias, alturaHoraPx } = params;
 
   const xRel = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
   const diaIndex = Math.min(numDias - 1, Math.max(0, Math.floor(xRel * numDias)));
 
   const yRel = Math.min(rect.height, Math.max(0, clientY - rect.top));
-  const minutosBrutos = minutosInicio + (yRel / ALTURA_HORA_PX) * 60;
+  const minutosBrutos = minutosInicio + (yRel / alturaHoraPx) * 60;
   const snap = Math.round(minutosBrutos / INTERVALO_SNAP_MIN) * INTERVALO_SNAP_MIN;
   const inicioMin = Math.min(minutosFin, Math.max(minutosInicio, snap));
 
@@ -66,9 +77,15 @@ export function posicionDesdePuntero(params: {
  * posicionDesdePuntero. Lo usa el redimensionado (estirar el borde superior
  * o inferior de un bloque), que solo necesita el eje Y.
  */
-export function minutoDesdePunteroY(clientY: number, rectTop: number, minutosInicio: number, minutosFin: number) {
+export function minutoDesdePunteroY(
+  clientY: number,
+  rectTop: number,
+  minutosInicio: number,
+  minutosFin: number,
+  alturaHoraPx: number
+) {
   const yRel = Math.max(0, clientY - rectTop);
-  const minutosBrutos = minutosInicio + (yRel / ALTURA_HORA_PX) * 60;
+  const minutosBrutos = minutosInicio + (yRel / alturaHoraPx) * 60;
   const snap = Math.round(minutosBrutos / INTERVALO_SNAP_MIN) * INTERVALO_SNAP_MIN;
   return Math.min(minutosFin, Math.max(minutosInicio, snap));
 }

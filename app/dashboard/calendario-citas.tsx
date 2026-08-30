@@ -18,6 +18,10 @@ import { fechaISO, fechaLocal, inicioSemana, sumarDias } from "@/lib/fechas";
 import {
   UMBRAL_ARRASTRE_PX,
   INTERVALO_SNAP_MIN,
+  NIVELES_ZOOM_SEMANA_PX,
+  ZOOM_SEMANA_INICIAL,
+  NIVELES_ZOOM_MES_PX,
+  ZOOM_MES_INICIAL,
   horaDesdeMinutos,
   minutosDesdeHora,
   finEfectivoMinutos,
@@ -156,6 +160,33 @@ export function CalendarioCitas({
   // columnas visibles de VistaMes usan este mismo índice.
   const diasVisibles = Array.from({ length: diaFin - diaInicio + 1 }, (_, i) => diaInicio - 1 + i);
 
+  // Zoom independiente por vista: cuánto se ve de cada hora (semana) o de
+  // cada celda de día (mes). Solo vive en el estado del cliente, no se
+  // persiste — al recargar vuelve al nivel por defecto.
+  const [zoomSemanaIndex, setZoomSemanaIndex] = useState(ZOOM_SEMANA_INICIAL);
+  const [zoomMesIndex, setZoomMesIndex] = useState(ZOOM_MES_INICIAL);
+  const alturaHoraPx = NIVELES_ZOOM_SEMANA_PX[zoomSemanaIndex];
+  const tamanoCeldaMesPx = NIVELES_ZOOM_MES_PX[zoomMesIndex];
+
+  function acercarZoom() {
+    if (vista === "semana") {
+      setZoomSemanaIndex((i) => Math.min(i + 1, NIVELES_ZOOM_SEMANA_PX.length - 1));
+    } else {
+      setZoomMesIndex((i) => Math.min(i + 1, NIVELES_ZOOM_MES_PX.length - 1));
+    }
+  }
+
+  function alejarZoom() {
+    if (vista === "semana") {
+      setZoomSemanaIndex((i) => Math.max(i - 1, 0));
+    } else {
+      setZoomMesIndex((i) => Math.max(i - 1, 0));
+    }
+  }
+
+  const zoomIndexActual = vista === "semana" ? zoomSemanaIndex : zoomMesIndex;
+  const zoomMaxIndex = (vista === "semana" ? NIVELES_ZOOM_SEMANA_PX : NIVELES_ZOOM_MES_PX).length - 1;
+
   const [arrastre, setArrastre] = useState<ArrastreEstado | null>(null);
   const [errorArrastre, setErrorArrastre] = useState<string | null>(null);
   const [redimension, setRedimension] = useState<RedimensionEstado | null>(null);
@@ -280,6 +311,7 @@ export function CalendarioCitas({
       minutosInicio: horaInicio * 60,
       minutosFin: horaFin * 60,
       numDias: diasVisibles.length,
+      alturaHoraPx,
     });
 
     setArrastre((prev) => {
@@ -306,18 +338,26 @@ export function CalendarioCitas({
     actualizarPosicionArrastre(e.clientX, e.clientY);
   }
 
-  // Auto-scroll del contenedor horizontal de VistaSemana mientras se arrastra
-  // una cita cerca de su borde izquierdo o derecho, para poder soltarla en un
-  // día que no estaba visible al empezar el gesto (p.ej. mover del lunes al
-  // viernes en móvil, donde solo caben ~2 días en pantalla). Corre en un
-  // bucle de rAF -no solo en pointermove- porque en touch, si el dedo se
-  // queda quieto pegado al borde, no llegan más eventos de movimiento pero el
-  // contenido sigue debiendo desplazarse.
+  // Auto-scroll del contenedor de VistaSemana (con overflow tanto horizontal
+  // como vertical) mientras se arrastra una cita cerca de cualquiera de sus
+  // cuatro bordes, para poder soltarla en un día u hora que no estaba
+  // visible al empezar el gesto (p.ej. mover del lunes al viernes en móvil,
+  // donde solo caben ~2 días en pantalla, o hacia una hora fuera de la franja
+  // visible). Corre en un bucle de rAF -no solo en pointermove- porque en
+  // touch, si el dedo se queda quieto pegado al borde, no llegan más eventos
+  // de movimiento pero el contenido sigue debiendo desplazarse. La misma
+  // lógica de velocidad/aceleración se reutiliza en ambos ejes.
   useEffect(() => {
     if (!arrastre?.moved) return;
 
     const ZONA_PX = 56;
     const VELOCIDAD_MAX_PX = 16;
+
+    function deltaEje(distInicio: number, distFin: number) {
+      if (distInicio < ZONA_PX) return -(1 - Math.max(0, distInicio) / ZONA_PX) * VELOCIDAD_MAX_PX;
+      if (distFin < ZONA_PX) return (1 - Math.max(0, distFin) / ZONA_PX) * VELOCIDAD_MAX_PX;
+      return 0;
+    }
 
     let frameId: number;
     const tick = () => {
@@ -325,18 +365,12 @@ export function CalendarioCitas({
       const puntero = punteroRef.current;
       if (contenedor && puntero) {
         const rect = contenedor.getBoundingClientRect();
-        const distIzq = puntero.x - rect.left;
-        const distDer = rect.right - puntero.x;
+        const deltaX = deltaEje(puntero.x - rect.left, rect.right - puntero.x);
+        const deltaY = deltaEje(puntero.y - rect.top, rect.bottom - puntero.y);
 
-        let delta = 0;
-        if (distIzq < ZONA_PX) {
-          delta = -(1 - Math.max(0, distIzq) / ZONA_PX) * VELOCIDAD_MAX_PX;
-        } else if (distDer < ZONA_PX) {
-          delta = (1 - Math.max(0, distDer) / ZONA_PX) * VELOCIDAD_MAX_PX;
-        }
-
-        if (delta !== 0) {
-          contenedor.scrollLeft += delta;
+        if (deltaX !== 0 || deltaY !== 0) {
+          contenedor.scrollLeft += deltaX;
+          contenedor.scrollTop += deltaY;
           actualizarPosicionArrastre(puntero.x, puntero.y);
         }
       }
@@ -431,7 +465,7 @@ export function CalendarioCitas({
       if (!prev || prev.pointerId !== e.pointerId || !gridRef.current) return prev;
 
       const rect = gridRef.current.getBoundingClientRect();
-      const minuto = minutoDesdePunteroY(e.clientY, rect.top, horaInicio * 60, horaFin * 60);
+      const minuto = minutoDesdePunteroY(e.clientY, rect.top, horaInicio * 60, horaFin * 60, alturaHoraPx);
 
       if (prev.borde === "inicio") {
         const inicioMin = Math.min(minuto, prev.finMin - INTERVALO_SNAP_MIN);
@@ -574,6 +608,27 @@ export function CalendarioCitas({
             </select>
           </div>
 
+          <div className="flex items-center gap-1 text-xs text-neutral-600">
+            <button
+              type="button"
+              onClick={alejarZoom}
+              disabled={zoomIndexActual === 0}
+              aria-label="Alejar zoom del calendario"
+              className="flex h-6 w-6 items-center justify-center rounded-full border border-neutral-300 font-medium text-neutral-700 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              onClick={acercarZoom}
+              disabled={zoomIndexActual === zoomMaxIndex}
+              aria-label="Acercar zoom del calendario"
+              className="flex h-6 w-6 items-center justify-center rounded-full border border-neutral-300 font-medium text-neutral-700 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              +
+            </button>
+          </div>
+
           <div className="flex overflow-hidden rounded-full border border-neutral-300">
             <button
               type="button"
@@ -633,6 +688,7 @@ export function CalendarioCitas({
             citas={citas}
             horaInicio={horaInicio}
             horaFin={horaFin}
+            alturaHoraPx={alturaHoraPx}
             diasVisibles={diasVisibles}
             gridRef={gridRef}
             scrollRef={scrollRef}
@@ -650,6 +706,7 @@ export function CalendarioCitas({
             anchor={anchor}
             citas={citas}
             diasVisibles={diasVisibles}
+            tamanoCeldaPx={tamanoCeldaMesPx}
             onSeleccionarDia={(dia) => navegar(dia, "semana")}
           />
         )}

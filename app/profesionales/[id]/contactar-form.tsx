@@ -55,7 +55,7 @@ export function ContactarForm({
         {modoElegido && <input type="hidden" name="modo_tiempo" value={modoElegido} />}
         {provinciaElegida && <input type="hidden" name="provincia" value={provinciaElegida} />}
 
-        <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+        <h2 className="text-lg font-semibold text-neutral-900">
           Cuéntale al profesional lo que necesitas
         </h2>
 
@@ -63,9 +63,9 @@ export function ContactarForm({
           <>
             <input type="hidden" name="fecha" value={fechaElegida} />
             <input type="hidden" name="hora_inicio" value={horaInicioElegida} />
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               Además de tu solicitud, le vas a proponer una cita:{" "}
-              <span className="font-medium text-neutral-900 dark:text-neutral-100">
+              <span className="font-medium text-neutral-900">
                 {formatearFecha(fechaElegida!)} a las {horaInicioElegida}
               </span>
               .
@@ -95,7 +95,7 @@ export function ContactarForm({
         </div>
 
         {state?.error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+          <p className="text-sm text-red-600">{state.error}</p>
         )}
 
         <div className="flex gap-2">

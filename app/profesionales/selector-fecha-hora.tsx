@@ -111,18 +111,18 @@ export function SelectorFechaHora({
             type="button"
             onClick={irMesAnterior}
             disabled={noSePuedeRetroceder}
-            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-30 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-30"
             aria-label="Mes anterior"
           >
             ←
           </button>
-          <p className="text-sm font-medium capitalize text-neutral-900 dark:text-neutral-100">
+          <p className="text-sm font-medium capitalize text-neutral-900">
             {NOMBRES_MES[mes - 1]} {anio}
           </p>
           <button
             type="button"
             onClick={irMesSiguiente}
-            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
             aria-label="Mes siguiente"
           >
             →
@@ -154,7 +154,7 @@ export function SelectorFechaHora({
                       "flex aspect-square items-center justify-center rounded-lg border text-sm disabled:cursor-not-allowed disabled:opacity-40 " +
                       (seleccionado
                         ? "border-primary-600 bg-primary-600 text-white"
-                        : "border-neutral-300 font-medium text-neutral-900 dark:border-neutral-700 dark:text-neutral-100")
+                        : "border-neutral-300 font-medium text-neutral-900")
                     }
                   >
                     {dia.getDate()}
@@ -170,7 +170,7 @@ export function SelectorFechaHora({
         <div className="flex flex-1 flex-col gap-1">
           <label
             htmlFor="selector-hora-desde"
-            className="text-sm font-medium text-neutral-900 dark:text-neutral-100"
+            className="text-sm font-medium text-neutral-900"
           >
             Desde
           </label>
@@ -183,13 +183,13 @@ export function SelectorFechaHora({
             value={horaInicio}
             onChange={(evento) => onSeleccionarHoraInicio(evento.target.value)}
             {...completarMinutosInicio}
-            className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-900"
           />
         </div>
         <div className="flex flex-1 flex-col gap-1">
           <label
             htmlFor="selector-hora-hasta"
-            className="text-sm font-medium text-neutral-900 dark:text-neutral-100"
+            className="text-sm font-medium text-neutral-900"
           >
             Hasta
           </label>
@@ -202,7 +202,7 @@ export function SelectorFechaHora({
             value={horaFin}
             onChange={(evento) => onSeleccionarHoraFin(evento.target.value)}
             {...completarMinutosFin}
-            className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100"
+            className="rounded-lg border border-neutral-300 px-3 py-1.5 text-sm text-neutral-900"
           />
         </div>
       </div>

@@ -41,7 +41,7 @@ export function DisponibilidadForm() {
         </div>
 
         {state?.error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+          <p className="text-sm text-red-600">{state.error}</p>
         )}
 
         <Button type="submit" disabled={pending} size="xs" className="self-start">

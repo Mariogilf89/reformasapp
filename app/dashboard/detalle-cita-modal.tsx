@@ -99,15 +99,15 @@ function SelectorColorCitaExterna({ cita, onCambio }: { cita: CitaCalendario; on
               onClick={() => handleSeleccionar(valor)}
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border-2 disabled:opacity-60 ${
                 seleccionado
-                  ? "border-neutral-900 dark:border-neutral-100"
-                  : "border-neutral-300 dark:border-neutral-700"
+                  ? "border-neutral-900"
+                  : "border-neutral-300"
               }`}
               style={valor ? { backgroundColor: valor } : undefined}
             >
               {!valor && (
                 <svg
                   viewBox="0 0 24 24"
-                  className="h-4 w-4 text-neutral-500 dark:text-neutral-400"
+                  className="h-4 w-4 text-neutral-500"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
@@ -120,7 +120,7 @@ function SelectorColorCitaExterna({ cita, onCambio }: { cita: CitaCalendario; on
           );
         })}
       </div>
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );
 }
@@ -195,7 +195,7 @@ function EditarFechaHoraCitaReal({
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex items-center gap-3">
         <Button type="submit" size="xs" disabled={enviando}>
@@ -255,10 +255,10 @@ export function DetalleCitaModal({
     <Modal onClose={onClose}>
       <div className="flex flex-col gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+          <h2 className="text-lg font-semibold text-neutral-900">
             {cita.origen_externo ? cita.titulo_externo : tipoLabel}
           </h2>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             {cita.fecha && cita.hora_inicio ? (
               <>
                 {formatearFecha(cita.fecha)}
@@ -273,17 +273,17 @@ export function DetalleCitaModal({
             )}
           </p>
           {!cita.origen_externo && (
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{tipoLabel}</p>
+            <p className="mt-1 text-sm text-neutral-600">{tipoLabel}</p>
           )}
           {ubicacion && (
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{ubicacion}</p>
+            <p className="mt-1 text-sm text-neutral-600">{ubicacion}</p>
           )}
           {cita.origen_externo && (cita.contacto_nombre || cita.contacto_telefono) && (
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-1 text-sm text-neutral-600">
               {cita.contacto_nombre}
               {cita.contacto_nombre && cita.contacto_telefono && " · "}
               {cita.contacto_telefono && (
-                <a href={`tel:${cita.contacto_telefono}`} className="text-primary-700 hover:underline dark:text-primary-400">
+                <a href={`tel:${cita.contacto_telefono}`} className="text-primary-700 hover:underline">
                   {cita.contacto_telefono}
                 </a>
               )}
@@ -296,13 +296,13 @@ export function DetalleCitaModal({
         )}
 
         {cita.comentario && (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             &quot;{cita.comentario}&quot;
           </p>
         )}
 
         {!cita.origen_externo && cita.estado === "confirmada" && (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             {cita.telefonoCliente
               ? `Teléfono de contacto: ${cita.telefonoCliente}`
               : "El cliente no ha añadido un teléfono de contacto todavía."}
@@ -339,7 +339,7 @@ export function DetalleCitaModal({
               </>
             )}
 
-            {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
             <div className="flex items-center gap-3">
               <Button type="button" variant="secondary" size="xs" onClick={() => setEditando(true)}>

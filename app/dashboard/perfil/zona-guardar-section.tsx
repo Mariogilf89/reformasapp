@@ -26,9 +26,9 @@ export function ZonaGuardarSection({ zonaInicial }: { zonaInicial?: string }) {
           />
         </div>
 
-        {state?.error && <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>}
+        {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
         {state?.success && (
-          <p className="text-sm text-primary-600 dark:text-primary-400">Perfil guardado.</p>
+          <p className="text-sm text-primary-600">Perfil guardado.</p>
         )}
 
         <Button type="submit" disabled={pending} className="w-full">

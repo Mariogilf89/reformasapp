@@ -41,9 +41,9 @@ export function MensajeForm({
         )}
 
         {paraProfesional && (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             Escribiendo a{" "}
-            <span className="font-medium text-neutral-900 dark:text-neutral-100">
+            <span className="font-medium text-neutral-900">
               {paraProfesional}
             </span>
           </p>
@@ -53,7 +53,7 @@ export function MensajeForm({
         <Textarea ref={textareaRef} id="texto" name="texto" required rows={3} />
 
         {state?.error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+          <p className="text-sm text-red-600">{state.error}</p>
         )}
 
         <Button type="submit" disabled={pending} size="xs" className="self-start">

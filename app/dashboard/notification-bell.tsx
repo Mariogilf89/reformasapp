@@ -46,7 +46,7 @@ export function NotificationBell({
         type="button"
         onClick={() => setAbierto((v) => !v)}
         aria-label="Notificaciones"
-        className="relative rounded-full p-2 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+        className="relative rounded-full p-2 text-neutral-600 hover:bg-neutral-100"
       >
         <span aria-hidden="true">🔔</span>
         {noLeidas > 0 && (
@@ -59,16 +59,16 @@ export function NotificationBell({
       {abierto && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setAbierto(false)} />
-          <div className="absolute right-0 z-50 mt-2 max-h-96 w-80 overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-800 dark:bg-neutral-900">
-            <div className="flex items-center justify-between gap-3 border-b border-neutral-200 p-3 dark:border-neutral-800">
-              <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <div className="absolute right-0 z-50 mt-2 max-h-96 w-80 overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-lg">
+            <div className="flex items-center justify-between gap-3 border-b border-neutral-200 p-3">
+              <p className="text-sm font-medium text-neutral-900">
                 Notificaciones
               </p>
               {noLeidas > 0 && (
                 <button
                   type="button"
                   onClick={marcarTodas}
-                  className="shrink-0 text-xs font-medium text-primary-700 hover:underline dark:text-primary-400"
+                  className="shrink-0 text-xs font-medium text-primary-700 hover:underline"
                 >
                   Marcar todas como leídas
                 </button>
@@ -76,11 +76,11 @@ export function NotificationBell({
             </div>
 
             {notificaciones.length === 0 ? (
-              <p className="p-4 text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="p-4 text-sm text-neutral-600">
                 No tienes notificaciones.
               </p>
             ) : (
-              <ul className="flex flex-col divide-y divide-neutral-200 dark:divide-neutral-800">
+              <ul className="flex flex-col divide-y divide-neutral-200">
                 {notificaciones.map((n) => (
                   <li key={n.id}>
                     <Link
@@ -90,13 +90,13 @@ export function NotificationBell({
                         if (!n.leida) marcarLeida(n.id);
                       }}
                       className={
-                        "block p-3 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800/60 " +
-                        (n.leida ? "" : "bg-primary-50/50 dark:bg-primary-900/10")
+                        "block p-3 text-sm hover:bg-neutral-50 " +
+                        (n.leida ? "" : "bg-primary-50/50")
                       }
                     >
-                      <p className="font-medium text-neutral-900 dark:text-neutral-100">{n.titulo}</p>
+                      <p className="font-medium text-neutral-900">{n.titulo}</p>
                       {n.cuerpo && (
-                        <p className="mt-0.5 text-neutral-600 dark:text-neutral-400">{n.cuerpo}</p>
+                        <p className="mt-0.5 text-neutral-600">{n.cuerpo}</p>
                       )}
                       <p className="mt-1 text-xs text-neutral-500">{tiempoRelativo(n.creado_en)}</p>
                     </Link>

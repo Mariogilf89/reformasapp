@@ -42,10 +42,10 @@ export function ExcepcionDisponibilidadForm() {
         </div>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <legend className="mb-1 text-sm font-medium text-neutral-900">
             Tipo de bloqueo
           </legend>
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+          <label className="flex items-center gap-2 text-sm text-neutral-700">
             <input
               type="radio"
               name="todo_el_dia"
@@ -56,7 +56,7 @@ export function ExcepcionDisponibilidadForm() {
             />
             No disponible todo el día
           </label>
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+          <label className="flex items-center gap-2 text-sm text-neutral-700">
             <input
               type="radio"
               name="todo_el_dia"
@@ -83,7 +83,7 @@ export function ExcepcionDisponibilidadForm() {
         )}
 
         {state?.error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+          <p className="text-sm text-red-600">{state.error}</p>
         )}
 
         <Button type="submit" disabled={pending} size="xs" className="self-start">

@@ -47,7 +47,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+      <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4">
           <Link href="/" className="shrink-0">
             <Image src="/logo-horizontal.png" alt="Faenia" width={100} height={40} priority />
@@ -58,7 +58,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-neutral-600 hover:text-primary-700 dark:text-neutral-400 dark:hover:text-primary-400"
+                className="text-neutral-600 hover:text-primary-700"
               >
                 {link.label}
               </Link>

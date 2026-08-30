@@ -81,10 +81,10 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
   return (
     <div className="flex flex-1 flex-col items-center gap-8 px-4 py-16">
       <div className="w-full max-w-5xl">
-        <h1 className="text-3xl font-semibold text-neutral-900 dark:text-neutral-50">
+        <h1 className="text-3xl font-semibold text-neutral-900">
           Encuentra un profesional
         </h1>
-        <p className="mt-1 text-neutral-600 dark:text-neutral-400">
+        <p className="mt-1 text-neutral-600">
           Explora los profesionales registrados en Faenia.
         </p>
       </div>
@@ -101,8 +101,8 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
 
       <div className="grid w-full max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {profesionales.length === 0 && (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-neutral-200 p-6 text-center dark:border-neutral-800 sm:col-span-2 lg:col-span-3">
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-neutral-200 p-6 text-center sm:col-span-2 lg:col-span-3">
+            <p className="text-sm text-neutral-600">
               No hay profesionales que coincidan con tu búsqueda todavía. Avísanos cuando
               lleguemos a tu zona.
             </p>
@@ -131,7 +131,7 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
           return (
             <Link key={profesional.id} href={href}>
               <Card className="flex h-full flex-col gap-3 p-4 transition-colors hover:border-primary-300">
-                <div className="aspect-video w-full overflow-hidden rounded-lg bg-neutral-100 dark:bg-neutral-800">
+                <div className="aspect-video w-full overflow-hidden rounded-lg bg-neutral-100">
                   {profesional.fotos?.[0] && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -143,28 +143,28 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                  <p className="font-medium text-neutral-900">
                     {profesional.nombre}
                   </p>
                   {profesional.verificado && <VerificadoBadge />}
                 </div>
 
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                <p className="text-sm text-neutral-600">
                   {profesional.categorias
                     .map((cat) => CATEGORIAS.find((c) => c.value === cat)?.label ?? cat)
                     .join(", ")}
                 </p>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">{profesional.zona}</p>
+                <p className="text-sm text-neutral-600">{profesional.zona}</p>
 
                 {profesional.primerHueco && (
-                  <p className="text-sm font-medium text-primary-700 dark:text-primary-400">
+                  <p className="text-sm font-medium text-primary-700">
                     Libre {modo === "dia_hora" ? "el" : "a partir del"}{" "}
                     {formatearFecha(profesional.primerHueco.fecha)} a las{" "}
                     {profesional.primerHueco.hora}
                   </p>
                 )}
 
-                <p className="mt-auto text-sm text-neutral-500 dark:text-neutral-500">
+                <p className="mt-auto text-sm text-neutral-500">
                   {resumen
                     ? `★ ${resumen.media.toFixed(1)} (${resumen.total})`
                     : "Sin valoraciones todavía"}

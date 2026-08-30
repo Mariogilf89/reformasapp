@@ -81,18 +81,18 @@ export function CalendarioHuecos({
             type="button"
             onClick={onMesAnterior}
             disabled={noSePuedeRetroceder}
-            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-30 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-30"
             aria-label="Mes anterior"
           >
             ←
           </button>
-          <p className="text-sm font-medium capitalize text-neutral-900 dark:text-neutral-100">
+          <p className="text-sm font-medium capitalize text-neutral-900">
             {NOMBRES_MES[mes - 1]} {anio}
           </p>
           <button
             type="button"
             onClick={onMesSiguiente}
-            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
             aria-label="Mes siguiente"
           >
             →
@@ -100,7 +100,7 @@ export function CalendarioHuecos({
         </div>
 
         {cargando ? (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             Consultando disponibilidad...
           </p>
         ) : (
@@ -130,8 +130,8 @@ export function CalendarioHuecos({
                         (seleccionado
                           ? "border-primary-600 bg-primary-600 text-white"
                           : disponible
-                            ? "border-neutral-300 font-medium text-neutral-900 dark:border-neutral-700 dark:text-neutral-100"
-                            : "border-neutral-200 dark:border-neutral-800")
+                            ? "border-neutral-300 font-medium text-neutral-900"
+                            : "border-neutral-200")
                       }
                     >
                       {fechaLocal(dia.fecha).getDate()}
@@ -146,9 +146,9 @@ export function CalendarioHuecos({
 
       {fechaSeleccionada && (
         <div className="flex flex-col gap-1">
-          <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Hora</p>
+          <p className="text-sm font-medium text-neutral-900">Hora</p>
           {horasDelDia.length === 0 ? (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               No hay huecos disponibles ese día.
             </p>
           ) : (
@@ -162,7 +162,7 @@ export function CalendarioHuecos({
                     "rounded-full border px-3 py-1.5 text-xs font-medium " +
                     (hora === horaSeleccionada
                       ? "border-primary-600 bg-primary-600 text-white"
-                      : "border-neutral-300 text-neutral-700 dark:border-neutral-700 dark:text-neutral-300")
+                      : "border-neutral-300 text-neutral-700")
                   }
                 >
                   {hora}

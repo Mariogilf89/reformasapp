@@ -44,11 +44,11 @@ export function TelefonoClienteForm({ telefonoInicial }: { telefonoInicial: stri
   return (
     <Card className="w-full max-w-lg p-8">
       <form action={handleGuardar} className="flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+        <h1 className="text-2xl font-semibold text-neutral-900">
           Añade tu teléfono de contacto
         </h1>
 
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-neutral-600">
           Los profesionales con los que tengas una cita confirmada podrán ver este número para
           contactar contigo.
         </p>
@@ -56,7 +56,7 @@ export function TelefonoClienteForm({ telefonoInicial }: { telefonoInicial: stri
         <div className="flex flex-col gap-1">
           <Label htmlFor="telefono_local">Teléfono</Label>
           <div className="flex items-stretch gap-2">
-            <span className="flex items-center rounded-md border border-neutral-300 bg-neutral-50 px-3 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+            <span className="flex items-center rounded-md border border-neutral-300 bg-neutral-50 px-3 text-sm text-neutral-600">
               {PREFIJO_ESPANA}
             </span>
             <Input
@@ -74,9 +74,9 @@ export function TelefonoClienteForm({ telefonoInicial }: { telefonoInicial: stri
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
         {guardado && !error && (
-          <p className="text-sm text-primary-600 dark:text-primary-400">Teléfono guardado.</p>
+          <p className="text-sm text-primary-600">Teléfono guardado.</p>
         )}
 
         <Button type="submit" disabled={enviando} className="w-full">

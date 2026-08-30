@@ -177,13 +177,13 @@ export default async function SolicitudDetallePage(
       <Card className="w-full max-w-lg p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="font-medium text-neutral-900 dark:text-neutral-100">
+            <p className="font-medium text-neutral-900">
               {CATEGORIAS.find((c) => c.value === solicitud.categoria)?.label ??
                 solicitud.categoria}
               {" · "}
               {solicitud.zona}
             </p>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-1 text-sm text-neutral-600">
               {solicitud.descripcion}
             </p>
           </div>
@@ -194,7 +194,7 @@ export default async function SolicitudDetallePage(
       <div id="mensaje" className="w-full max-w-lg flex flex-col gap-6 scroll-mt-8">
         {esClienteDueno ? (
           hilos.length === 0 ? (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               Todavía no has contactado con ningún profesional para esta solicitud.
             </p>
           ) : (
@@ -213,25 +213,25 @@ export default async function SolicitudDetallePage(
           )
         ) : (
           <>
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+            <h2 className="text-xl font-semibold text-neutral-900">
               Mensajes
             </h2>
 
             <div className="flex flex-col gap-3">
               {(mensajes ?? []).length === 0 && (
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                <p className="text-sm text-neutral-600">
                   Todavía no hay mensajes en esta solicitud.
                 </p>
               )}
               {(mensajes ?? []).map((mensaje) => (
                 <div
                   key={mensaje.id}
-                  className="rounded-lg bg-neutral-50 p-3 text-sm dark:bg-neutral-800/60"
+                  className="rounded-lg bg-neutral-50 p-3 text-sm"
                 >
-                  <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                  <p className="font-medium text-neutral-900">
                     {nombreRemitente(mensaje.remitente_id)}
                   </p>
-                  <p className="mt-1 text-neutral-700 dark:text-neutral-300">{mensaje.texto}</p>
+                  <p className="mt-1 text-neutral-700">{mensaje.texto}</p>
                   <p className="mt-1 text-xs text-neutral-500">
                     {new Date(mensaje.creado_en).toLocaleString("es-ES")}
                   </p>
@@ -250,7 +250,7 @@ export default async function SolicitudDetallePage(
 
       {esClienteDueno && (
         <div className="w-full max-w-lg flex flex-col gap-4">
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+          <h2 className="text-xl font-semibold text-neutral-900">
             {solicitud.estado === "abierta"
               ? "Marcar como completada y valorar"
               : "Tu valoración"}
@@ -258,7 +258,7 @@ export default async function SolicitudDetallePage(
 
           {solicitud.estado === "abierta" ? (
             profesionalesContactados.length === 0 ? (
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="text-sm text-neutral-600">
                 Todavía no hay ningún profesional en el hilo para valorar.
               </p>
             ) : (
@@ -272,19 +272,19 @@ export default async function SolicitudDetallePage(
             )
           ) : valoracion ? (
             <Card className="p-6">
-              <p className="font-medium text-neutral-900 dark:text-neutral-100">
+              <p className="font-medium text-neutral-900">
                 {valoracion.profesionales?.nombre ?? "Profesional"}
                 {" · "}
                 {valoracion.puntuacion} {valoracion.puntuacion === 1 ? "estrella" : "estrellas"}
               </p>
               {valoracion.comentario && (
-                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+                <p className="mt-1 text-sm text-neutral-600">
                   {valoracion.comentario}
                 </p>
               )}
             </Card>
           ) : (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               No dejaste ninguna valoración para esta solicitud.
             </p>
           )}

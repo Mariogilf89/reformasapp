@@ -164,7 +164,7 @@ const PASOS = [
     numero: "1",
     titulo: "Publica lo que necesitas",
     descripcion:
-      "Cuéntanos qué reforma o servicio necesitas y en qué zona de Galicia, en menos de dos minutos.",
+      "Cuéntanos qué reforma o servicio necesitas y en qué zona vives, en menos de dos minutos.",
   },
   {
     numero: "2",
@@ -207,7 +207,7 @@ export default function Home() {
         {/* Hero */}
         <section className="px-4 py-16 sm:py-20">
           <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-14">
-            <div className="relative order-2 aspect-[4/3] w-full lg:order-1 lg:aspect-square">
+            <div className="relative order-1 aspect-[4/3] w-full lg:aspect-square">
               <Image
                 src="/images/logo-completo.png"
                 alt="Faenia — Profesionales. Citas. Sin complicaciones."
@@ -218,14 +218,14 @@ export default function Home() {
               />
             </div>
 
-            <div className="order-1 flex flex-col items-center gap-6 text-center lg:order-2 lg:items-start lg:text-left">
-              <span className="text-sm font-medium uppercase tracking-wide text-primary-700 dark:text-primary-400">
-                Reformas y servicios del hogar en Galicia
+            <div className="order-2 flex flex-col items-center gap-6 text-center lg:items-start lg:text-left">
+              <span className="text-sm font-medium uppercase tracking-wide text-primary-700">
+                Reformas y servicios del hogar
               </span>
-              <h1 className="text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl dark:text-neutral-50">
+              <h1 className="text-4xl font-semibold tracking-tight text-neutral-900 sm:text-5xl">
                 Encuentra al profesional de confianza para tu próxima reforma
               </h1>
-              <p className="max-w-xl text-lg text-neutral-600 dark:text-neutral-400">
+              <p className="max-w-xl text-lg text-neutral-600">
                 Pintores, electricistas, fontaneros y más, cerca de ti. Publica lo que
                 necesitas y compara propuestas reales antes de decidir.
               </p>
@@ -238,18 +238,18 @@ export default function Home() {
         </section>
 
         {/* Diferenciación */}
-        <section className="bg-white px-4 py-16 dark:bg-neutral-950">
+        <section className="bg-white px-4 py-16">
           <div className="mx-auto w-full max-w-5xl">
             <div className="grid gap-6 sm:grid-cols-3">
               {DIFERENCIACION.map(({ titulo, descripcion, Icon }) => (
                 <div key={titulo} className="flex flex-col items-start gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700">
                     <Icon className="h-5 w-5" />
                   </span>
-                  <h3 className="font-medium text-neutral-900 dark:text-neutral-50">
+                  <h3 className="font-medium text-neutral-900">
                     {titulo}
                   </h3>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  <p className="text-sm text-neutral-600">
                     {descripcion}
                   </p>
                 </div>
@@ -261,7 +261,7 @@ export default function Home() {
         {/* Categorías */}
         <section className="px-4 py-16">
           <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-14">
-            <div className="relative order-2 aspect-[4/3] w-full overflow-hidden rounded-2xl border border-neutral-200 shadow-sm lg:order-1 lg:aspect-square dark:border-neutral-800">
+            <div className="relative order-2 aspect-[4/3] w-full overflow-hidden rounded-2xl border border-neutral-200 shadow-sm lg:order-1 lg:aspect-square">
               <Image
                 src="/images/hero-cocina-reformada.jpg"
                 alt="Cocina reformada"
@@ -272,21 +272,21 @@ export default function Home() {
             </div>
 
             <div className="order-1 flex flex-col gap-6 lg:order-2">
-              <h2 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+              <h2 className="text-2xl font-semibold text-neutral-900">
                 Explora por categoría
               </h2>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                 {CATEGORIAS_HOME.map(({ value, label, descripcion, Icon }) => (
                   <Link key={value} href={`/profesionales?categoria=${value}`}>
                     <Card className="flex h-full flex-col items-start gap-3 px-4 py-5 text-left transition-colors hover:border-primary-300">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-50 text-primary-700">
                         <Icon className="h-5 w-5" />
                       </span>
                       <div>
-                        <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                        <p className="text-sm font-medium text-neutral-900">
                           {label}
                         </p>
-                        <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-500">
+                        <p className="mt-0.5 text-xs text-neutral-500">
                           {descripcion}
                         </p>
                       </div>
@@ -296,10 +296,10 @@ export default function Home() {
 
                 <Link href="/profesionales">
                   <Card className="flex h-full flex-col items-start justify-center gap-3 px-4 py-5 text-left transition-colors hover:border-primary-300">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-neutral-100 text-neutral-600">
                       <IconVerTodas className="h-5 w-5" />
                     </span>
-                    <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                    <p className="text-sm font-medium text-neutral-900">
                       Ver todas
                     </p>
                   </Card>
@@ -310,9 +310,9 @@ export default function Home() {
         </section>
 
         {/* Cómo funciona */}
-        <section className="bg-primary-50 px-4 py-16 dark:bg-neutral-900">
+        <section className="bg-primary-50 px-4 py-16">
           <div className="mx-auto w-full max-w-5xl">
-            <h2 className="text-center text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+            <h2 className="text-center text-2xl font-semibold text-neutral-900">
               Cómo funciona
             </h2>
             <div className="mt-10 grid gap-6 sm:grid-cols-3">
@@ -321,10 +321,10 @@ export default function Home() {
                   <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-600 text-sm font-semibold text-white">
                     {paso.numero}
                   </span>
-                  <h3 className="font-medium text-neutral-900 dark:text-neutral-50">
+                  <h3 className="font-medium text-neutral-900">
                     {paso.titulo}
                   </h3>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  <p className="text-sm text-neutral-600">
                     {paso.descripcion}
                   </p>
                 </div>
@@ -336,12 +336,12 @@ export default function Home() {
         {/* Para profesionales */}
         <section className="px-4 py-16">
           <div className="mx-auto w-full max-w-5xl">
-            <Card className="flex flex-col items-center gap-4 border-primary-200 bg-primary-50 px-6 py-10 text-center dark:border-primary-900 dark:bg-primary-950/30 sm:flex-row sm:justify-between sm:text-left">
+            <Card className="flex flex-col items-center gap-4 border-primary-200 bg-primary-50 px-6 py-10 text-center sm:flex-row sm:justify-between sm:text-left">
               <div>
-                <h2 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+                <h2 className="text-2xl font-semibold text-neutral-900">
                   ¿Eres profesional de reformas?
                 </h2>
-                <p className="mt-2 max-w-xl text-neutral-600 dark:text-neutral-400">
+                <p className="mt-2 max-w-xl text-neutral-600">
                   Gestiona tu agenda, recibe solicitudes reales de tu zona y haz crecer tu
                   negocio sin intermediarios.
                 </p>
@@ -361,8 +361,8 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="border-t border-neutral-200 bg-white px-4 py-10 dark:border-neutral-800 dark:bg-neutral-950">
-        <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-4 text-sm text-neutral-600 sm:flex-row dark:text-neutral-400">
+      <footer className="border-t border-neutral-200 bg-white px-4 py-10">
+        <div className="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-4 text-sm text-neutral-600 sm:flex-row">
           <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:text-left">
             <Image
               src="/images/logo-completo.png"
@@ -371,26 +371,26 @@ export default function Home() {
               height={56}
               className="shrink-0"
             />
-            <p>© 2026 Faenia. Marketplace de reformas y servicios del hogar en Galicia.</p>
+            <p>© 2026 Faenia. Marketplace de reformas y servicios del hogar.</p>
           </div>
           <p>
             ¿Eres profesional de la reforma?{" "}
             <Link
               href="/register"
-              className="font-medium text-primary-700 hover:underline dark:text-primary-400"
+              className="font-medium text-primary-700 hover:underline"
             >
               Regístrate y recibe solicitudes
             </Link>
           </p>
         </div>
-        <div className="mx-auto mt-6 flex w-full max-w-5xl flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-neutral-100 pt-6 text-xs text-neutral-500 sm:justify-start dark:border-neutral-900 dark:text-neutral-500">
-          <Link href="/aviso-legal" className="hover:text-primary-700 hover:underline dark:hover:text-primary-400">
+        <div className="mx-auto mt-6 flex w-full max-w-5xl flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-neutral-100 pt-6 text-xs text-neutral-500 sm:justify-start">
+          <Link href="/aviso-legal"className="hover:text-primary-700 hover:underline">
             Aviso legal
           </Link>
-          <Link href="/privacidad" className="hover:text-primary-700 hover:underline dark:hover:text-primary-400">
+          <Link href="/privacidad"className="hover:text-primary-700 hover:underline">
             Política de privacidad
           </Link>
-          <Link href="/terminos" className="hover:text-primary-700 hover:underline dark:hover:text-primary-400">
+          <Link href="/terminos"className="hover:text-primary-700 hover:underline">
             Términos y condiciones
           </Link>
         </div>

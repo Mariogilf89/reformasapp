@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
+/* La web está pensada solo para modo claro (el modo oscuro nunca se
+   terminó de diseñar de forma consistente). Se fuerza aquí, sin depender
+   de la preferencia del sistema del usuario. */
 :root {
+  color-scheme: light;
   --background: #fafafa;
   --foreground: #18181b;
 }
@@ -35,13 +39,6 @@
   --color-neutral-800: #27272a;
   --color-neutral-900: #18181b;
   --color-neutral-950: #09090b;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #09090b;
-    --foreground: #fafafa;
-  }
 }
 
 body {

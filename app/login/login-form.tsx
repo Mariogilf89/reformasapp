@@ -22,12 +22,12 @@ export function LoginForm({
       <form action={action} className="flex flex-col gap-4">
         <input type="hidden" name="redirect" value={redirectTo ?? ""} />
 
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+        <h1 className="text-2xl font-semibold text-neutral-900">
           Iniciar sesión
         </h1>
 
         {justRegistered && (
-          <p className="text-sm text-primary-600 dark:text-primary-400">
+          <p className="text-sm text-primary-600">
             Cuenta creada. Revisa tu email si se requiere confirmación, luego
             inicia sesión.
           </p>
@@ -43,25 +43,25 @@ export function LoginForm({
           <Input id="password" name="password" type="password" required />
           <Link
             href="/forgot-password"
-            className="mt-1 self-end text-xs font-medium text-primary-600 hover:underline dark:text-primary-400"
+            className="mt-1 self-end text-xs font-medium text-primary-600 hover:underline"
           >
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
 
         {state?.error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+          <p className="text-sm text-red-600">{state.error}</p>
         )}
 
         <Button type="submit" disabled={pending} className="mt-2 w-full">
           {pending ? "Entrando..." : "Entrar"}
         </Button>
 
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-neutral-600">
           ¿No tienes cuenta?{" "}
           <Link
             href={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : "/register"}
-            className="font-medium text-primary-600 hover:underline dark:text-primary-400"
+            className="font-medium text-primary-600 hover:underline"
           >
             Regístrate
           </Link>

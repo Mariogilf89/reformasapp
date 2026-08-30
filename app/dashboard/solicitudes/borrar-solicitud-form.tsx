@@ -26,7 +26,7 @@ export function BorrarSolicitudForm({
     <form action={action} onSubmit={handleSubmit} className="flex flex-col items-end gap-1">
       <input type="hidden" name="id" value={solicitudId} />
       {state?.error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{state.error}</p>
+        <p className="text-xs text-red-600">{state.error}</p>
       )}
       <Button type="submit" variant="danger" size="xs" disabled={pending}>
         {pending ? "Borrando..." : "Borrar"}

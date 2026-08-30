@@ -172,7 +172,7 @@ export function VistaSemana({
     arrastre?.moved && arrastre.origenPanel
       ? {
           className:
-            "border-dashed border-neutral-400 bg-neutral-100 text-neutral-700 dark:border-neutral-500 dark:bg-neutral-800 dark:text-neutral-300",
+            "border-dashed border-neutral-400 bg-neutral-100 text-neutral-700",
         }
       : null;
 
@@ -184,7 +184,7 @@ export function VistaSemana({
           {horas.map((h) => (
             <div
               key={h}
-              className="relative text-right text-xs text-neutral-500 dark:text-neutral-500"
+              className="relative text-right text-xs text-neutral-500"
               style={{ height: `${ALTURA_HORA_PX}px` }}
             >
               <span className="absolute -top-2 right-1">{h}:00</span>
@@ -194,7 +194,7 @@ export function VistaSemana({
 
         <div className="flex-1">
           <div
-            className="grid h-10 border-b border-neutral-200 dark:border-neutral-800"
+            className="grid h-10 border-b border-neutral-200"
             style={{ gridTemplateColumns: `repeat(${numDias}, minmax(0, 1fr))` }}
           >
             {dias.map((dia) => {
@@ -203,10 +203,10 @@ export function VistaSemana({
               return (
                 <div
                   key={fecha}
-                  className={`flex flex-col items-center justify-center border-l border-neutral-200 text-xs font-medium first:border-l-0 dark:border-neutral-800 ${
+                  className={`flex flex-col items-center justify-center border-l border-neutral-200 text-xs font-medium first:border-l-0 ${
                     esHoy
-                      ? "text-primary-700 dark:text-primary-400"
-                      : "text-neutral-600 dark:text-neutral-400"
+                      ? "text-primary-700"
+                      : "text-neutral-600"
                   }`}
                 >
                   <span>{DIAS_CABECERA[(dia.getDay() + 6) % 7]}</span>
@@ -224,14 +224,14 @@ export function VistaSemana({
             {dias.map((dia, i) => (
               <div
                 key={i}
-                className="border-l border-neutral-200 first:border-l-0 dark:border-neutral-800"
+                className="border-l border-neutral-200 first:border-l-0"
               />
             ))}
 
             {horas.map((h) => (
               <div
                 key={h}
-                className="absolute inset-x-0 border-t border-neutral-100 dark:border-neutral-800/60"
+                className="absolute inset-x-0 border-t border-neutral-100"
                 style={{ top: `${(h - horaInicio) * ALTURA_HORA_PX}px` }}
               />
             ))}

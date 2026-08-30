@@ -6,7 +6,7 @@ const MAX_PUNTOS = 4;
 
 function colorPunto(cita: CitaCalendario) {
   if (cita.origen_externo) {
-    return "bg-neutral-400 dark:bg-neutral-500";
+    return"bg-neutral-400";
   }
   if (cita.estado === "confirmada") {
     return "bg-primary-500";
@@ -103,8 +103,8 @@ export function VistaMes({
                   onClick={() => onSeleccionarDia(dia)}
                   className={`flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border text-lg disabled:cursor-default ${
                     esHoy
-                      ? "border-primary-600 font-medium text-primary-700 dark:text-primary-400"
-                      : "border-neutral-200 text-neutral-900 dark:border-neutral-800 dark:text-neutral-100"
+                      ? "border-primary-600 font-medium text-primary-700"
+                      : "border-neutral-200 text-neutral-900"
                   }`}
                 >
                   <span>{dia.getDate()}</span>

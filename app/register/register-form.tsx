@@ -22,15 +22,15 @@ export function RegisterForm({
       <form action={action} className="flex flex-col gap-4">
         <input type="hidden" name="redirect" value={redirectTo ?? ""} />
 
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+        <h1 className="text-2xl font-semibold text-neutral-900">
           Crear cuenta
         </h1>
 
         <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <legend className="mb-1 text-sm font-medium text-neutral-900">
             Tipo de cuenta
           </legend>
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+          <label className="flex items-center gap-2 text-sm text-neutral-700">
             <input
               type="radio"
               name="role"
@@ -40,7 +40,7 @@ export function RegisterForm({
             />
             Cliente
           </label>
-          <label className="flex items-center gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+          <label className="flex items-center gap-2 text-sm text-neutral-700">
             <input
               type="radio"
               name="role"
@@ -67,7 +67,7 @@ export function RegisterForm({
           <Input id="password" name="password" type="password" required minLength={8} />
         </div>
 
-        <label className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
+        <label className="flex items-start gap-2 text-sm text-neutral-700">
           <input
             type="checkbox"
             name="acceptTerms"
@@ -79,7 +79,7 @@ export function RegisterForm({
             <Link
               href="/terminos"
               target="_blank"
-              className="font-medium text-primary-600 hover:underline dark:text-primary-400"
+              className="font-medium text-primary-600 hover:underline"
             >
               Términos
             </Link>{" "}
@@ -87,7 +87,7 @@ export function RegisterForm({
             <Link
               href="/privacidad"
               target="_blank"
-              className="font-medium text-primary-600 hover:underline dark:text-primary-400"
+              className="font-medium text-primary-600 hover:underline"
             >
               Política de Privacidad
             </Link>
@@ -96,18 +96,18 @@ export function RegisterForm({
         </label>
 
         {state?.error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+          <p className="text-sm text-red-600">{state.error}</p>
         )}
 
         <Button type="submit" disabled={pending} className="mt-2 w-full">
           {pending ? "Creando cuenta..." : "Registrarse"}
         </Button>
 
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-neutral-600">
           ¿Ya tienes cuenta?{" "}
           <Link
             href={redirectTo ? `/login?redirect=${encodeURIComponent(redirectTo)}` : "/login"}
-            className="font-medium text-primary-600 hover:underline dark:text-primary-400"
+            className="font-medium text-primary-600 hover:underline"
           >
             Inicia sesión
           </Link>

@@ -16,7 +16,7 @@ export function SolicitudForm() {
   return (
     <Card className="w-full max-w-lg p-8">
       <form action={action} className="flex flex-col gap-4">
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+        <h1 className="text-2xl font-semibold text-neutral-900">
           Publicar una solicitud
         </h1>
 
@@ -40,7 +40,7 @@ export function SolicitudForm() {
         </div>
 
         <fieldset className="flex flex-col gap-3">
-          <legend className="mb-1 text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          <legend className="mb-1 text-sm font-medium text-neutral-900">
             ¿Dónde es el trabajo? (opcional, pero recomendado)
           </legend>
           <div className="flex flex-col gap-1">
@@ -65,10 +65,10 @@ export function SolicitudForm() {
         </div>
 
         {state?.error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+          <p className="text-sm text-red-600">{state.error}</p>
         )}
         {state?.success && (
-          <p className="text-sm text-primary-600 dark:text-primary-400">
+          <p className="text-sm text-primary-600">
             Solicitud publicada.
           </p>
         )}

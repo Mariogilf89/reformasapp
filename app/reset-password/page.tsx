@@ -88,17 +88,17 @@ export default function ResetPasswordPage() {
     <div className="flex flex-1 items-center justify-center px-4 py-16">
       <Card className="w-full max-w-sm p-6">
         {estado === "comprobando" && (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             Comprobando el enlace...
           </p>
         )}
 
         {estado === "caducado" && (
           <div className="flex flex-col gap-4">
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+            <h1 className="text-2xl font-semibold text-neutral-900">
               Enlace caducado
             </h1>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               Este enlace de restablecimiento no es válido o ha caducado. Solicita uno
               nuevo.
             </p>
@@ -110,10 +110,10 @@ export default function ResetPasswordPage() {
 
         {estado === "guardado" && (
           <div className="flex flex-col gap-4">
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+            <h1 className="text-2xl font-semibold text-neutral-900">
               Contraseña actualizada
             </h1>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               Ya puedes seguir usando tu cuenta con la nueva contraseña.
             </p>
             <Link href="/dashboard" className={buttonClassName()}>
@@ -124,7 +124,7 @@ export default function ResetPasswordPage() {
 
         {estado === "listo" && (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+            <h1 className="text-2xl font-semibold text-neutral-900">
               Elige una nueva contraseña
             </h1>
 
@@ -153,7 +153,7 @@ export default function ResetPasswordPage() {
             </div>
 
             {error && (
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <p className="text-sm text-red-600">{error}</p>
             )}
 
             <Button type="submit" disabled={pending} className="mt-2 w-full">

@@ -176,11 +176,11 @@ export function AvisoCambiosSinGuardar() {
   return (
     <Modal onClose={cerrarModal}>
       <div className="flex flex-col gap-4">
-        <p className="text-sm text-neutral-700 dark:text-neutral-300">
+        <p className="text-sm text-neutral-700">
           Vas a salir de aquí sin haber guardado los cambios del perfil.
         </p>
 
-        {errorGuardar && <p className="text-sm text-red-600 dark:text-red-400">{errorGuardar}</p>}
+        {errorGuardar && <p className="text-sm text-red-600">{errorGuardar}</p>}
 
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" onClick={guardarYNavegar} disabled={guardando}>

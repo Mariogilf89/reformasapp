@@ -67,7 +67,7 @@ export function FiltrosSolicitudesDisponibles({
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <label htmlFor="categoria" className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            <label htmlFor="categoria"className="text-sm font-medium text-neutral-900">
               Categoría
             </label>
             <Select id="categoria" name="categoria" defaultValue={categoriaInicial} className="w-full">
@@ -81,7 +81,7 @@ export function FiltrosSolicitudesDisponibles({
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <label htmlFor="provincia" className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            <label htmlFor="provincia"className="text-sm font-medium text-neutral-900">
               Provincia
             </label>
             <Select id="provincia" name="provincia" defaultValue={provinciaInicial} className="w-full">
@@ -95,7 +95,7 @@ export function FiltrosSolicitudesDisponibles({
           </div>
 
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <label htmlFor="modo" className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            <label htmlFor="modo"className="text-sm font-medium text-neutral-900">
               ¿Cuándo lo necesita?
             </label>
             <Select id="modo" name="modo" defaultValue={modoInicial} className="w-full">
@@ -110,7 +110,7 @@ export function FiltrosSolicitudesDisponibles({
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <label htmlFor="orden" className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+            <label htmlFor="orden"className="text-sm font-medium text-neutral-900">
               Ordenar por
             </label>
             <Select id="orden" name="orden" defaultValue={ordenInicial} className="w-full">
@@ -122,7 +122,7 @@ export function FiltrosSolicitudesDisponibles({
             </Select>
           </div>
 
-          <label className="flex items-center gap-2 pb-2 text-sm text-neutral-700 dark:text-neutral-300">
+          <label className="flex items-center gap-2 pb-2 text-sm text-neutral-700">
             <input
               type="checkbox"
               name="ocultar_contactadas"
@@ -134,9 +134,9 @@ export function FiltrosSolicitudesDisponibles({
           </label>
         </div>
 
-        {errorGuardar && <p className="text-sm text-red-600 dark:text-red-400">{errorGuardar}</p>}
+        {errorGuardar && <p className="text-sm text-red-600">{errorGuardar}</p>}
         {guardado && (
-          <p className="text-sm font-medium text-primary-700 dark:text-primary-400">
+          <p className="text-sm font-medium text-primary-700">
             Alerta guardada. Te avisaremos por email cuando encaje una solicitud nueva.
           </p>
         )}
@@ -153,7 +153,7 @@ export function FiltrosSolicitudesDisponibles({
           </Button>
           <Link
             href="/dashboard/alertas-busqueda"
-            className="text-sm font-medium text-primary-700 hover:underline dark:text-primary-400"
+            className="text-sm font-medium text-primary-700 hover:underline"
           >
             Mis alertas
           </Link>

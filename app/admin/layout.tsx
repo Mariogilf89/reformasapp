@@ -17,11 +17,11 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+      <header className="border-b border-neutral-200 bg-white">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4">
           <Link href="/" className="flex shrink-0 items-center gap-2">
             <Image src="/logo-horizontal.png" alt="Faenia" width={100} height={40} priority />
-            <span className="text-sm font-medium text-neutral-500 dark:text-neutral-400">
+            <span className="text-sm font-medium text-neutral-500">
               Admin
             </span>
           </Link>
@@ -29,7 +29,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium">
             <Link
               href="/dashboard"
-              className="text-neutral-600 hover:text-primary-700 dark:text-neutral-400 dark:hover:text-primary-400"
+              className="text-neutral-600 hover:text-primary-700"
             >
               Volver al panel
             </Link>

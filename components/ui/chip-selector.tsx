@@ -40,14 +40,14 @@ export function ChipSelector({
         return (
           <span
             key={value}
-            className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 py-1 pl-3 pr-2 text-sm text-primary-700 dark:bg-primary-950 dark:text-primary-300"
+            className="inline-flex items-center gap-1.5 rounded-full bg-primary-50 py-1 pl-3 pr-2 text-sm text-primary-700"
           >
             {opcion?.label ?? value}
             <button
               type="button"
               onClick={() => quitar(value)}
               aria-label={`Quitar ${opcion?.label ?? value}`}
-              className="rounded-full text-primary-500 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-200"
+              className="rounded-full text-primary-500 hover:text-primary-700"
             >
               ×
             </button>
@@ -78,7 +78,7 @@ export function ChipSelector({
           <button
             type="button"
             onClick={() => setAbierto(true)}
-            className="rounded-full border border-dashed border-neutral-300 px-3 py-1 text-sm text-neutral-600 hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-500 dark:hover:text-neutral-100"
+            className="rounded-full border border-dashed border-neutral-300 px-3 py-1 text-sm text-neutral-600 hover:border-neutral-400 hover:text-neutral-900"
           >
             {addLabel}
           </button>

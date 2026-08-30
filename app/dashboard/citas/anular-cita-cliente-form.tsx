@@ -18,7 +18,7 @@ export function AnularCitaClienteForm({ citaId }: { citaId: string }) {
         <Textarea id={`comentario_cliente_${citaId}`} name="comentario" rows={2} />
       </div>
 
-      {state?.error && <p className="text-xs text-red-600 dark:text-red-400">{state.error}</p>}
+      {state?.error && <p className="text-xs text-red-600">{state.error}</p>}
 
       <Button type="submit" variant="secondary" size="xs" disabled={pending} className="self-start">
         {pending ? "Anulando..." : "Anular"}

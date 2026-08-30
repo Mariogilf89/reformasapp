@@ -99,31 +99,31 @@ export function estiloCita(
   if (cita.origen_externo) {
     if (cita.color) {
       return {
-        className: "border-neutral-400 dark:border-neutral-500",
+        className: "border-neutral-400",
         style: { backgroundColor: cita.color, color: "#1F2937" },
       };
     }
     return {
       className:
-        "border-neutral-400 bg-neutral-100 text-neutral-700 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300",
+        "border-neutral-400 bg-neutral-100 text-neutral-700",
     };
   }
   if (cita.estado === "confirmada") {
     return {
       className:
-        "border-primary-500 bg-primary-100 text-primary-800 dark:border-primary-600 dark:bg-primary-900/40 dark:text-primary-200",
+        "border-primary-500 bg-primary-100 text-primary-800",
     };
   }
   if (cita.propuesto_por === "profesional") {
     return {
       className:
-        "border-amber-400 bg-amber-50 text-amber-800 dark:border-amber-600 dark:bg-amber-900/30 dark:text-amber-200",
+        "border-amber-400 bg-amber-50 text-amber-800",
       style: RAYADO,
     };
   }
   return {
     className:
-      "border-amber-400 bg-amber-50 text-amber-800 dark:border-amber-600 dark:bg-amber-900/30 dark:text-amber-200",
+      "border-amber-400 bg-amber-50 text-amber-800",
   };
 }
 

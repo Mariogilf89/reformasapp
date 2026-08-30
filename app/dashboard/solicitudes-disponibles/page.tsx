@@ -81,7 +81,7 @@ export default async function SolicitudesDisponiblesPage(
   if (user.user_metadata?.role !== "profesional") {
     return (
       <div className="flex flex-1 items-center justify-center px-4 py-16 text-center">
-        <p className="text-neutral-600 dark:text-neutral-400">
+        <p className="text-neutral-600">
           Esta página es solo para cuentas de tipo profesional.
         </p>
       </div>
@@ -173,10 +173,10 @@ export default async function SolicitudesDisponiblesPage(
   return (
     <div className="flex flex-1 flex-col items-center gap-6 px-4 py-16">
       <div className="w-full max-w-lg">
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+        <h1 className="text-2xl font-semibold text-neutral-900">
           Solicitudes disponibles
         </h1>
-        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="mt-1 text-sm text-neutral-600">
           Solicitudes abiertas que coinciden con tus categorías.
         </p>
       </div>
@@ -192,13 +192,13 @@ export default async function SolicitudesDisponiblesPage(
 
       <div className="w-full max-w-lg flex flex-col gap-4">
         {!formularioEnviado && (
-          <p className="text-neutral-600 dark:text-neutral-400">
+          <p className="text-neutral-600">
             Usa los filtros para buscar solicitudes.
           </p>
         )}
 
         {formularioEnviado && solicitudes.length === 0 && (
-          <p className="text-neutral-600 dark:text-neutral-400">
+          <p className="text-neutral-600">
             No hay solicitudes disponibles con estos filtros por ahora.
           </p>
         )}
@@ -207,7 +207,7 @@ export default async function SolicitudesDisponiblesPage(
           <Link key={solicitud.id} href={`/dashboard/solicitudes/${solicitud.id}`}>
             <Card className="flex flex-col gap-2 p-6 transition-colors hover:border-primary-300">
               <div className="flex items-start justify-between gap-3">
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                <p className="font-medium text-neutral-900">
                   {CATEGORIAS.find((c) => c.value === solicitud.categoria)?.label ??
                     solicitud.categoria}
                   {" · "}
@@ -215,7 +215,7 @@ export default async function SolicitudesDisponiblesPage(
                 </p>
                 {contactadas.has(solicitud.id) && <Badge status="cerrada">Ya contactada</Badge>}
               </div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="text-sm text-neutral-600">
                 {solicitud.descripcion}
               </p>
             </Card>

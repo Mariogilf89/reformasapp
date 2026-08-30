@@ -82,8 +82,8 @@ export function FotosForm({ userId, fotosIniciales }: { userId: string; fotosIni
     <Card className="w-full max-w-lg p-8">
       <div className="flex flex-col gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">Fotos</h2>
-          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+          <h2 className="text-xl font-semibold text-neutral-900">Fotos</h2>
+          <p className="mt-1 text-sm text-neutral-600">
             Añade hasta {MAX_FOTOS_PROFESIONAL} fotos de tus trabajos (máximo 5 MB cada una).
           </p>
         </div>
@@ -93,7 +93,7 @@ export function FotosForm({ userId, fotosIniciales }: { userId: string; fotosIni
             {fotos.map((url) => (
               <div
                 key={url}
-                className="group relative aspect-square overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800"
+                className="group relative aspect-square overflow-hidden rounded-lg border border-neutral-200"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="Foto de trabajo del profesional" className="h-full w-full object-cover" />
@@ -109,7 +109,7 @@ export function FotosForm({ userId, fotosIniciales }: { userId: string; fotosIni
           </div>
         )}
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
         {huecosLibres > 0 && (
           <div>
@@ -120,10 +120,10 @@ export function FotosForm({ userId, fotosIniciales }: { userId: string; fotosIni
               multiple
               disabled={subiendo}
               onChange={(e) => handleFiles(e.target.files)}
-              className="block w-full text-sm text-neutral-600 file:mr-4 file:rounded-full file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:text-neutral-400 dark:file:bg-primary-900/30 dark:file:text-primary-300"
+              className="block w-full text-sm text-neutral-600 file:mr-4 file:rounded-full file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100"
             />
             {subiendo && (
-              <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-500">Subiendo...</p>
+              <p className="mt-2 text-sm text-neutral-500">Subiendo...</p>
             )}
           </div>
         )}

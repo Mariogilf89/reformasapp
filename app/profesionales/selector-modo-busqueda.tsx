@@ -6,7 +6,7 @@ import { SelectorFechaHora } from "./selector-fecha-hora";
 const MODOS = [
   { value: "lo_antes_posible", label: "Lo antes posible" },
   { value: "dia_hora", label: "Elegir día y hora" },
-  { value: "indiferente", label: "Indiferente" },
+  { value: "indiferente", label: "Cualquiera" },
 ] as const;
 
 /**
@@ -35,7 +35,7 @@ export function SelectorModoBusqueda({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+      <p className="text-sm font-medium text-neutral-900">
         ¿Cuándo lo necesitas?
       </p>
       <div className="flex flex-wrap gap-2">
@@ -48,7 +48,7 @@ export function SelectorModoBusqueda({
               "rounded-full border px-4 py-1.5 text-sm font-medium transition-colors " +
               (modo === m.value
                 ? "border-primary-600 bg-primary-600 text-white"
-                : "border-neutral-300 text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800")
+                : "border-neutral-300 text-neutral-700 hover:bg-neutral-100")
             }
           >
             {m.label}
@@ -58,7 +58,7 @@ export function SelectorModoBusqueda({
       <input type="hidden" name="modo" value={modo} />
 
       {modo === "dia_hora" && (
-        <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+        <div className="rounded-lg border border-neutral-200 p-4">
           <SelectorFechaHora
             fecha={fecha}
             horaInicio={horaInicio}

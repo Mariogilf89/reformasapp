@@ -27,7 +27,6 @@ import {
   type ArrastreEstado,
   type RedimensionEstado,
 } from "@/lib/calendario-geometria";
-import { Button } from "@/components/ui/button";
 import { VistaSemana } from "./vista-semana";
 import { VistaMes } from "./vista-mes";
 import { PanelPendientesSinFecha } from "./panel-pendientes-sin-fecha";
@@ -426,36 +425,45 @@ export function CalendarioCitas({
 
   return (
     <div className="flex w-full flex-col gap-4">
+      <PanelPendientesSinFecha
+        citas={citasPendientes}
+        citaArrastrandoId={arrastre?.origenPanel ? arrastre.citaId : null}
+        onAbrirFormulario={() => setMostrarFormExterna(true)}
+        onPointerDownCita={(e, cita) => iniciarArrastre(e, cita, true)}
+        onPointerMoveArrastre={moverArrastre}
+        onPointerUpArrastre={soltarArrastre}
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={irAnterior}
             aria-label="Anterior"
-            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
           >
             ←
           </button>
-          <p className="min-w-[10rem] text-center text-sm font-medium capitalize text-neutral-900 dark:text-neutral-100">
+          <p className="min-w-[10rem] text-center text-sm font-medium capitalize text-neutral-900">
             {etiquetaRango(anchor, vista)}
           </p>
           <button
             type="button"
             onClick={irSiguiente}
             aria-label="Siguiente"
-            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            className="rounded-full px-2 py-1 text-sm font-medium text-neutral-700 hover:bg-neutral-100"
           >
             →
           </button>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-1 text-xs text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center gap-1 text-xs text-neutral-600">
             <select
               aria-label="Hora de inicio del calendario"
               value={horaInicio}
               onChange={(e) => handleCambioRango(Number(e.target.value), horaFin)}
-              className="rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+              className="rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs"
             >
               {HORAS_DIA.map((h) => (
                 <option key={h} value={h}>
@@ -468,7 +476,7 @@ export function CalendarioCitas({
               aria-label="Hora de fin del calendario"
               value={horaFin}
               onChange={(e) => handleCambioRango(horaInicio, Number(e.target.value))}
-              className="rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+              className="rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs"
             >
               {HORAS_DIA.filter((h) => h >= 1).map((h) => (
                 <option key={h} value={h}>
@@ -478,12 +486,12 @@ export function CalendarioCitas({
             </select>
           </div>
 
-          <div className="flex items-center gap-1 text-xs text-neutral-600 dark:text-neutral-400">
+          <div className="flex items-center gap-1 text-xs text-neutral-600">
             <select
               aria-label="Primer día visible del calendario"
               value={diaInicio}
               onChange={(e) => handleCambioRangoDias(Number(e.target.value), diaFin)}
-              className="rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+              className="rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs"
             >
               {DIAS_SEMANA_CALENDARIO.map((d) => (
                 <option key={d.value} value={d.value}>
@@ -496,7 +504,7 @@ export function CalendarioCitas({
               aria-label="Último día visible del calendario"
               value={diaFin}
               onChange={(e) => handleCambioRangoDias(diaInicio, Number(e.target.value))}
-              className="rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+              className="rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-xs"
             >
               {DIAS_SEMANA_CALENDARIO.map((d) => (
                 <option key={d.value} value={d.value}>
@@ -506,14 +514,14 @@ export function CalendarioCitas({
             </select>
           </div>
 
-          <div className="flex overflow-hidden rounded-full border border-neutral-300 dark:border-neutral-700">
+          <div className="flex overflow-hidden rounded-full border border-neutral-300">
             <button
               type="button"
               onClick={() => navegar(anchor, "semana")}
               className={`px-3 py-1.5 text-xs font-medium ${
                 vista === "semana"
                   ? "bg-primary-600 text-white"
-                  : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                  : "text-neutral-700 hover:bg-neutral-100"
               }`}
             >
               Semana
@@ -524,38 +532,25 @@ export function CalendarioCitas({
               className={`px-3 py-1.5 text-xs font-medium ${
                 vista === "mes"
                   ? "bg-primary-600 text-white"
-                  : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                  : "text-neutral-700 hover:bg-neutral-100"
               }`}
             >
               Mes
             </button>
           </div>
-
-          <Button type="button" size="xs" onClick={() => setMostrarFormExterna(true)}>
-            Cita externa
-          </Button>
         </div>
       </div>
 
-      {errorRango && <p className="text-sm text-red-600 dark:text-red-400">{errorRango}</p>}
-      {errorRangoDias && <p className="text-sm text-red-600 dark:text-red-400">{errorRangoDias}</p>}
-      {errorArrastre && <p className="text-sm text-red-600 dark:text-red-400">{errorArrastre}</p>}
-
-      <PanelPendientesSinFecha
-        citas={citasPendientes}
-        citaArrastrandoId={arrastre?.origenPanel ? arrastre.citaId : null}
-        onAbrirFormulario={() => setMostrarFormExterna(true)}
-        onPointerDownCita={(e, cita) => iniciarArrastre(e, cita, true)}
-        onPointerMoveArrastre={moverArrastre}
-        onPointerUpArrastre={soltarArrastre}
-      />
+      {errorRango && <p className="text-sm text-red-600">{errorRango}</p>}
+      {errorRangoDias && <p className="text-sm text-red-600">{errorRangoDias}</p>}
+      {errorArrastre && <p className="text-sm text-red-600">{errorArrastre}</p>}
 
       <div className="relative w-full">
         {cargando && (
           <div
             role="status"
             aria-label="Actualizando calendario"
-            className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-white/60 backdrop-blur-sm dark:bg-neutral-950/60"
+            className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-lg bg-white/60 backdrop-blur-sm"
           >
             <svg
               className="h-8 w-8 animate-spin text-primary-600"

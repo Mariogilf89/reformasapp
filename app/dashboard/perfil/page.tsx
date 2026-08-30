@@ -50,7 +50,7 @@ export default async function PerfilProfesionalPage() {
   if (user.user_metadata?.role !== "profesional") {
     return (
       <div className="flex flex-1 items-center justify-center px-4 py-16 text-center">
-        <p className="text-neutral-600 dark:text-neutral-400">
+        <p className="text-neutral-600">
           Esta página es solo para cuentas de tipo profesional.
         </p>
       </div>
@@ -102,7 +102,7 @@ export default async function PerfilProfesionalPage() {
       <AvisoCambiosSinGuardar />
 
       <div className="flex w-full max-w-6xl items-center gap-3">
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+        <h1 className="text-2xl font-semibold text-neutral-900">
           Mi perfil profesional
         </h1>
         {perfil?.verificado && <VerificadoBadge />}
@@ -119,7 +119,7 @@ export default async function PerfilProfesionalPage() {
         <div className="flex flex-col gap-8">
           {perfil && (
             <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+              <h2 className="text-xl font-semibold text-neutral-900">
                 Mi disponibilidad
               </h2>
 
@@ -132,14 +132,14 @@ export default async function PerfilProfesionalPage() {
 
                   return (
                     <div key={dia.value}>
-                      <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+                      <p className="text-sm font-medium text-neutral-900">
                         {dia.label}
                       </p>
                       <ul className="mt-1 flex flex-col gap-1">
                         {tramosDia.map((tramo) => (
                           <li key={tramo.id}>
                             <Card className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                              <span className="text-neutral-600 dark:text-neutral-400">
+                              <span className="text-neutral-600">
                                 {tramo.hora_inicio.slice(0, 5)} – {tramo.hora_fin.slice(0, 5)}
                               </span>
                               <form action={borrarTramoDisponibilidad}>
@@ -157,7 +157,7 @@ export default async function PerfilProfesionalPage() {
                 })}
 
                 {(disponibilidad ?? []).length === 0 && (
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  <p className="text-sm text-neutral-600">
                     Todavía no has añadido ningún tramo de disponibilidad.
                   </p>
                 )}
@@ -169,13 +169,13 @@ export default async function PerfilProfesionalPage() {
 
           {perfil && (
             <div className="flex flex-col gap-4">
-              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+              <h2 className="text-xl font-semibold text-neutral-900">
                 Días no disponibles
               </h2>
 
               <div className="flex flex-col gap-2">
                 {(excepciones ?? []).length === 0 && (
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  <p className="text-sm text-neutral-600">
                     No tienes ninguna excepción próxima.
                   </p>
                 )}
@@ -184,7 +184,7 @@ export default async function PerfilProfesionalPage() {
                     key={excepcion.id}
                     className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
                   >
-                    <span className="text-neutral-600 dark:text-neutral-400">
+                    <span className="text-neutral-600">
                       {new Date(`${excepcion.fecha}T00:00:00`).toLocaleDateString("es-ES", {
                         weekday: "long",
                         day: "numeric",
@@ -228,12 +228,12 @@ export default async function PerfilProfesionalPage() {
 
       {perfil && (
         <div className="w-full max-w-lg flex flex-col gap-4">
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+          <h2 className="text-xl font-semibold text-neutral-900">
             Valoraciones {media !== null && `· ${media.toFixed(1)} / 5`}
           </h2>
 
           {(valoraciones ?? []).length === 0 ? (
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               Todavía no has recibido ninguna valoración.
             </p>
           ) : (
@@ -241,11 +241,11 @@ export default async function PerfilProfesionalPage() {
               {(valoraciones ?? []).map((valoracion, index) => (
                 <li key={index}>
                   <Card className="p-3 text-sm">
-                    <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                    <p className="font-medium text-neutral-900">
                       {valoracion.puntuacion} {valoracion.puntuacion === 1 ? "estrella" : "estrellas"}
                     </p>
                     {valoracion.comentario && (
-                      <p className="mt-1 text-neutral-600 dark:text-neutral-400">
+                      <p className="mt-1 text-neutral-600">
                         {valoracion.comentario}
                       </p>
                     )}

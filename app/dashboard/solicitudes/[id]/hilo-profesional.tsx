@@ -105,7 +105,7 @@ export function HiloProfesional({
 
         <div>
           <div className="flex items-center gap-2">
-            <p className="font-medium text-neutral-900 dark:text-neutral-100">{profesionalNombre}</p>
+            <p className="font-medium text-neutral-900">{profesionalNombre}</p>
             {profesionalVerificado && <VerificadoBadge />}
           </div>
           {profesionalFotos && profesionalFotos.length > 0 && (
@@ -116,7 +116,7 @@ export function HiloProfesional({
                   key={url}
                   src={url}
                   alt={`Trabajo de ${profesionalNombre}`}
-                  className="h-14 w-14 rounded-md border border-neutral-200 object-cover dark:border-neutral-800"
+                  className="h-14 w-14 rounded-md border border-neutral-200 object-cover"
                 />
               ))}
             </div>
@@ -124,7 +124,7 @@ export function HiloProfesional({
         </div>
 
         <div className="flex flex-col gap-2">
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             Opcional: propón un día y hora para una cita.
           </p>
           <CalendarioHuecos
@@ -161,29 +161,29 @@ export function HiloProfesional({
         </div>
 
         {mensajes.length > 0 && (
-          <div className="flex flex-col gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+          <div className="flex flex-col gap-3 border-t border-neutral-200 pt-4">
             {mensajes.map((mensaje) => (
               <div
                 key={mensaje.id}
-                className="rounded-lg bg-neutral-50 p-3 text-sm dark:bg-neutral-800/60"
+                className="rounded-lg bg-neutral-50 p-3 text-sm"
               >
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                <p className="font-medium text-neutral-900">
                   {mensaje.autor}
                 </p>
-                <p className="mt-1 text-neutral-700 dark:text-neutral-300">{mensaje.texto}</p>
+                <p className="mt-1 text-neutral-700">{mensaje.texto}</p>
                 <p className="mt-1 text-xs text-neutral-500">{mensaje.creadoEn}</p>
               </div>
             ))}
           </div>
         )}
 
-        <div className="flex flex-col gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
+        <div className="flex flex-col gap-2 border-t border-neutral-200 pt-4">
           <Label htmlFor={`texto-${profesionalId}`}>Enviar un mensaje</Label>
           <Textarea ref={textareaRef} id={`texto-${profesionalId}`} name="texto" required rows={3} />
         </div>
 
         {state?.error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{state.error}</p>
+          <p className="text-sm text-red-600">{state.error}</p>
         )}
 
         <Button type="submit" disabled={pending} size="xs" className="self-start">

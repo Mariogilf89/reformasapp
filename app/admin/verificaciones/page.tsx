@@ -26,7 +26,7 @@ export default async function VerificacionesAdminPage() {
   if (user.user_metadata?.role !== "admin") {
     return (
       <div className="flex flex-1 items-center justify-center px-4 py-16 text-center">
-        <p className="text-neutral-600 dark:text-neutral-400">
+        <p className="text-neutral-600">
           Esta página es solo para administradores.
         </p>
       </div>
@@ -53,17 +53,17 @@ export default async function VerificacionesAdminPage() {
   return (
     <div className="flex flex-1 flex-col items-center gap-6 px-4 py-16">
       <div className="w-full max-w-2xl">
-        <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+        <h1 className="text-2xl font-semibold text-neutral-900">
           Verificaciones pendientes
         </h1>
-        <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="mt-1 text-sm text-neutral-600">
           Profesionales que han enviado su documento de identidad y esperan revisión.
         </p>
       </div>
 
       <div className="flex w-full max-w-2xl flex-col gap-4">
         {pendientesConUrl.length === 0 && (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             No hay verificaciones pendientes.
           </p>
         )}
@@ -80,13 +80,13 @@ export default async function VerificacionesAdminPage() {
                   <img
                     src={profesional.urlFirmada}
                     alt={`Documento de identidad de ${profesional.nombre}`}
-                    className="h-32 w-32 rounded-md border border-neutral-200 object-cover transition-opacity hover:opacity-80 dark:border-neutral-800"
+                    className="h-32 w-32 rounded-md border border-neutral-200 object-cover transition-opacity hover:opacity-80"
                   />
                 </a>
               ) : (
-                <div className="h-32 w-32 rounded-md border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-800" />
+                <div className="h-32 w-32 rounded-md border border-neutral-200 bg-neutral-50"/>
               )}
-              <p className="font-medium text-neutral-900 dark:text-neutral-100">
+              <p className="font-medium text-neutral-900">
                 {profesional.nombre}
               </p>
             </div>

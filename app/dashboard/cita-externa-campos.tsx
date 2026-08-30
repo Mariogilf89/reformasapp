@@ -111,10 +111,10 @@ export function CitaExternaCampos({
     <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-4">
       {!citaExistente && (
         <>
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+          <h2 className="text-lg font-semibold text-neutral-900">
             {duplicarDesde ? "Duplicar cita externa" : "Cita externa"}
           </h2>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             Bloquea un hueco en tu calendario que no pasa por la negociación con clientes (por
             ejemplo, un trabajo ya acordado fuera de la app).
           </p>
@@ -218,13 +218,13 @@ export function CitaExternaCampos({
       </div>
 
       {!citaExistente && (
-        <p className="text-xs text-neutral-500 dark:text-neutral-500">
+        <p className="text-xs text-neutral-500">
           Déjalo sin fecha ni horas para guardarla como pendiente de agendar: aparecerá en el
           panel lateral y podrás arrastrarla al calendario más adelante.
         </p>
       )}
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={enviando} className={onCancelar ? undefined : "w-full"}>
@@ -246,10 +246,10 @@ export function CitaExternaCampos({
       {formPendienteSolape && (
         <Modal onClose={() => setFormPendienteSolape(null)}>
           <div className="flex flex-col gap-4">
-            <h2 className="text-lg font-semibold text-neutral-900 dark:text-neutral-50">
+            <h2 className="text-lg font-semibold text-neutral-900">
               Cita solapada
             </h2>
-            <p className="text-sm text-neutral-700 dark:text-neutral-300">
+            <p className="text-sm text-neutral-700">
               Estás creando una cita que se solapa con otra ya existente en tu calendario. Si
               continúas, aparecerán dos citas simultáneas. ¿Quieres continuar o cancelar?
             </p>

@@ -76,12 +76,12 @@ export default async function ProfesionalDetallePage(
         <div className="flex flex-col gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+              <h1 className="text-2xl font-semibold text-neutral-900">
                 {profesional.nombre}
               </h1>
               {profesional.verificado && <VerificadoBadge />}
             </div>
-            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="mt-1 text-sm text-neutral-600">
               {profesional.zona}
             </p>
           </div>
@@ -90,18 +90,18 @@ export default async function ProfesionalDetallePage(
             {profesional.categorias.map((cat) => (
               <span
                 key={cat}
-                className="rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
+                className="rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700"
               >
                 {CATEGORIAS.find((c) => c.value === cat)?.label ?? cat}
               </span>
             ))}
           </div>
 
-          <p className="text-sm text-neutral-700 dark:text-neutral-300">
+          <p className="text-sm text-neutral-700">
             {profesional.descripcion}
           </p>
 
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             {media !== null
               ? `★ ${media.toFixed(1)} / 5 (${listaValoraciones.length} valoraci${listaValoraciones.length === 1 ? "ón" : "ones"})`
               : "Todavía no tiene valoraciones."}
@@ -115,7 +115,7 @@ export default async function ProfesionalDetallePage(
                   key={url}
                   src={url}
                   alt={`Trabajo de ${profesional.nombre}`}
-                  className="aspect-square w-full rounded-lg border border-neutral-200 object-cover dark:border-neutral-800"
+                  className="aspect-square w-full rounded-lg border border-neutral-200 object-cover"
                 />
               ))}
             </div>
@@ -141,19 +141,19 @@ export default async function ProfesionalDetallePage(
             provinciaElegida={provinciaElegida}
           />
         ) : (
-          <p className="text-sm text-neutral-500 dark:text-neutral-500">
+          <p className="text-sm text-neutral-500">
             Esta vista es para clientes.
           </p>
         )}
       </div>
 
       <div className="flex w-full max-w-2xl flex-col gap-4">
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+        <h2 className="text-xl font-semibold text-neutral-900">
           Valoraciones
         </h2>
 
         {listaValoraciones.length === 0 ? (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             Todavía no hay valoraciones para este profesional.
           </p>
         ) : (
@@ -161,12 +161,12 @@ export default async function ProfesionalDetallePage(
             {listaValoraciones.map((valoracion, index) => (
               <li key={index}>
                 <Card className="p-4 text-sm">
-                  <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                  <p className="font-medium text-neutral-900">
                     {valoracion.puntuacion}{" "}
                     {valoracion.puntuacion === 1 ? "estrella" : "estrellas"}
                   </p>
                   {valoracion.comentario && (
-                    <p className="mt-1 text-neutral-600 dark:text-neutral-400">
+                    <p className="mt-1 text-neutral-600">
                       {valoracion.comentario}
                     </p>
                   )}
@@ -179,7 +179,7 @@ export default async function ProfesionalDetallePage(
 
       <Link
         href="/profesionales"
-        className="text-sm font-medium text-primary-700 hover:underline dark:text-primary-400"
+        className="text-sm font-medium text-primary-700 hover:underline"
       >
         ← Volver al directorio
       </Link>

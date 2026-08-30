@@ -39,26 +39,26 @@ export default function ForgotPasswordPage() {
       <Card className="w-full max-w-sm p-6">
         {enviado ? (
           <div className="flex flex-col gap-4">
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+            <h1 className="text-2xl font-semibold text-neutral-900">
               Revisa tu email
             </h1>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               Si existe una cuenta con ese email, te hemos enviado un enlace para
               restablecer la contraseña.
             </p>
             <Link
               href="/login"
-              className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-400"
+              className="text-sm font-medium text-primary-600 hover:underline"
             >
               Volver a iniciar sesión
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+            <h1 className="text-2xl font-semibold text-neutral-900">
               ¿Olvidaste tu contraseña?
             </h1>
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               Escribe tu email y te enviaremos un enlace para restablecerla.
             </p>
 
@@ -75,17 +75,17 @@ export default function ForgotPasswordPage() {
             </div>
 
             {error && (
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              <p className="text-sm text-red-600">{error}</p>
             )}
 
             <Button type="submit" disabled={pending} className="mt-2 w-full">
               {pending ? "Enviando..." : "Enviar enlace"}
             </Button>
 
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               <Link
                 href="/login"
-                className="font-medium text-primary-600 hover:underline dark:text-primary-400"
+                className="font-medium text-primary-600 hover:underline"
               >
                 Volver a iniciar sesión
               </Link>

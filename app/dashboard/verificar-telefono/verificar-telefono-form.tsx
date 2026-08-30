@@ -72,7 +72,7 @@ export function VerificarTelefonoForm({
     <Card className="w-full max-w-lg p-8">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-50">
+          <h1 className="text-2xl font-semibold text-neutral-900">
             Verificación de teléfono
           </h1>
           {verificado ? (
@@ -83,20 +83,20 @@ export function VerificarTelefonoForm({
         </div>
 
         {verificado ? (
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="text-sm text-neutral-600">
             Tu teléfono {telefono} está verificado. Los clientes y profesionales con los que
             tengas una cita confirmada podrán ver este número.
           </p>
         ) : paso === "telefono" ? (
           <form action={handleSolicitar} className="flex flex-col gap-4">
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               Te enviaremos un código de verificación por SMS a este número.
             </p>
 
             <div className="flex flex-col gap-1">
               <Label htmlFor="telefono_local">Teléfono</Label>
               <div className="flex items-stretch gap-2">
-                <span className="flex items-center rounded-md border border-neutral-300 bg-neutral-50 px-3 text-sm text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+                <span className="flex items-center rounded-md border border-neutral-300 bg-neutral-50 px-3 text-sm text-neutral-600">
                   {PREFIJO_ESPANA}
                 </span>
                 <Input
@@ -114,7 +114,7 @@ export function VerificarTelefonoForm({
               </div>
             </div>
 
-            {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
             <Button type="submit" disabled={enviando} className="w-full">
               {enviando ? "Enviando..." : "Enviar código"}
@@ -122,7 +122,7 @@ export function VerificarTelefonoForm({
           </form>
         ) : (
           <form action={handleVerificar} className="flex flex-col gap-4">
-            <p className="text-sm text-neutral-600 dark:text-neutral-400">
+            <p className="text-sm text-neutral-600">
               Hemos enviado un código a {telefono}. Introdúcelo a continuación. Caduca a los 10
               minutos.
             </p>
@@ -140,7 +140,7 @@ export function VerificarTelefonoForm({
               />
             </div>
 
-            {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+            {error && <p className="text-sm text-red-600">{error}</p>}
 
             <div className="flex items-center gap-4">
               <Button type="submit" disabled={enviando}>
@@ -152,7 +152,7 @@ export function VerificarTelefonoForm({
                   setError(null);
                   setPaso("telefono");
                 }}
-                className="text-sm text-neutral-600 hover:underline dark:text-neutral-400"
+                className="text-sm text-neutral-600 hover:underline"
               >
                 Cambiar número
               </button>

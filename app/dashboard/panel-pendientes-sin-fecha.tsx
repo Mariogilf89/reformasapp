@@ -23,16 +23,16 @@ export function PanelPendientesSinFecha({
   return (
     <Card className="flex w-full flex-wrap items-center gap-3 p-3">
       <div className="flex shrink-0 items-center gap-2">
-        <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
+        <h2 className="text-sm font-semibold text-neutral-900">
           Citas externas
         </h2>
-        <Button type="button" size="xs" variant="secondary" onClick={onAbrirFormulario}>
+        <Button type="button" size="xs" onClick={onAbrirFormulario}>
           Añadir
         </Button>
       </div>
 
       {citas.length === 0 ? (
-        <p className="text-xs text-neutral-500 dark:text-neutral-500">
+        <p className="text-xs text-neutral-500">
           No tienes citas externas pendientes de agendar.
         </p>
       ) : (
@@ -48,7 +48,7 @@ export function PanelPendientesSinFecha({
                 touchAction: "none",
                 opacity: citaArrastrandoId === cita.id ? 0.4 : 1,
               }}
-              className="cursor-grab select-none whitespace-nowrap rounded-md border border-neutral-300 bg-neutral-50 px-3 py-2 text-sm text-neutral-700 active:cursor-grabbing dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+              className="cursor-grab select-none whitespace-nowrap rounded-md border border-neutral-300 bg-neutral-50 px-3 py-2 text-sm text-neutral-700 active:cursor-grabbing"
             >
               {cita.titulo_externo}
             </li>

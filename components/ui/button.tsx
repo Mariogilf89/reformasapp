@@ -7,7 +7,7 @@ export type ButtonSize = "sm" | "xs";
 const variantClasses: Record<ButtonVariant, string> = {
   primary: "bg-primary-600 text-white hover:bg-primary-700",
   secondary:
-    "border border-neutral-300 text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-100 dark:hover:bg-neutral-800",
+    "border border-neutral-300 text-neutral-900 hover:bg-neutral-100",
   danger: "bg-red-600 text-white hover:bg-red-700",
 };
 

@@ -36,7 +36,7 @@ export default async function SolicitudesPage() {
   if (user.user_metadata?.role !== "cliente") {
     return (
       <div className="flex flex-1 items-center justify-center px-4 py-16 text-center">
-        <p className="text-neutral-600 dark:text-neutral-400">
+        <p className="text-neutral-600">
           Esta página es solo para cuentas de tipo cliente.
         </p>
       </div>
@@ -94,12 +94,12 @@ export default async function SolicitudesPage() {
       <SolicitudForm />
 
       <div className="w-full max-w-lg flex flex-col gap-6">
-        <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+        <h2 className="text-xl font-semibold text-neutral-900">
           Mis solicitudes
         </h2>
 
         {(solicitudes ?? []).length === 0 && (
-          <p className="text-neutral-600 dark:text-neutral-400">
+          <p className="text-neutral-600">
             Todavía no has publicado ninguna solicitud.
           </p>
         )}
@@ -108,13 +108,13 @@ export default async function SolicitudesPage() {
           <Card key={solicitud.id} className="p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                <p className="font-medium text-neutral-900">
                   {CATEGORIAS.find((c) => c.value === solicitud.categoria)?.label ??
                     solicitud.categoria}
                   {" · "}
                   {solicitud.zona}
                 </p>
-                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+                <p className="mt-1 text-sm text-neutral-600">
                   {solicitud.descripcion}
                 </p>
               </div>
@@ -124,7 +124,7 @@ export default async function SolicitudesPage() {
             <div className="mt-3 flex items-center justify-between gap-4">
               <Link
                 href={`/dashboard/solicitudes/${solicitud.id}`}
-                className="text-sm font-medium text-primary-700 hover:underline dark:text-primary-400"
+                className="text-sm font-medium text-primary-700 hover:underline"
               >
                 Ver detalle y mensajes
               </Link>
@@ -135,33 +135,33 @@ export default async function SolicitudesPage() {
             </div>
 
             {solicitud.estado === "abierta" && (
-              <div className="mt-4 flex flex-col gap-3 border-t border-neutral-200 pt-4 dark:border-neutral-800">
-                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+              <div className="mt-4 flex flex-col gap-3 border-t border-neutral-200 pt-4">
+                <p className="text-sm font-medium text-neutral-900">
                   Profesionales que coinciden
                 </p>
                 {(matchesPorSolicitud.get(solicitud.id) ?? []).length === 0 ? (
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  <p className="text-sm text-neutral-600">
                     Todavía no hay profesionales de esta categoría.
                   </p>
                 ) : (
                   <ul className="flex flex-col gap-3">
                     {matchesPorSolicitud.get(solicitud.id)!.map((profesional) => (
                       <li key={profesional.id}>
-                        <div className="flex items-start justify-between gap-3 rounded-lg bg-neutral-50 p-3 text-sm dark:bg-neutral-800/60">
+                        <div className="flex items-start justify-between gap-3 rounded-lg bg-neutral-50 p-3 text-sm">
                           <div>
-                            <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                            <p className="font-medium text-neutral-900">
                               {profesional.nombre}
                             </p>
-                            <p className="text-neutral-600 dark:text-neutral-400">
+                            <p className="text-neutral-600">
                               {profesional.zona}
                             </p>
-                            <p className="text-neutral-600 dark:text-neutral-400">
+                            <p className="text-neutral-600">
                               {profesional.descripcion}
                             </p>
                           </div>
                           <Link
                             href={`/dashboard/solicitudes/${solicitud.id}?contactar=${profesional.id}#mensaje`}
-                            className="shrink-0 font-medium text-primary-700 hover:underline dark:text-primary-400"
+                            className="shrink-0 font-medium text-primary-700 hover:underline"
                           >
                             Contactar
                           </Link>

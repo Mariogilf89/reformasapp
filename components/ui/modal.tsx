@@ -17,7 +17,7 @@ export function Modal({ onClose, children }: { onClose: () => void; children: Re
           type="button"
           onClick={onClose}
           aria-label="Cerrar"
-          className="absolute right-4 top-4 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+          className="absolute right-4 top-4 text-neutral-500 hover:text-neutral-900"
         >
           ×
         </button>

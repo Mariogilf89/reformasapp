@@ -32,7 +32,7 @@ export function FiltroBusqueda({
           <div className="flex flex-1 flex-col gap-1">
             <label
               htmlFor="categoria"
-              className="text-sm font-medium text-neutral-900 dark:text-neutral-100"
+              className="text-sm font-medium text-neutral-900"
             >
               Categoría
             </label>
@@ -49,7 +49,7 @@ export function FiltroBusqueda({
           <div className="flex flex-1 flex-col gap-1">
             <label
               htmlFor="provincia"
-              className="text-sm font-medium text-neutral-900 dark:text-neutral-100"
+              className="text-sm font-medium text-neutral-900"
             >
               Provincia
             </label>
@@ -66,7 +66,7 @@ export function FiltroBusqueda({
           <div className="flex flex-1 flex-col gap-1">
             <label
               htmlFor="zona"
-              className="text-sm font-medium text-neutral-900 dark:text-neutral-100"
+              className="text-sm font-medium text-neutral-900"
             >
               Localidad
             </label>

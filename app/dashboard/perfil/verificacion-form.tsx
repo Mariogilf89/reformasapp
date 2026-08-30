@@ -67,7 +67,7 @@ export function VerificacionForm({
     <Card className="w-full max-w-lg p-8">
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">
+          <h2 className="text-xl font-semibold text-neutral-900">
             Verificación de identidad
           </h2>
           {verificado ? (
@@ -79,13 +79,13 @@ export function VerificacionForm({
           )}
         </div>
 
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-neutral-600">
           Sube una foto o escaneado de tu DNI/NIF/CIF para verificar tu identidad. Un
           administrador revisará el documento manualmente. Solo tú y el equipo de Faenia
           podéis verlo.
         </p>
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div>
           <input
@@ -94,13 +94,13 @@ export function VerificacionForm({
             accept="image/*"
             disabled={subiendo}
             onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
-            className="block w-full text-sm text-neutral-600 file:mr-4 file:rounded-full file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100 dark:text-neutral-400 dark:file:bg-primary-900/30 dark:file:text-primary-300"
+            className="block w-full text-sm text-neutral-600 file:mr-4 file:rounded-full file:border-0 file:bg-primary-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-primary-700 hover:file:bg-primary-100"
           />
           {subiendo && (
-            <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-500">Subiendo...</p>
+            <p className="mt-2 text-sm text-neutral-500">Subiendo...</p>
           )}
           {tieneDocumento && !subiendo && (
-            <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-500">
+            <p className="mt-2 text-xs text-neutral-500">
               {verificado
                 ? "Si subes un nuevo documento, tu verificación volverá a quedar pendiente de revisión."
                 : "Ya tienes un documento enviado. Si subes otro, sustituirá al anterior."}

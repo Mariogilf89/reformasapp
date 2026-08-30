@@ -14,7 +14,7 @@ markdown
 
 Marketplace que conecta particulares con profesionales de la reforma
 
-(pintores, electricistas, fontaneros...) en Galicia. Fase 1: marketplace
+(pintores, electricistas, fontaneros...) en Madrid. Fase 1: marketplace
 
 mínimo (sin calendario ni finanzas todavía).
 

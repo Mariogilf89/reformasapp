@@ -28,10 +28,10 @@ export function CabeceraProfesional({
     <Card className="flex w-full flex-wrap items-center justify-between gap-4 p-6">
       <div className="flex flex-col gap-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">{nombre}</h1>
+          <h1 className="text-xl font-semibold text-neutral-900">{nombre}</h1>
           {verificado && <VerificadoBadge />}
         </div>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="text-sm text-neutral-600">
           {categoriasLabel || "Sin categorías"} · {zona || "Sin zona"} ·{" "}
           {telefono ?? "Sin teléfono"}
         </p>

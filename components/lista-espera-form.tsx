@@ -44,7 +44,7 @@ export function ListaEsperaForm({
 
   if (estado === "enviado") {
     return (
-      <p className="text-sm font-medium text-primary-700 dark:text-primary-400">
+      <p className="text-sm font-medium text-primary-700">
         ¡Gracias! Te avisaremos en cuanto lleguemos a tu zona.
       </p>
     );
@@ -85,7 +85,7 @@ export function ListaEsperaForm({
       <Button type="submit" variant="secondary" disabled={estado === "enviando"} className="whitespace-nowrap">
         {estado === "enviando" ? "Enviando..." : "Avisadme"}
       </Button>
-      {error && <p className="text-sm text-red-600 dark:text-red-400 sm:basis-full">{error}</p>}
+      {error && <p className="text-sm text-red-600 sm:basis-full">{error}</p>}
     </form>
   );
 }

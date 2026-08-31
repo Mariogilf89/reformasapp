@@ -13,10 +13,26 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { IconTelefono } from "@/components/ui/icon-telefono";
 import { AceptarCitaForm } from "./citas/aceptar-cita-form";
 import { ProponerHorarioForm } from "./citas/proponer-horario-form";
 import { AnularCitaProfesionalForm } from "./citas/anular-cita-profesional-form";
 import { CitaExternaCampos } from "./cita-externa-campos";
+
+// Solo tiene sentido en móvil: en escritorio no hay marcador de teléfono al
+// que llamar (el número ya es un enlace tel: en el sitio donde se muestra,
+// pero ahí no siempre queda claro que sea pulsable).
+function BotonLlamar({ telefono }: { telefono: string }) {
+  return (
+    <a
+      href={`tel:${telefono}`}
+      aria-label={`Llamar al ${telefono}`}
+      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white sm:hidden"
+    >
+      <IconTelefono className="h-3.5 w-3.5" />
+    </a>
+  );
+}
 
 function formatearFecha(fecha: string) {
   return new Date(`${fecha}T00:00:00`).toLocaleDateString("es-ES", {
@@ -279,14 +295,17 @@ export function DetalleCitaModal({
             <p className="mt-1 text-sm text-neutral-600">{ubicacion}</p>
           )}
           {cita.origen_externo && (cita.contacto_nombre || cita.contacto_telefono) && (
-            <p className="mt-1 text-sm text-neutral-600">
-              {cita.contacto_nombre}
-              {cita.contacto_nombre && cita.contacto_telefono && " · "}
-              {cita.contacto_telefono && (
-                <a href={`tel:${cita.contacto_telefono}`} className="text-primary-700 hover:underline">
-                  {cita.contacto_telefono}
-                </a>
-              )}
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-neutral-600">
+              <span>
+                {cita.contacto_nombre}
+                {cita.contacto_nombre && cita.contacto_telefono && " · "}
+                {cita.contacto_telefono && (
+                  <a href={`tel:${cita.contacto_telefono}`} className="text-primary-700 hover:underline">
+                    {cita.contacto_telefono}
+                  </a>
+                )}
+              </span>
+              {cita.contacto_telefono && <BotonLlamar telefono={cita.contacto_telefono} />}
             </p>
           )}
         </div>
@@ -302,10 +321,13 @@ export function DetalleCitaModal({
         )}
 
         {!cita.origen_externo && cita.estado === "confirmada" && (
-          <p className="text-sm text-neutral-600">
-            {cita.telefonoCliente
-              ? `Teléfono de contacto: ${cita.telefonoCliente}`
-              : "El cliente no ha añadido un teléfono de contacto todavía."}
+          <p className="flex items-center gap-1.5 text-sm text-neutral-600">
+            <span>
+              {cita.telefonoCliente
+                ? `Teléfono de contacto: ${cita.telefonoCliente}`
+                : "El cliente no ha añadido un teléfono de contacto todavía."}
+            </span>
+            {cita.telefonoCliente && <BotonLlamar telefono={cita.telefonoCliente} />}
           </p>
         )}
 

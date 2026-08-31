@@ -15,6 +15,7 @@ import {
 } from "@/lib/calendario-geometria";
 import { fechaISO, inicioSemana, sumarDias } from "@/lib/fechas";
 import { IconUbicacion } from "@/components/ui/icon-ubicacion";
+import { IconTelefono } from "@/components/ui/icon-telefono";
 
 const DIAS_CABECERA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -342,8 +343,10 @@ export function VistaSemana({
                     onPointerMove={onPointerMoveArrastre}
                     onPointerUp={onPointerUpArrastre}
                     onPointerCancel={onPointerCancelArrastre}
-                    className={`absolute cursor-grab select-none overflow-hidden border text-left active:cursor-grabbing [-webkit-touch-callout:none] ${
-                      esVistaDia ? "px-3 py-2 text-sm leading-snug sm:text-base" : "px-1.5 py-0.5 text-[11px] leading-tight"
+                    className={`absolute cursor-grab select-none overflow-hidden border active:cursor-grabbing [-webkit-touch-callout:none] ${
+                      esVistaDia
+                        ? "flex flex-col justify-center gap-0.5 px-3 py-2 text-center text-sm leading-snug sm:text-base"
+                        : "px-1.5 py-0.5 text-left text-[11px] leading-tight"
                     } ${radioClase} ${estilo.className} ${
                       esArrastrada || esRedimensionada ? "shadow-lg ring-2 ring-primary-500" : ""
                     }`}
@@ -367,13 +370,39 @@ export function VistaSemana({
                     {esVistaDia ? (
                       <>
                         {!esArrastrada && ubicacionTexto && height >= ALTURA_UBICACION_DIA_PX && (
-                          <span className="flex items-center gap-1 truncate opacity-80">
+                          <span className="flex items-center justify-center gap-1 truncate opacity-80">
                             <IconUbicacion className="h-3.5 w-3.5 shrink-0" />
                             <span className="truncate">{ubicacionTexto}</span>
                           </span>
                         )}
                         {!esArrastrada && contactoTexto && height >= ALTURA_CONTACTO_DIA_PX && (
-                          <span className="block truncate opacity-80">{contactoTexto}</span>
+                          <span className="flex items-center justify-center gap-1.5">
+                            <span className="min-w-0 truncate opacity-80">{contactoTexto}</span>
+                            {contacto.telefono && (
+                              // No es un <a>: este bloque ya es un <button> (mueve/abre
+                              // la cita al arrastrarlo/pulsarlo) y anidar un enlace
+                              // dentro sería HTML inválido. En su lugar, un span que
+                              // navega a tel: él mismo, con propagación cortada en
+                              // pointerdown/up (mismo patrón que las asas de
+                              // redimensionado de abajo) para que pulsarlo no dispare
+                              // el arrastre ni abra el modal de detalle. Solo tiene
+                              // sentido en móvil: en escritorio no hay marcador al que
+                              // llamar. Fuera del span de opacidad reducida de arriba
+                              // para que el icono se vea nítido, no atenuado.
+                              <span
+                                role="button"
+                                aria-label={`Llamar al ${contacto.telefono}`}
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onPointerUp={(e) => {
+                                  e.stopPropagation();
+                                  window.location.href = `tel:${contacto.telefono}`;
+                                }}
+                                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/60 text-current sm:hidden"
+                              >
+                                <IconTelefono className="h-3.5 w-3.5" />
+                              </span>
+                            )}
+                          </span>
                         )}
                       </>
                     ) : (

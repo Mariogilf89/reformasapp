@@ -9,6 +9,7 @@ import {
   crearNotificacion,
 } from "@/lib/supabase-admin";
 import { enviarEmail } from "@/lib/email";
+import { fechaLocal, sumarDias } from "@/lib/fechas";
 
 export type Supabase = Awaited<ReturnType<typeof createServerSupabaseClient>>;
 
@@ -42,6 +43,36 @@ function finConFallback(horaInicio: string, horaFin: string | null) {
 
 function seSuperponen(inicioA: number, finA: number, inicioB: number, finB: number) {
   return inicioA < finB && inicioB < finA;
+}
+
+// Tope defensivo para que un rango de repetición mal indicado (p.ej. una
+// fecha de fin a varios años vista) no genere una inserción masiva por
+// error: cubre de sobra el caso de uso real (repetir semanalmente durante
+// varios meses).
+const LIMITE_CITAS_REPETICION = 366;
+
+/**
+ * Fechas ISO entre fechaInicio y fechaFin (ambas incluidas) cuyo día de la
+ * semana —criterio Date.getDay(), 0=domingo..6=sábado— está en diasSemana.
+ * La usa crearCitaExterna para expandir una cita externa "que se repite" en
+ * una fila independiente por cada ocurrencia.
+ */
+function fechasRepeticion(
+  fechaInicioISO: string,
+  fechaFinISO: string,
+  diasSemana: number[]
+): string[] {
+  const diasSet = new Set(diasSemana);
+  const fechas: string[] = [];
+  let cursor = fechaLocal(fechaInicioISO);
+  const fin = fechaLocal(fechaFinISO);
+  while (cursor.getTime() <= fin.getTime()) {
+    if (diasSet.has(cursor.getDay())) {
+      fechas.push(fechaISO(cursor));
+    }
+    cursor = sumarDias(cursor, 1);
+  }
+  return fechas;
 }
 
 function escapeHtml(texto: string) {
@@ -1025,6 +1056,8 @@ export async function crearCitaExterna(
   const calle = formData.get("calle")?.toString().trim() || null;
   const contactoNombre = formData.get("contacto_nombre")?.toString().trim() || null;
   const contactoTelefono = formData.get("contacto_telefono")?.toString().trim() || null;
+  const repetir = formData.get("repetir") === "1";
+  const diasSemanaRepeticion = formData.getAll("dias_semana").map((valor) => Number(valor));
 
   if (!titulo) {
     return { error: "Indica un título para la cita." };
@@ -1039,6 +1072,14 @@ export async function crearCitaExterna(
   }
   if (estadoFechaHora === "completo" && fechaFin && fechaFin < fecha!) {
     return { error: "La fecha de fin no puede ser anterior a la fecha de inicio." };
+  }
+  if (estadoFechaHora === "completo" && repetir) {
+    if (!fechaFin) {
+      return { error: "Indica la fecha de fin hasta la que se repite la cita." };
+    }
+    if (diasSemanaRepeticion.length === 0) {
+      return { error: "Selecciona al menos un día de la semana para la repetición." };
+    }
   }
 
   const profesionalId = await propioProfesionalId(supabase, user.id);
@@ -1077,6 +1118,72 @@ export async function crearCitaExterna(
     return { error: "La hora de fin debe ser posterior a la hora de inicio." };
   }
 
+  const permitirSolape = formData.get("permitir_solape") === "1";
+
+  // Cita "que se repite": en vez de una sola fila con fecha/fecha_fin (que
+  // representa un bloqueo continuo de varios días, ver más abajo), genera
+  // una fila independiente por cada fecha del rango [fecha, fecha_fin] cuyo
+  // día de la semana esté entre los elegidos.
+  if (repetir) {
+    const fechasGeneradas = fechasRepeticion(fecha!, fechaFin!, diasSemanaRepeticion);
+    if (fechasGeneradas.length === 0) {
+      return {
+        error: "Ningún día del rango coincide con los días de la semana seleccionados.",
+      };
+    }
+    if (fechasGeneradas.length > LIMITE_CITAS_REPETICION) {
+      return {
+        error: `El rango de repetición genera demasiadas citas (más de ${LIMITE_CITAS_REPETICION}). Reduce la fecha de fin o los días seleccionados.`,
+      };
+    }
+
+    if (!permitirSolape) {
+      const seSolapa = await haySolapeConConfirmadas(
+        supabase,
+        profesionalId,
+        fecha!,
+        horaInicio!,
+        horaFin!,
+        undefined,
+        fechaFin
+      );
+      if (seSolapa) {
+        return {
+          error:
+            "Ya tienes otra cita confirmada que se solapa con ese horario en alguna de las fechas repetidas.",
+          solape: true,
+        };
+      }
+    }
+
+    const { error } = await supabase.from("citas").insert(
+      fechasGeneradas.map((fechaOcurrencia) => ({
+        profesional_id: profesionalId,
+        cliente_id: null,
+        solicitud_id: null,
+        tipo: null,
+        fecha: fechaOcurrencia,
+        hora_inicio: horaInicio,
+        hora_fin: horaFin,
+        fecha_fin: null,
+        estado: "confirmada",
+        origen_externo: true,
+        titulo_externo: titulo,
+        localidad,
+        calle,
+        contacto_nombre: contactoNombre,
+        contacto_telefono: contactoTelefono,
+      }))
+    );
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return undefined;
+  }
+
   // Un bloqueo de varios días (fecha_fin) debe comprobarse en todo su rango,
   // no solo en "fecha": si no, un choque en un día posterior del propio
   // rango pasaba desapercibido.
@@ -1085,7 +1192,6 @@ export async function crearCitaExterna(
   // El solapamiento ya no bloquea la creación: se avisa (solape: true) para
   // que el formulario muestre una confirmación, y solo se salta esta
   // comprobación si el profesional ya confirmó que quiere seguir adelante.
-  const permitirSolape = formData.get("permitir_solape") === "1";
   if (!permitirSolape) {
     const seSolapa = await haySolapeConConfirmadas(
       supabase,

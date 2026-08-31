@@ -6,7 +6,20 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
+import { ChipSelector } from "@/components/ui/chip-selector";
 import { useCompletarMinutos } from "@/lib/completar-minutos";
+
+// Valores = Date.getDay() (0=domingo..6=sábado), en el orden lunes-domingo
+// para mostrarlos como los pide el desplegable de repetición.
+const DIAS_SEMANA_REPETICION = [
+  { value: "1", label: "Lunes" },
+  { value: "2", label: "Martes" },
+  { value: "3", label: "Miércoles" },
+  { value: "4", label: "Jueves" },
+  { value: "5", label: "Viernes" },
+  { value: "6", label: "Sábado" },
+  { value: "0", label: "Domingo" },
+] as const;
 
 export function CitaExternaCampos({
   citaExistente,
@@ -29,6 +42,7 @@ export function CitaExternaCampos({
   // confirme el aviso de solapamiento (ver handleSubmit). Su sola presencia
   // controla si se muestra ese modal de confirmación.
   const [formPendienteSolape, setFormPendienteSolape] = useState<FormData | null>(null);
+  const [repetir, setRepetir] = useState(false);
 
   const plantilla = citaExistente ?? duplicarDesde;
 
@@ -69,6 +83,14 @@ export function CitaExternaCampos({
     }
     if (fechaFin && !fecha) {
       setError('Indica una fecha de inicio para poder indicar "Hasta".');
+      return;
+    }
+    if (repetir && !fechaFin) {
+      setError("Indica la fecha de fin hasta la que se repite la cita.");
+      return;
+    }
+    if (repetir && formData.getAll("dias_semana").length === 0) {
+      setError("Selecciona al menos un día de la semana para la repetición.");
       return;
     }
 
@@ -139,15 +161,42 @@ export function CitaExternaCampos({
           <Input id="fecha" name="fecha" type="date" defaultValue={citaExistente?.fecha ?? ""} />
         </div>
         <div className="flex flex-1 flex-col gap-1">
-          <Label htmlFor="fecha_fin">Hasta (opcional)</Label>
+          <Label htmlFor="fecha_fin">{repetir ? "Hasta" : "Hasta (opcional)"}</Label>
           <Input
             id="fecha_fin"
             name="fecha_fin"
             type="date"
+            required={repetir}
             defaultValue={citaExistente?.fecha_fin ?? ""}
           />
         </div>
       </div>
+
+      {!citaExistente && (
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-2 text-sm text-neutral-700">
+            <input
+              type="checkbox"
+              name="repetir"
+              value="1"
+              checked={repetir}
+              onChange={(e) => setRepetir(e.target.checked)}
+              className="accent-primary-600"
+            />
+            ¿Se repite?
+          </label>
+
+          {repetir && (
+            <div className="flex flex-col gap-1">
+              <Label>Días de la semana</Label>
+              <ChipSelector name="dias_semana" options={DIAS_SEMANA_REPETICION} />
+              <p className="text-xs text-neutral-500">
+                Se creará una cita en cada día elegido desde la fecha hasta la fecha de fin.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex gap-2">
         <div className="flex flex-1 flex-col gap-1">

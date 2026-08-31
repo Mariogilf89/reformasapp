@@ -27,9 +27,9 @@ function BotonLlamar({ telefono }: { telefono: string }) {
     <a
       href={`tel:${telefono}`}
       aria-label={`Llamar al ${telefono}`}
-      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white sm:hidden"
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-green-600 text-white sm:hidden"
     >
-      <IconTelefono className="h-3.5 w-3.5" />
+      <IconTelefono className="h-5 w-5" />
     </a>
   );
 }
@@ -295,7 +295,7 @@ export function DetalleCitaModal({
             <p className="mt-1 text-sm text-neutral-600">{ubicacion}</p>
           )}
           {cita.origen_externo && (cita.contacto_nombre || cita.contacto_telefono) && (
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-neutral-600">
+            <p className="mt-1 flex items-center gap-3 text-sm text-neutral-600">
               <span>
                 {cita.contacto_nombre}
                 {cita.contacto_nombre && cita.contacto_telefono && " · "}
@@ -321,7 +321,7 @@ export function DetalleCitaModal({
         )}
 
         {!cita.origen_externo && cita.estado === "confirmada" && (
-          <p className="flex items-center gap-1.5 text-sm text-neutral-600">
+          <p className="flex items-center gap-3 text-sm text-neutral-600">
             <span>
               {cita.telefonoCliente
                 ? `Teléfono de contacto: ${cita.telefonoCliente}`

@@ -43,18 +43,11 @@ export default async function PerfilProfesionalPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // El guard de auth/rol (login + role === "profesional") ya lo hace
+  // app/dashboard/perfil/layout.tsx para las 4 rutas hijas; si llegamos
+  // aquí es porque ya pasó esa comprobación.
   if (!user) {
     redirect("/login");
-  }
-
-  if (user.user_metadata?.role !== "profesional") {
-    return (
-      <div className="flex flex-1 items-center justify-center px-4 py-16 text-center">
-        <p className="text-neutral-600">
-          Esta página es solo para cuentas de tipo profesional.
-        </p>
-      </div>
-    );
   }
 
   const { data: perfil } = await supabase
@@ -98,7 +91,7 @@ export default async function PerfilProfesionalPage() {
     : { data: [] as Excepcion[] };
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-10 px-4 py-16">
+    <div className="flex flex-col gap-10">
       <AvisoCambiosSinGuardar />
 
       <div className="flex w-full max-w-6xl items-center gap-3">

@@ -46,7 +46,7 @@ export function NotificationBell({
         type="button"
         onClick={() => setAbierto((v) => !v)}
         aria-label="Notificaciones"
-        className="relative rounded-full p-2 text-neutral-600 hover:bg-neutral-100"
+        className="relative cursor-pointer rounded-full p-2 text-neutral-600 hover:bg-neutral-100"
       >
         <span aria-hidden="true">🔔</span>
         {noLeidas > 0 && (

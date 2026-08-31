@@ -3,6 +3,7 @@ import type { CitaCalendario } from "@/app/actions/citas";
 import {
   ALTURA_UBICACION_COMPACTA_PX,
   ALTURA_UBICACION_COMPLETA_PX,
+  contactoCita,
   estiloCita,
   finEfectivoMinutos,
   horaDesdeMinutos,
@@ -16,6 +17,13 @@ import { fechaISO, inicioSemana, sumarDias } from "@/lib/fechas";
 import { IconUbicacion } from "@/components/ui/icon-ubicacion";
 
 const DIAS_CABECERA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+// Alturas mínimas (px) de un bloque en vista Día (un solo día visible, letra
+// más grande) para ir mostrando ubicación y contacto según quepan: son más
+// altas que ALTURA_UBICACION_COMPLETA_PX/COMPACTA_PX porque cada línea ocupa
+// más espacio con la tipografía ampliada, y hay una línea extra (contacto).
+const ALTURA_UBICACION_DIA_PX = 78;
+const ALTURA_CONTACTO_DIA_PX = 104;
 
 type CitaConFecha = CitaCalendario & { fecha: string; hora_inicio: string };
 
@@ -92,6 +100,7 @@ export function VistaSemana({
   horaFin,
   alturaHoraPx,
   diasVisibles,
+  esVistaDia,
   gridRef,
   scrollRef,
   arrastre,
@@ -113,6 +122,12 @@ export function VistaSemana({
   alturaHoraPx: number;
   /** Offsets desde el lunes (0=lunes ... 6=domingo) de los días a mostrar. */
   diasVisibles: number[];
+  /** true cuando este render es la vista Día (un único día, letra más
+   * grande y más datos en cada bloque), no solo cuando diasVisibles trae un
+   * único offset: el rango de días configurado por el profesional para
+   * Semana podría colapsar a 1 día igualmente, y eso no debe activar el
+   * tratamiento de Día. */
+  esVistaDia: boolean;
   gridRef: RefObject<HTMLDivElement | null>;
   /** Contenedor con overflow-x-auto/overflow-y-auto: lo usa el auto-scroll durante el arrastre. */
   scrollRef: RefObject<HTMLDivElement | null>;
@@ -315,6 +330,10 @@ export function VistaSemana({
                     ? `${horaDesdeMinutos(redimension.borde === "inicio" ? redimension.inicioMin : bloque.inicioMin)}–${horaDesdeMinutos(redimension.borde === "fin" ? redimension.finMin : bloque.finMin)}`
                     : null;
 
+                const contacto = contactoCita(bloque);
+                const ubicacionTexto = [bloque.localidad, bloque.calle].filter(Boolean).join(", ");
+                const contactoTexto = [contacto.nombre, contacto.telefono].filter(Boolean).join(" · ");
+
                 return (
                   <button
                     key={`${bloque.id}-${fecha}`}
@@ -323,7 +342,9 @@ export function VistaSemana({
                     onPointerMove={onPointerMoveArrastre}
                     onPointerUp={onPointerUpArrastre}
                     onPointerCancel={onPointerCancelArrastre}
-                    className={`absolute cursor-grab select-none overflow-hidden border px-1.5 py-0.5 text-left text-[11px] leading-tight active:cursor-grabbing [-webkit-touch-callout:none] ${radioClase} ${estilo.className} ${
+                    className={`absolute cursor-grab select-none overflow-hidden border text-left active:cursor-grabbing [-webkit-touch-callout:none] ${
+                      esVistaDia ? "px-3 py-2 text-sm leading-snug sm:text-base" : "px-1.5 py-0.5 text-[11px] leading-tight"
+                    } ${radioClase} ${estilo.className} ${
                       esArrastrada || esRedimensionada ? "shadow-lg ring-2 ring-primary-500" : ""
                     }`}
                     style={{
@@ -336,35 +357,51 @@ export function VistaSemana({
                       zIndex: esArrastrada || esRedimensionada ? 10 : undefined,
                     }}
                   >
-                    <span className="block font-medium">
+                    <span className={esVistaDia ? "block font-semibold" : "block font-medium"}>
                       {esArrastrada && arrastre
                         ? `${horaDesdeMinutos(arrastre.inicioMin)}–${horaDesdeMinutos(arrastre.inicioMin + arrastre.duracionMin)}`
                         : (horaTextoLive ?? rangoHoraTexto(bloque.hora_inicio, bloque.hora_fin))}
                     </span>
                     <span className="block truncate">{tituloCita(bloque)}</span>
 
-                    {!esArrastrada && height >= ALTURA_UBICACION_COMPLETA_PX && (
+                    {esVistaDia ? (
                       <>
-                        {bloque.localidad && (
-                          <span className="block truncate text-[10px] opacity-80">
-                            {bloque.localidad}
+                        {!esArrastrada && ubicacionTexto && height >= ALTURA_UBICACION_DIA_PX && (
+                          <span className="flex items-center gap-1 truncate opacity-80">
+                            <IconUbicacion className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{ubicacionTexto}</span>
                           </span>
                         )}
-                        {bloque.calle && (
-                          <span className="block truncate text-[10px] opacity-80">{bloque.calle}</span>
+                        {!esArrastrada && contactoTexto && height >= ALTURA_CONTACTO_DIA_PX && (
+                          <span className="block truncate opacity-80">{contactoTexto}</span>
                         )}
                       </>
-                    )}
+                    ) : (
+                      <>
+                        {!esArrastrada && height >= ALTURA_UBICACION_COMPLETA_PX && (
+                          <>
+                            {bloque.localidad && (
+                              <span className="block truncate text-[10px] opacity-80">
+                                {bloque.localidad}
+                              </span>
+                            )}
+                            {bloque.calle && (
+                              <span className="block truncate text-[10px] opacity-80">{bloque.calle}</span>
+                            )}
+                          </>
+                        )}
 
-                    {!esArrastrada &&
-                      height >= ALTURA_UBICACION_COMPACTA_PX &&
-                      height < ALTURA_UBICACION_COMPLETA_PX &&
-                      (bloque.localidad || bloque.calle) && (
-                        <span className="flex items-center gap-0.5 truncate text-[10px] opacity-80">
-                          <IconUbicacion className="h-2.5 w-2.5 shrink-0" />
-                          <span className="truncate">{bloque.localidad || bloque.calle}</span>
-                        </span>
-                      )}
+                        {!esArrastrada &&
+                          height >= ALTURA_UBICACION_COMPACTA_PX &&
+                          height < ALTURA_UBICACION_COMPLETA_PX &&
+                          (bloque.localidad || bloque.calle) && (
+                            <span className="flex items-center gap-0.5 truncate text-[10px] opacity-80">
+                              <IconUbicacion className="h-2.5 w-2.5 shrink-0" />
+                              <span className="truncate">{bloque.localidad || bloque.calle}</span>
+                            </span>
+                          )}
+                      </>
+                    )}
 
                     {/* Asas de redimensionado: separadas del gesto de mover, que sigue
                         colgando del cuerpo del botón. Solo en el día que representa ese

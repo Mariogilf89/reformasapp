@@ -831,9 +831,10 @@ export type CitaCalendario = {
   // Solo aplica a citas externas: datos de contacto opcionales del bloqueo.
   contacto_nombre: string | null;
   contacto_telefono: string | null;
-  // Solo se rellena para estado="confirmada" && !origen_externo, reutilizando
-  // la misma revelación de teléfono que ya usa /dashboard/citas.
+  // Solo se rellenan para estado="confirmada" && !origen_externo, reutilizando
+  // la misma revelación de contacto que ya usa /dashboard/citas.
   telefonoCliente: string | null;
+  nombreCliente: string | null;
 };
 
 /**
@@ -875,23 +876,24 @@ export async function obtenerCitasCalendario(desde: string, hasta: string): Prom
     .or(`fecha_fin.gte.${desde},and(fecha_fin.is.null,fecha.gte.${desde})`)
     .order("fecha", { ascending: true })
     .order("hora_inicio", { ascending: true })
-    .returns<Omit<CitaCalendario, "telefonoCliente">[]>();
+    .returns<Omit<CitaCalendario, "telefonoCliente" | "nombreCliente">[]>();
 
   const citas = data ?? [];
 
-  const telefonosPorCliente = new Map<string, string | null>();
+  const contactosPorCliente = new Map<string, { telefono: string | null; nombre: string | null }>();
   for (const cita of citas) {
     if (cita.estado === "confirmada" && !cita.origen_externo && cita.cliente_id) {
-      if (!telefonosPorCliente.has(cita.cliente_id)) {
+      if (!contactosPorCliente.has(cita.cliente_id)) {
         const contacto = await obtenerContactoTelefonicoUsuario(cita.cliente_id);
-        telefonosPorCliente.set(cita.cliente_id, contacto.telefono);
+        contactosPorCliente.set(cita.cliente_id, { telefono: contacto.telefono, nombre: contacto.nombre });
       }
     }
   }
 
   return citas.map((cita) => ({
     ...cita,
-    telefonoCliente: cita.cliente_id ? telefonosPorCliente.get(cita.cliente_id) ?? null : null,
+    telefonoCliente: (cita.cliente_id && contactosPorCliente.get(cita.cliente_id)?.telefono) ?? null,
+    nombreCliente: (cita.cliente_id && contactosPorCliente.get(cita.cliente_id)?.nombre) ?? null,
   }));
 }
 
@@ -926,9 +928,9 @@ export async function obtenerCitasExternasPendientes(): Promise<CitaCalendario[]
     .is("fecha", null)
     .neq("estado", "cancelada")
     .order("creado_en", { ascending: true })
-    .returns<Omit<CitaCalendario, "telefonoCliente">[]>();
+    .returns<Omit<CitaCalendario, "telefonoCliente" | "nombreCliente">[]>();
 
-  return (data ?? []).map((cita) => ({ ...cita, telefonoCliente: null }));
+  return (data ?? []).map((cita) => ({ ...cita, telefonoCliente: null, nombreCliente: null }));
 }
 
 /**
@@ -960,19 +962,21 @@ export async function obtenerCitaPorId(citaId: string): Promise<CitaCalendario |
     )
     .eq("id", citaId)
     .eq("profesional_id", profesionalId)
-    .maybeSingle<Omit<CitaCalendario, "telefonoCliente">>();
+    .maybeSingle<Omit<CitaCalendario, "telefonoCliente" | "nombreCliente">>();
 
   if (!cita) {
     return null;
   }
 
   let telefonoCliente: string | null = null;
+  let nombreCliente: string | null = null;
   if (cita.estado === "confirmada" && !cita.origen_externo && cita.cliente_id) {
     const contacto = await obtenerContactoTelefonicoUsuario(cita.cliente_id);
     telefonoCliente = contacto.telefono;
+    nombreCliente = contacto.nombre;
   }
 
-  return { ...cita, telefonoCliente };
+  return { ...cita, telefonoCliente, nombreCliente };
 }
 
 /**

@@ -788,6 +788,7 @@ export function CalendarioCitas({
             horaFin={horaFin}
             alturaHoraPx={alturaHoraPx}
             diasVisibles={diasVisiblesActivos}
+            esVistaDia={vista === "dia"}
             gridRef={gridRef}
             scrollRef={scrollRef}
             arrastre={arrastre}

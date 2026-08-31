@@ -97,6 +97,20 @@ export function tituloCita(cita: Pick<CitaCalendario, "origen_externo" | "titulo
   return TIPOS_CITA.find((t) => t.value === cita.tipo)?.label ?? "Cita";
 }
 
+/**
+ * Datos de contacto a mostrar de una cita: en bloqueos externos, los que se
+ * editan libremente (contacto_nombre/contacto_telefono); en citas reales,
+ * los del cliente ya resueltos en el servidor (solo disponibles para
+ * estado="confirmada", igual que en el modal de detalle).
+ */
+export function contactoCita(
+  cita: Pick<CitaCalendario, "origen_externo" | "contacto_nombre" | "contacto_telefono" | "nombreCliente" | "telefonoCliente">
+) {
+  return cita.origen_externo
+    ? { nombre: cita.contacto_nombre, telefono: cita.contacto_telefono }
+    : { nombre: cita.nombreCliente, telefono: cita.telefonoCliente };
+}
+
 const RAYADO: CSSProperties = {
   backgroundImage:
     "repeating-linear-gradient(45deg, rgba(180,83,9,0.25) 0px, rgba(180,83,9,0.25) 5px, transparent 5px, transparent 10px)",

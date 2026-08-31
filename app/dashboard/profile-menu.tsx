@@ -30,7 +30,7 @@ export function ProfileMenu({
         aria-label="Menú de perfil"
         aria-haspopup="menu"
         aria-expanded={abierto}
-        className="block h-9 w-9 shrink-0 overflow-hidden rounded-full border border-neutral-200"
+        className="block h-9 w-9 shrink-0 cursor-pointer overflow-hidden rounded-full border border-neutral-300"
       >
         {fotoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element

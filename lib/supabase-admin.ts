@@ -31,7 +31,7 @@ export async function obtenerEmailUsuario(userId: string): Promise<string | null
   return data.user.email;
 }
 
-export type ContactoTelefonico = { telefono: string | null; verificado: boolean };
+export type ContactoTelefonico = { telefono: string | null; verificado: boolean; nombre: string | null };
 
 /**
  * Resuelve el teléfono (y si está verificado por SMS) guardado en
@@ -45,16 +45,17 @@ export async function obtenerContactoTelefonicoUsuario(userId: string): Promise<
 
   if (error || !data.user) {
     console.error("No se pudo resolver el teléfono del usuario", userId, error);
-    return { telefono: null, verificado: false };
+    return { telefono: null, verificado: false, nombre: null };
   }
 
   const metadata = data.user.user_metadata as
-    | { telefono?: string; telefono_verificado?: boolean }
+    | { telefono?: string; telefono_verificado?: boolean; full_name?: string }
     | null;
 
   return {
     telefono: metadata?.telefono ?? null,
     verificado: metadata?.telefono_verificado === true,
+    nombre: metadata?.full_name ?? null,
   };
 }
 

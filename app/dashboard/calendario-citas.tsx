@@ -54,6 +54,16 @@ const NOMBRES_MES = [
 
 const HORAS_DIA = Array.from({ length: 24 }, (_, i) => i);
 
+const NOMBRES_DIA_SEMANA = [
+  "lunes",
+  "martes",
+  "miércoles",
+  "jueves",
+  "viernes",
+  "sábado",
+  "domingo",
+];
+
 // Numeración ISO (1=lunes ... 7=domingo). Distinta del dia_semana de
 // disponibilidad (que usa el criterio de Date.getDay(), domingo=0): aquí
 // domingo=7 para que el rango inicio->fin se compare sin casos especiales.
@@ -67,7 +77,7 @@ const DIAS_SEMANA_CALENDARIO = [
   { value: 7, label: "Domingo" },
 ];
 
-type Vista = "semana" | "mes";
+type Vista = "dia" | "semana" | "mes";
 
 function rangoSemana(anchor: Date) {
   const lunes = inicioSemana(anchor);
@@ -80,9 +90,18 @@ function rangoMes(anchor: Date) {
   return { desde: fechaISO(primerDia), hasta: fechaISO(ultimoDia) };
 }
 
+function rangoDia(anchor: Date) {
+  const iso = fechaISO(anchor);
+  return { desde: iso, hasta: iso };
+}
+
 function etiquetaRango(anchor: Date, vista: Vista) {
   if (vista === "mes") {
     return `${NOMBRES_MES[anchor.getMonth()]} ${anchor.getFullYear()}`;
+  }
+  if (vista === "dia") {
+    const diaSemana = NOMBRES_DIA_SEMANA[(anchor.getDay() + 6) % 7];
+    return `${diaSemana} ${anchor.getDate()} ${NOMBRES_MES[anchor.getMonth()]} ${anchor.getFullYear()}`;
   }
   const lunes = inicioSemana(anchor);
   const domingo = sumarDias(lunes, 6);
@@ -112,7 +131,7 @@ export function CalendarioCitas({
   diaFinInicial: number;
 }) {
   const router = useRouter();
-  const [vista, setVista] = useState<Vista>("semana");
+  const [vista, setVista] = useState<Vista>("dia");
   const [anchor, setAnchor] = useState(anchorInicial);
   const [citas, setCitas] = useState(citasIniciales);
   const [citasPendientes, setCitasPendientes] = useState(citasPendientesIniciales);
@@ -160,32 +179,74 @@ export function CalendarioCitas({
   // columnas visibles de VistaMes usan este mismo índice.
   const diasVisibles = Array.from({ length: diaFin - diaInicio + 1 }, (_, i) => diaInicio - 1 + i);
 
-  // Zoom independiente por vista: cuánto se ve de cada hora (semana) o de
+  // La vista Día siempre muestra el día del ancla actual (hoy, al entrar),
+  // sin importar el rango diaInicio/diaFin configurado por el profesional
+  // (ese rango solo filtra columnas en Semana/Mes).
+  const diasVisiblesActivos = vista === "dia" ? [(anchor.getDay() + 6) % 7] : diasVisibles;
+
+  // Vistas que comparten el mismo eje de horas/zoom (Día es, en la práctica,
+  // Semana con una sola columna).
+  const esVistaHoraria = vista !== "mes";
+
+  // Zoom independiente por eje: cuánto se ve de cada hora (día/semana) o de
   // cada celda de día (mes). Solo vive en el estado del cliente, no se
   // persiste — al recargar vuelve al nivel por defecto.
   const [zoomSemanaIndex, setZoomSemanaIndex] = useState(ZOOM_SEMANA_INICIAL);
   const [zoomMesIndex, setZoomMesIndex] = useState(ZOOM_MES_INICIAL);
-  const alturaHoraPx = NIVELES_ZOOM_SEMANA_PX[zoomSemanaIndex];
+
+  // Nivel de zoom más alejado (índice 0), adaptado a móvil: en pantallas
+  // estrechas se recalcula para que la franja horaria configurada
+  // (horaInicio..horaFin) quepa entera en el alto visible sin scroll, en vez
+  // de quedarse fijo en 40px/hora (que en franjas largas se sigue
+  // desbordando en pantallas pequeñas). Solo se sustituye ese primer nivel:
+  // los demás índices no cambian, así que el zoom por defecto en escritorio
+  // no se ve afectado.
+  const [nivelesZoomSemana, setNivelesZoomSemana] = useState<readonly number[]>(NIVELES_ZOOM_SEMANA_PX);
+
+  useEffect(() => {
+    function recalcular() {
+      const esMovil = window.innerWidth < 640;
+      if (!esMovil) {
+        setNivelesZoomSemana(NIVELES_ZOOM_SEMANA_PX);
+        return;
+      }
+      const numHoras = Math.max(1, horaFin - horaInicio);
+      // El contenedor scrollable de VistaSemana limita su alto a 65vh
+      // (max-h-[65vh]) y reserva ~40px para la cabecera con los días.
+      const altoDisponiblePx = window.innerHeight * 0.65 - 40;
+      const pxPorHoraParaCaber = Math.max(18, Math.floor(altoDisponiblePx / numHoras));
+      setNivelesZoomSemana(
+        pxPorHoraParaCaber < NIVELES_ZOOM_SEMANA_PX[0]
+          ? [pxPorHoraParaCaber, ...NIVELES_ZOOM_SEMANA_PX.slice(1)]
+          : NIVELES_ZOOM_SEMANA_PX
+      );
+    }
+    recalcular();
+    window.addEventListener("resize", recalcular);
+    return () => window.removeEventListener("resize", recalcular);
+  }, [horaInicio, horaFin]);
+
+  const alturaHoraPx = nivelesZoomSemana[zoomSemanaIndex];
   const tamanoCeldaMesPx = NIVELES_ZOOM_MES_PX[zoomMesIndex];
 
   function acercarZoom() {
-    if (vista === "semana") {
-      setZoomSemanaIndex((i) => Math.min(i + 1, NIVELES_ZOOM_SEMANA_PX.length - 1));
+    if (esVistaHoraria) {
+      setZoomSemanaIndex((i) => Math.min(i + 1, nivelesZoomSemana.length - 1));
     } else {
       setZoomMesIndex((i) => Math.min(i + 1, NIVELES_ZOOM_MES_PX.length - 1));
     }
   }
 
   function alejarZoom() {
-    if (vista === "semana") {
+    if (esVistaHoraria) {
       setZoomSemanaIndex((i) => Math.max(i - 1, 0));
     } else {
       setZoomMesIndex((i) => Math.max(i - 1, 0));
     }
   }
 
-  const zoomIndexActual = vista === "semana" ? zoomSemanaIndex : zoomMesIndex;
-  const zoomMaxIndex = (vista === "semana" ? NIVELES_ZOOM_SEMANA_PX : NIVELES_ZOOM_MES_PX).length - 1;
+  const zoomIndexActual = esVistaHoraria ? zoomSemanaIndex : zoomMesIndex;
+  const zoomMaxIndex = (esVistaHoraria ? nivelesZoomSemana : NIVELES_ZOOM_MES_PX).length - 1;
 
   const [arrastre, setArrastre] = useState<ArrastreEstado | null>(null);
   const [errorArrastre, setErrorArrastre] = useState<string | null>(null);
@@ -200,7 +261,12 @@ export function CalendarioCitas({
   const punteroRef = useRef<{ x: number; y: number } | null>(null);
 
   function refrescar(nuevoAnchor: Date, nuevaVista: Vista) {
-    const { desde, hasta } = nuevaVista === "semana" ? rangoSemana(nuevoAnchor) : rangoMes(nuevoAnchor);
+    const { desde, hasta } =
+      nuevaVista === "semana"
+        ? rangoSemana(nuevoAnchor)
+        : nuevaVista === "mes"
+          ? rangoMes(nuevoAnchor)
+          : rangoDia(nuevoAnchor);
     startTransition(async () => {
       const [nuevasCitas, nuevasPendientes] = await Promise.all([
         obtenerCitasCalendario(desde, hasta),
@@ -218,11 +284,23 @@ export function CalendarioCitas({
   }
 
   function irAnterior() {
-    navegar(vista === "semana" ? sumarDias(anchor, -7) : new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1));
+    if (vista === "semana") {
+      navegar(sumarDias(anchor, -7));
+    } else if (vista === "dia") {
+      navegar(sumarDias(anchor, -1));
+    } else {
+      navegar(new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1));
+    }
   }
 
   function irSiguiente() {
-    navegar(vista === "semana" ? sumarDias(anchor, 7) : new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1));
+    if (vista === "semana") {
+      navegar(sumarDias(anchor, 7));
+    } else if (vista === "dia") {
+      navegar(sumarDias(anchor, 1));
+    } else {
+      navegar(new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1));
+    }
   }
 
   function cerrarDetalle() {
@@ -310,7 +388,7 @@ export function CalendarioCitas({
       rect,
       minutosInicio: horaInicio * 60,
       minutosFin: horaFin * 60,
-      numDias: diasVisibles.length,
+      numDias: diasVisiblesActivos.length,
       alturaHoraPx,
     });
 
@@ -403,7 +481,7 @@ export function CalendarioCitas({
     }
 
     const lunes = inicioSemana(anchor);
-    const nuevaFecha = fechaISO(sumarDias(lunes, diasVisibles[actual.diaIndex]));
+    const nuevaFecha = fechaISO(sumarDias(lunes, diasVisiblesActivos[actual.diaIndex]));
     const nuevaHoraInicio = horaDesdeMinutos(actual.inicioMin);
     const nuevaHoraFin = horaDesdeMinutos(actual.inicioMin + actual.duracionMin);
 
@@ -526,6 +604,7 @@ export function CalendarioCitas({
         onPointerDownCita={(e, cita) => iniciarArrastre(e, cita, true)}
         onPointerMoveArrastre={moverArrastre}
         onPointerUpArrastre={soltarArrastre}
+        onPointerCancelArrastre={soltarArrastre}
       />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -632,6 +711,17 @@ export function CalendarioCitas({
           <div className="flex overflow-hidden rounded-full border border-neutral-300">
             <button
               type="button"
+              onClick={() => navegar(anchor, "dia")}
+              className={`px-3 py-1.5 text-xs font-medium ${
+                vista === "dia"
+                  ? "bg-primary-600 text-white"
+                  : "text-neutral-700 hover:bg-neutral-100"
+              }`}
+            >
+              Día
+            </button>
+            <button
+              type="button"
               onClick={() => navegar(anchor, "semana")}
               className={`px-3 py-1.5 text-xs font-medium ${
                 vista === "semana"
@@ -682,14 +772,22 @@ export function CalendarioCitas({
             </svg>
           </div>
         )}
-        {vista === "semana" ? (
+        {vista === "mes" ? (
+          <VistaMes
+            anchor={anchor}
+            citas={citas}
+            diasVisibles={diasVisibles}
+            tamanoCeldaPx={tamanoCeldaMesPx}
+            onSeleccionarDia={(dia) => navegar(dia, "semana")}
+          />
+        ) : (
           <VistaSemana
             anchor={anchor}
             citas={citas}
             horaInicio={horaInicio}
             horaFin={horaFin}
             alturaHoraPx={alturaHoraPx}
-            diasVisibles={diasVisibles}
+            diasVisibles={diasVisiblesActivos}
             gridRef={gridRef}
             scrollRef={scrollRef}
             arrastre={arrastre}
@@ -697,17 +795,11 @@ export function CalendarioCitas({
             onPointerDownCita={(e, cita) => iniciarArrastre(e, cita, false)}
             onPointerMoveArrastre={moverArrastre}
             onPointerUpArrastre={soltarArrastre}
+            onPointerCancelArrastre={soltarArrastre}
             onPointerDownRedimensionar={iniciarRedimension}
             onPointerMoveRedimensionar={moverRedimension}
             onPointerUpRedimensionar={soltarRedimension}
-          />
-        ) : (
-          <VistaMes
-            anchor={anchor}
-            citas={citas}
-            diasVisibles={diasVisibles}
-            tamanoCeldaPx={tamanoCeldaMesPx}
-            onSeleccionarDia={(dia) => navegar(dia, "semana")}
+            onPointerCancelRedimensionar={soltarRedimension}
           />
         )}
       </div>

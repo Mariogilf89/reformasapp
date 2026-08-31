@@ -99,9 +99,11 @@ export function VistaSemana({
   onPointerDownCita,
   onPointerMoveArrastre,
   onPointerUpArrastre,
+  onPointerCancelArrastre,
   onPointerDownRedimensionar,
   onPointerMoveRedimensionar,
   onPointerUpRedimensionar,
+  onPointerCancelRedimensionar,
 }: {
   anchor: Date;
   citas: CitaCalendario[];
@@ -119,6 +121,11 @@ export function VistaSemana({
   onPointerDownCita: (e: ReactPointerEvent<HTMLButtonElement>, cita: CitaCalendario) => void;
   onPointerMoveArrastre: (e: ReactPointerEvent<HTMLButtonElement>) => void;
   onPointerUpArrastre: (e: ReactPointerEvent<HTMLButtonElement>) => void;
+  /** Cierra el arrastre igual que soltar el puntero: en táctil, iOS/Android
+   * pueden emitir "pointercancel" en vez de "pointerup" si el sistema
+   * interrumpe el gesto (p.ej. un gesto de navegación del propio SO), y sin
+   * este manejador el arrastre se quedaba colgado indefinidamente. */
+  onPointerCancelArrastre: (e: ReactPointerEvent<HTMLButtonElement>) => void;
   onPointerDownRedimensionar: (
     e: ReactPointerEvent<HTMLDivElement>,
     cita: CitaCalendario,
@@ -126,6 +133,7 @@ export function VistaSemana({
   ) => void;
   onPointerMoveRedimensionar: (e: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerUpRedimensionar: (e: ReactPointerEvent<HTMLDivElement>) => void;
+  onPointerCancelRedimensionar: (e: ReactPointerEvent<HTMLDivElement>) => void;
 }) {
   const minutosInicio = horaInicio * 60;
   const minutosFin = horaFin * 60;
@@ -181,9 +189,15 @@ export function VistaSemana({
         }
       : null;
 
+  // Ancho mínimo proporcional al número de días visibles: para el rango
+  // completo de 7 días equivale a los 720px de siempre, pero una vista Día
+  // (numDias=1) no debe forzar ese mismo ancho mínimo, o quedaría con scroll
+  // horizontal innecesario en móvil para mostrar una sola columna.
+  const minWidthPx = Math.max(260, Math.round((720 / 7) * numDias));
+
   return (
-    <div ref={scrollRef} className="flex max-h-[65vh] w-full overflow-auto">
-      <div className="flex min-w-[720px] flex-1">
+    <div ref={scrollRef} className="flex max-h-[65vh] w-full overflow-auto overscroll-contain">
+      <div className="flex flex-1" style={{ minWidth: `${minWidthPx}px` }}>
         <div className="w-12 shrink-0">
           <div className="h-10" />
           {horas.map((h) => (
@@ -308,7 +322,8 @@ export function VistaSemana({
                     onPointerDown={(e) => onPointerDownCita(e, bloque)}
                     onPointerMove={onPointerMoveArrastre}
                     onPointerUp={onPointerUpArrastre}
-                    className={`absolute cursor-grab overflow-hidden border px-1.5 py-0.5 text-left text-[11px] leading-tight active:cursor-grabbing ${radioClase} ${estilo.className} ${
+                    onPointerCancel={onPointerCancelArrastre}
+                    className={`absolute cursor-grab select-none overflow-hidden border px-1.5 py-0.5 text-left text-[11px] leading-tight active:cursor-grabbing [-webkit-touch-callout:none] ${radioClase} ${estilo.className} ${
                       esArrastrada || esRedimensionada ? "shadow-lg ring-2 ring-primary-500" : ""
                     }`}
                     style={{
@@ -376,7 +391,11 @@ export function VistaSemana({
                           e.stopPropagation();
                           onPointerUpRedimensionar(e);
                         }}
-                        className="absolute inset-x-0 top-0 hidden h-1.5 cursor-ns-resize sm:block"
+                        onPointerCancel={(e) => {
+                          e.stopPropagation();
+                          onPointerCancelRedimensionar(e);
+                        }}
+                        className="absolute inset-x-0 top-0 hidden h-1.5 cursor-ns-resize select-none sm:block [-webkit-touch-callout:none]"
                         style={{ touchAction: "none" }}
                       />
                     )}
@@ -394,7 +413,11 @@ export function VistaSemana({
                           e.stopPropagation();
                           onPointerUpRedimensionar(e);
                         }}
-                        className="absolute inset-x-0 bottom-0 hidden h-1.5 cursor-ns-resize sm:block"
+                        onPointerCancel={(e) => {
+                          e.stopPropagation();
+                          onPointerCancelRedimensionar(e);
+                        }}
+                        className="absolute inset-x-0 bottom-0 hidden h-1.5 cursor-ns-resize select-none sm:block [-webkit-touch-callout:none]"
                         style={{ touchAction: "none" }}
                       />
                     )}

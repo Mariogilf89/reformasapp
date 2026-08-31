@@ -4,8 +4,8 @@ import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { signOut } from "@/app/actions/auth";
 import { obtenerNotificaciones } from "@/app/actions/notificaciones";
-import { Button } from "@/components/ui/button";
 import { NotificationBell } from "./notification-bell";
+import { ProfileMenu } from "./profile-menu";
 
 export default async function DashboardLayout({ children }: LayoutProps<"/dashboard">) {
   const supabase = await createServerSupabaseClient();
@@ -20,6 +20,24 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   const notificaciones = await obtenerNotificaciones();
 
   const role = user.user_metadata?.role ?? "cliente";
+
+  // Nombre/foto para el icono circular del menú de perfil: para
+  // profesionales, el nombre del negocio y la primera foto de su galería
+  // (no hay un campo de foto de perfil dedicado); para el resto, el nombre
+  // de la cuenta, sin foto.
+  let nombreMenu = (user.user_metadata?.full_name as string | undefined) ?? user.email ?? "Cuenta";
+  let fotoMenu: string | null = null;
+  if (role === "profesional") {
+    const { data: perfil } = await supabase
+      .from("profesionales")
+      .select("nombre, fotos")
+      .eq("user_id", user.id)
+      .maybeSingle<{ nombre: string; fotos: string[] | null }>();
+    if (perfil) {
+      nombreMenu = perfil.nombre;
+      fotoMenu = perfil.fotos?.[0] ?? null;
+    }
+  }
 
   const navLinks = [
     { href: "/dashboard", label: "Panel" },
@@ -48,30 +66,14 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   return (
     <div className="flex flex-1 flex-col">
       <header className="border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-4">
-          <Link href="/" className="shrink-0">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4">
+          <Link href="/dashboard" className="shrink-0">
             <Image src="/logo-horizontal.png" alt="Faenia" width={100} height={40} priority />
           </Link>
 
-          <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm font-medium">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-neutral-600 hover:text-primary-700"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2">
             <NotificationBell notificacionesIniciales={notificaciones} />
-            <form action={signOut}>
-              <Button type="submit" variant="secondary">
-                Cerrar sesión
-              </Button>
-            </form>
+            <ProfileMenu nombre={nombreMenu} fotoUrl={fotoMenu} navLinks={navLinks} onSignOut={signOut} />
           </div>
         </div>
       </header>

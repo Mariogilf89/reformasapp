@@ -1,9 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Button, buttonClassName } from "@/components/ui/button";
+import { buttonClassName } from "@/components/ui/button";
 import { createServerSupabaseClient } from "@/lib/supabase";
-import { signOut } from "@/app/actions/auth";
 import { StickyHeader } from "@/components/sticky-header";
+import { UserMenu } from "@/components/user-menu";
 
 // El enlace del nombre de la app siempre va a "/" y nunca depende de si hay
 // sesión iniciada ni forma parte del formulario de cerrar sesión: solo el
@@ -21,19 +21,7 @@ export async function PublicHeader() {
           <Image src="/logo-horizontal.png" alt="Faenia" width={100} height={40} priority />
         </Link>
         {user ? (
-          <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="text-sm font-medium text-neutral-600 hover:text-primary-700"
-            >
-              Mi panel
-            </Link>
-            <form action={signOut}>
-              <Button type="submit" variant="secondary">
-                Cerrar sesión
-              </Button>
-            </form>
-          </div>
+          <UserMenu />
         ) : (
           <div className="flex items-center gap-3">
             <Link

@@ -5,7 +5,7 @@ import { createServerSupabaseClient } from "@/lib/supabase";
 import {
   DOCUMENTOS_IDENTIDAD_BUCKET,
   FOTOS_BUCKET,
-  MAX_FOTOS_PROFESIONAL,
+  extraerRutaStorage,
   isCategoria,
   type Categoria,
 } from "@/lib/profesionales";
@@ -30,23 +30,33 @@ export async function guardarPerfilProfesional(
 
   const categorias = formData.getAll("categorias").map(String).filter(isCategoria);
   const provincias = formData.getAll("provincias").map(String).filter(isProvincia);
-  const zona = formData.get("zona")?.toString().trim();
   const descripcion = formData.get("descripcion")?.toString().trim();
+  const nombreForm = formData.get("nombre")?.toString().trim();
+  const apellidos = formData.get("apellidos")?.toString().trim() ?? "";
+  const fechaNacimiento = formData.get("fecha_nacimiento")?.toString().trim() || null;
 
   if (categorias.length === 0) {
     return { error: "Selecciona al menos una categoría." };
   }
-  if (!zona) {
-    return { error: "Indica tu zona de cobertura." };
-  }
   if (!descripcion) {
     return { error: "Añade una descripción." };
   }
+  if (fechaNacimiento && (Number.isNaN(Date.parse(fechaNacimiento)) || fechaNacimiento > fechaISO(new Date()))) {
+    return { error: "Indica una fecha de nacimiento válida." };
+  }
 
-  const nombre = user.user_metadata?.full_name ?? user.email ?? "Profesional";
+  const nombre = nombreForm || user.user_metadata?.full_name || user.email || "Profesional";
 
   const { error } = await supabase.from("profesionales").upsert(
-    { user_id: user.id, nombre, categorias, provincias, zona, descripcion },
+    {
+      user_id: user.id,
+      nombre,
+      categorias,
+      provincias,
+      descripcion,
+      apellidos,
+      fecha_nacimiento: fechaNacimiento,
+    },
     { onConflict: "user_id" }
   );
 
@@ -137,16 +147,11 @@ export async function actualizarRangoDiasCalendario(
   return undefined;
 }
 
-// Extrae la ruta dentro del bucket (userId/archivo.ext) de una URL pública,
-// verificando que la foto pertenece a la carpeta del propio usuario.
-function extraerRutaStorage(url: string, userId: string): string | null {
-  const marcador = `/storage/v1/object/public/${FOTOS_BUCKET}/${userId}/`;
-  const indice = url.indexOf(marcador);
-  if (indice === -1) return null;
-  return `${userId}/${url.slice(indice + marcador.length)}`;
-}
-
-export async function agregarFotoProfesional(url: string): Promise<PerfilFormState> {
+// El perfil solo tiene una foto (la principal, usada como avatar en toda la
+// plataforma: menú del dashboard, listado público...), así que guardarla
+// sustituye el array `fotos` entero en vez de añadir a una galería, y borra
+// del storage la foto anterior si había una.
+export async function guardarFotoPrincipalProfesional(url: string): Promise<PerfilFormState> {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
@@ -167,64 +172,29 @@ export async function agregarFotoProfesional(url: string): Promise<PerfilFormSta
     .maybeSingle<{ id: string; fotos: string[] }>();
 
   if (!perfil) {
-    return { error: "Completa tu perfil antes de añadir fotos." };
+    return { error: "Completa tu perfil antes de añadir una foto." };
   }
 
-  const fotosActuales = perfil.fotos ?? [];
-  if (fotosActuales.length >= MAX_FOTOS_PROFESIONAL) {
-    return { error: `Solo puedes tener un máximo de ${MAX_FOTOS_PROFESIONAL} fotos.` };
-  }
+  const anterior = perfil.fotos?.[0] ?? null;
 
   const { error } = await supabase
     .from("profesionales")
-    .update({ fotos: [...fotosActuales, url] })
+    .update({ fotos: [url] })
     .eq("id", perfil.id);
 
   if (error) {
     return { error: error.message };
   }
 
-  revalidatePath("/dashboard/perfil");
-  return { success: true };
-}
-
-export async function borrarFotoProfesional(url: string): Promise<PerfilFormState> {
-  const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user || user.user_metadata?.role !== "profesional") {
-    return { error: "No autorizado." };
+  if (anterior && anterior !== url) {
+    const rutaAnterior = extraerRutaStorage(anterior, user.id);
+    if (rutaAnterior) {
+      await supabase.storage.from(FOTOS_BUCKET).remove([rutaAnterior]);
+    }
   }
-
-  const ruta = extraerRutaStorage(url, user.id);
-  if (!ruta) {
-    return { error: "Foto no válida." };
-  }
-
-  const { data: perfil } = await supabase
-    .from("profesionales")
-    .select("id, fotos")
-    .eq("user_id", user.id)
-    .maybeSingle<{ id: string; fotos: string[] }>();
-
-  if (!perfil) {
-    return { error: "No autorizado." };
-  }
-
-  const { error } = await supabase
-    .from("profesionales")
-    .update({ fotos: (perfil.fotos ?? []).filter((foto) => foto !== url) })
-    .eq("id", perfil.id);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  await supabase.storage.from(FOTOS_BUCKET).remove([ruta]);
 
   revalidatePath("/dashboard/perfil");
+  revalidatePath("/dashboard", "layout");
   return { success: true };
 }
 

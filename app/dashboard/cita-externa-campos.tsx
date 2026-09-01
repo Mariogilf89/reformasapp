@@ -273,6 +273,28 @@ export function CitaExternaCampos({
         </p>
       )}
 
+      {citaExistente?.serie_id && (
+        <div className="flex flex-col gap-1">
+          <Label>Aplicar cambios a</Label>
+          <div className="flex gap-4 text-sm text-neutral-700">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="alcance"
+                value="solo_esta"
+                defaultChecked
+                className="accent-primary-600"
+              />
+              Solo esta cita
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="radio" name="alcance" value="serie" className="accent-primary-600" />
+              Toda la serie
+            </label>
+          </div>
+        </div>
+      )}
+
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex items-center gap-3">

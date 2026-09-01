@@ -3,36 +3,34 @@
 import { useActionState } from "react";
 import { guardarPerfilProfesional } from "@/app/actions/profesionales";
 import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PERFIL_FORM_ID } from "./constants";
+import { usePerfilReset } from "./perfil-reset-provider";
 
-export function ZonaGuardarSection({ zonaInicial }: { zonaInicial?: string }) {
+export function GuardarSection() {
   const [state, action, pending] = useActionState(guardarPerfilProfesional, undefined);
+  const reset = usePerfilReset();
 
   return (
     <Card className="p-6">
       <form id={PERFIL_FORM_ID} action={action} className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="zona">Zona de cobertura</Label>
-          <Input
-            id="zona"
-            name="zona"
-            type="text"
-            required
-            defaultValue={zonaInicial}
-            placeholder="Ej. Vigo y alrededores"
-          />
-        </div>
-
         {state?.error && <p className="text-sm text-red-600">{state.error}</p>}
         {state?.success && (
           <p className="text-sm text-primary-600">Perfil guardado.</p>
         )}
 
-        <Button type="submit" disabled={pending} className="w-full">
-          {pending ? "Guardando..." : "Guardar perfil"}
+        <Button type="submit" disabled={pending} className="w-full py-3 text-base">
+          {pending ? "Guardando..." : "Guardar cambios"}
+        </Button>
+
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={reset}
+          disabled={pending}
+          className="w-full"
+        >
+          Cancelar
         </Button>
       </form>
     </Card>

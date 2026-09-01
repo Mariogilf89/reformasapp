@@ -862,6 +862,10 @@ export type CitaCalendario = {
   // Solo aplica a citas externas: datos de contacto opcionales del bloqueo.
   contacto_nombre: string | null;
   contacto_telefono: string | null;
+  // Solo aplica a citas externas creadas "que se repite": id compartido por
+  // todas las filas de esa tanda. NULL en citas individuales y en series
+  // creadas antes de que existiera este campo.
+  serie_id: string | null;
   // Solo se rellenan para estado="confirmada" && !origen_externo, reutilizando
   // la misma revelación de contacto que ya usa /dashboard/citas.
   telefonoCliente: string | null;
@@ -899,7 +903,7 @@ export async function obtenerCitasCalendario(desde: string, hasta: string): Prom
   const { data } = await supabase
     .from("citas")
     .select(
-      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color, fecha_fin, contacto_nombre, contacto_telefono"
+      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color, fecha_fin, contacto_nombre, contacto_telefono, serie_id"
     )
     .eq("profesional_id", profesionalId)
     .neq("estado", "cancelada")
@@ -952,7 +956,7 @@ export async function obtenerCitasExternasPendientes(): Promise<CitaCalendario[]
   const { data } = await supabase
     .from("citas")
     .select(
-      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color, fecha_fin, contacto_nombre, contacto_telefono"
+      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color, fecha_fin, contacto_nombre, contacto_telefono, serie_id"
     )
     .eq("profesional_id", profesionalId)
     .eq("origen_externo", true)
@@ -989,7 +993,7 @@ export async function obtenerCitaPorId(citaId: string): Promise<CitaCalendario |
   const { data: cita } = await supabase
     .from("citas")
     .select(
-      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color, fecha_fin, contacto_nombre, contacto_telefono"
+      "id, fecha, hora_inicio, hora_fin, tipo, estado, propuesto_por, comentario, cliente_id, origen_externo, titulo_externo, localidad, calle, color, fecha_fin, contacto_nombre, contacto_telefono, serie_id"
     )
     .eq("id", citaId)
     .eq("profesional_id", profesionalId)
@@ -1156,6 +1160,11 @@ export async function crearCitaExterna(
       }
     }
 
+    // Un único serie_id compartido por todas las filas de esta tanda,
+    // para poder editarlas o cancelarlas juntas más adelante ("toda la
+    // serie" en editarCitaExterna/cancelarCitaExterna).
+    const serieId = crypto.randomUUID();
+
     const { error } = await supabase.from("citas").insert(
       fechasGeneradas.map((fechaOcurrencia) => ({
         profesional_id: profesionalId,
@@ -1173,6 +1182,7 @@ export async function crearCitaExterna(
         calle,
         contacto_nombre: contactoNombre,
         contacto_telefono: contactoTelefono,
+        serie_id: serieId,
       }))
     );
 
@@ -1270,6 +1280,9 @@ export async function editarCitaExterna(
   // de detalle sí lo manda siempre (con "" para volver a "sin color").
   const colorProvisto = formData.has("color");
   const color = formData.get("color")?.toString().trim() || null;
+  // "serie" solo tiene efecto si la cita pertenece a una (tiene serie_id);
+  // en cualquier otro caso se comporta como "solo_esta" (valor por defecto).
+  const alcance = formData.get("alcance")?.toString() === "serie" ? "serie" : "solo_esta";
 
   if (!citaId) {
     return { error: "Cita inválida." };
@@ -1296,9 +1309,9 @@ export async function editarCitaExterna(
 
   const { data: cita } = await supabase
     .from("citas")
-    .select("id, profesional_id, origen_externo")
+    .select("id, profesional_id, origen_externo, serie_id")
     .eq("id", citaId)
-    .maybeSingle<{ id: string; profesional_id: string; origen_externo: boolean }>();
+    .maybeSingle<{ id: string; profesional_id: string; origen_externo: boolean; serie_id: string | null }>();
 
   if (!cita || cita.profesional_id !== profesionalId) {
     return { error: "No autorizado." };
@@ -1335,6 +1348,64 @@ export async function editarCitaExterna(
 
   if (aMinutos(horaFin!) <= aMinutos(horaInicio!)) {
     return { error: "La hora de fin debe ser posterior a la hora de inicio." };
+  }
+
+  // "Toda la serie": aplica título/hora/color/localidad/calle/contacto a
+  // todas las citas (no canceladas) que comparten serie_id, cada una
+  // conservando su propia fecha — no se tocan fecha ni fecha_fin aquí.
+  if (alcance === "serie" && cita.serie_id) {
+    const { data: filasSerie } = await supabase
+      .from("citas")
+      .select("id, fecha")
+      .eq("serie_id", cita.serie_id)
+      .eq("profesional_id", profesionalId)
+      .neq("estado", "cancelada")
+      .returns<{ id: string; fecha: string | null }[]>();
+
+    const ocurrencias = (filasSerie ?? []).filter(
+      (fila): fila is { id: string; fecha: string } => Boolean(fila.fecha)
+    );
+
+    for (const ocurrencia of ocurrencias) {
+      const seSolapaOcurrencia = await haySolapeConConfirmadas(
+        supabase,
+        profesionalId,
+        ocurrencia.fecha,
+        horaInicio!,
+        horaFin!,
+        ocurrencia.id
+      );
+      if (seSolapaOcurrencia) {
+        return {
+          error:
+            "Ya tienes otra cita confirmada que se solapa con ese horario en alguna fecha de la serie.",
+        };
+      }
+    }
+
+    const { error: errorSerie } = await supabase
+      .from("citas")
+      .update({
+        titulo_externo: titulo,
+        hora_inicio: horaInicio,
+        hora_fin: horaFin,
+        estado: "confirmada",
+        localidad,
+        calle,
+        contacto_nombre: contactoNombre,
+        contacto_telefono: contactoTelefono,
+        ...(colorProvisto ? { color } : {}),
+      })
+      .eq("serie_id", cita.serie_id)
+      .eq("profesional_id", profesionalId)
+      .neq("estado", "cancelada");
+
+    if (errorSerie) {
+      return { error: errorSerie.message };
+    }
+
+    revalidatePath("/dashboard");
+    return undefined;
   }
 
   const fechaFinEfectiva = fechaFin && fechaFin > fecha! ? fechaFin : null;
@@ -1596,6 +1667,7 @@ export async function cancelarCitaExterna(
   if (!citaId) {
     return { error: "Cita inválida." };
   }
+  const alcance = formData.get("alcance")?.toString() === "serie" ? "serie" : "solo_esta";
 
   const profesionalId = await propioProfesionalId(supabase, user.id);
   if (!profesionalId) {
@@ -1604,9 +1676,15 @@ export async function cancelarCitaExterna(
 
   const { data: cita } = await supabase
     .from("citas")
-    .select("id, profesional_id, origen_externo, estado")
+    .select("id, profesional_id, origen_externo, estado, serie_id")
     .eq("id", citaId)
-    .maybeSingle<{ id: string; profesional_id: string; origen_externo: boolean; estado: string }>();
+    .maybeSingle<{
+      id: string;
+      profesional_id: string;
+      origen_externo: boolean;
+      estado: string;
+      serie_id: string | null;
+    }>();
 
   if (!cita || cita.profesional_id !== profesionalId) {
     return { error: "No autorizado." };
@@ -1614,6 +1692,23 @@ export async function cancelarCitaExterna(
   if (!cita.origen_externo) {
     return { error: "Esta cita no es un bloqueo externo." };
   }
+
+  if (alcance === "serie" && cita.serie_id) {
+    const { error } = await supabase
+      .from("citas")
+      .update({ estado: "cancelada" })
+      .eq("serie_id", cita.serie_id)
+      .eq("profesional_id", profesionalId)
+      .neq("estado", "cancelada");
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    revalidatePath("/dashboard");
+    return undefined;
+  }
+
   if (cita.estado === "cancelada") {
     return undefined;
   }

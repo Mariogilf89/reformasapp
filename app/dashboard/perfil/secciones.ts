@@ -32,4 +32,15 @@ export const SECCIONES_PERFIL: SeccionPerfil[] = [
     label: "Notificaciones",
     breadcrumb: "Notificaciones",
   },
+  {
+    href: "/dashboard/perfil/trabajos",
+    label: "Mis trabajos",
+    breadcrumb: "Mis trabajos",
+    descripcion: "Añade trabajos que has realizado",
+  },
+  {
+    href: "/dashboard/perfil/valoraciones",
+    label: "Valoraciones",
+    breadcrumb: "Valoraciones",
+  },
 ];

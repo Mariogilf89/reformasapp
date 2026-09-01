@@ -239,13 +239,15 @@ export function DetalleCitaModal({
   const [editando, setEditando] = useState(false);
   const [duplicando, setDuplicando] = useState(false);
   const [cancelando, setCancelando] = useState(false);
+  const [eligiendoAlcanceEliminar, setEligiendoAlcanceEliminar] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleCancelarExterna() {
+  async function handleCancelarExterna(alcance: "solo_esta" | "serie") {
     setError(null);
     setCancelando(true);
     const formData = new FormData();
     formData.set("id", cita.id);
+    formData.set("alcance", alcance);
     const resultado = await cancelarCitaExterna(undefined, formData);
     setCancelando(false);
 
@@ -372,15 +374,59 @@ export function DetalleCitaModal({
                   <Button type="button" variant="secondary" size="xs" onClick={() => setDuplicando(true)}>
                     Duplicar
                   </Button>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="xs"
-                    disabled={cancelando}
-                    onClick={handleCancelarExterna}
-                  >
-                    {cancelando ? "Eliminando..." : "Eliminar"}
-                  </Button>
+                  {cita.serie_id ? (
+                    eligiendoAlcanceEliminar ? (
+                      <>
+                        <span className="text-sm text-neutral-600">Eliminar:</span>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="xs"
+                          disabled={cancelando}
+                          onClick={() => handleCancelarExterna("solo_esta")}
+                        >
+                          {cancelando ? "Eliminando..." : "Solo esta"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="xs"
+                          disabled={cancelando}
+                          onClick={() => handleCancelarExterna("serie")}
+                        >
+                          {cancelando ? "Eliminando..." : "Toda la serie"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="xs"
+                          disabled={cancelando}
+                          onClick={() => setEligiendoAlcanceEliminar(false)}
+                        >
+                          Cancelar
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="xs"
+                        onClick={() => setEligiendoAlcanceEliminar(true)}
+                      >
+                        Eliminar
+                      </Button>
+                    )
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="xs"
+                      disabled={cancelando}
+                      onClick={() => handleCancelarExterna("solo_esta")}
+                    >
+                      {cancelando ? "Eliminando..." : "Eliminar"}
+                    </Button>
+                  )}
                 </>
               )}
             </div>

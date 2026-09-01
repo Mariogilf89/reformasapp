@@ -7,13 +7,16 @@ import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { OAuthButtons } from "@/components/oauth-buttons";
 
 export function LoginForm({
   justRegistered,
   redirectTo,
+  oauthError,
 }: {
   justRegistered: boolean;
   redirectTo?: string;
+  oauthError?: string;
 }) {
   const [state, action, pending] = useActionState(signIn, undefined);
 
@@ -32,6 +35,16 @@ export function LoginForm({
             inicia sesión.
           </p>
         )}
+
+        {oauthError && <p className="text-sm text-red-600">{oauthError}</p>}
+
+        <OAuthButtons redirectTo={redirectTo} />
+
+        <div className="flex items-center gap-3 text-xs text-neutral-500">
+          <span className="h-px flex-1 bg-neutral-200" />
+          o entra con email
+          <span className="h-px flex-1 bg-neutral-200" />
+        </div>
 
         <div className="flex flex-col gap-1">
           <Label htmlFor="email">Email</Label>

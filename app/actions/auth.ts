@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
+import { esRutaInternaSegura } from "@/lib/rutas";
 
 export type UserRole = "profesional" | "cliente" | "admin";
 
@@ -15,13 +16,6 @@ function isRoleRegistrable(
   value: FormDataEntryValue | null
 ): value is "profesional" | "cliente" {
   return value === "profesional" || value === "cliente";
-}
-
-// Solo se sigue un "redirect" si es una ruta interna (empieza por "/" y no
-// por "//" o "/\", que un navegador podría interpretar como otro host),
-// para evitar redirigir a un sitio externo controlado por el parámetro.
-function esRutaInternaSegura(ruta: string): boolean {
-  return ruta.startsWith("/") && !ruta.startsWith("//") && !ruta.startsWith("/\\");
 }
 
 export async function signUp(

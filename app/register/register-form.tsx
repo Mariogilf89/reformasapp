@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { signUp } from "@/app/actions/auth";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { OAuthButtons } from "@/components/oauth-buttons";
 
 export function RegisterForm({
   redirectTo,
@@ -16,6 +17,10 @@ export function RegisterForm({
   roleInicial?: "cliente" | "profesional";
 }) {
   const [state, action, pending] = useActionState(signUp, undefined);
+  // Controlado (no solo defaultChecked) porque los botones de Google/
+  // Facebook necesitan saber qué tipo de cuenta está elegido ahora mismo,
+  // no solo el valor inicial.
+  const [role, setRole] = useState<"cliente" | "profesional">(roleInicial);
 
   return (
     <Card className="w-full max-w-sm p-6">
@@ -35,7 +40,8 @@ export function RegisterForm({
               type="radio"
               name="role"
               value="cliente"
-              defaultChecked={roleInicial === "cliente"}
+              checked={role === "cliente"}
+              onChange={() => setRole("cliente")}
               className="accent-primary-600"
             />
             Cliente
@@ -45,12 +51,21 @@ export function RegisterForm({
               type="radio"
               name="role"
               value="profesional"
-              defaultChecked={roleInicial === "profesional"}
+              checked={role === "profesional"}
+              onChange={() => setRole("profesional")}
               className="accent-primary-600"
             />
             Profesional
           </label>
         </fieldset>
+
+        <OAuthButtons redirectTo={redirectTo} role={role} />
+
+        <div className="flex items-center gap-3 text-xs text-neutral-500">
+          <span className="h-px flex-1 bg-neutral-200" />
+          o regístrate con email
+          <span className="h-px flex-1 bg-neutral-200" />
+        </div>
 
         <div className="flex flex-col gap-1">
           <Label htmlFor="name">Nombre</Label>

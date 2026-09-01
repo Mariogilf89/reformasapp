@@ -6,6 +6,8 @@ export default async function LoginPage(props: PageProps<"/login">) {
   const justRegistered = searchParams.registered === "1";
   const redirectParam = searchParams.redirect;
   const redirectTo = typeof redirectParam === "string" ? redirectParam : undefined;
+  const errorParam = searchParams.error;
+  const oauthError = typeof errorParam === "string" ? errorParam : undefined;
 
   return (
     <div className="grid flex-1 lg:grid-cols-2">
@@ -29,7 +31,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
           priority
           className="lg:hidden"
         />
-        <LoginForm justRegistered={justRegistered} redirectTo={redirectTo} />
+        <LoginForm justRegistered={justRegistered} redirectTo={redirectTo} oauthError={oauthError} />
       </div>
     </div>
   );

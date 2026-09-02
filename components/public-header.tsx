@@ -1,6 +1,5 @@
 import Link from "next/link";
 import Image from "next/image";
-import { buttonClassName } from "@/components/ui/button";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { StickyHeader } from "@/components/sticky-header";
 import { UserMenu } from "@/components/user-menu";
@@ -30,9 +29,12 @@ export async function PublicHeader() {
             >
               Iniciar sesión
             </Link>
-            <Link href="/register" className={buttonClassName()}>
-              Registrarse
-            </Link>
+            <p className="rounded-lg bg-blue-600 px-4 py-2 text-base text-white">
+              Si eres profesional,{" "}
+              <Link href="/register?role=profesional" className="font-bold underline">
+                regístrate aquí
+              </Link>
+            </p>
           </div>
         )}
       </div>

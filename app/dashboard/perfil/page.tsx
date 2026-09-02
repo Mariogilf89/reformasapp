@@ -105,55 +105,53 @@ export default async function PerfilProfesionalPage() {
 
           {/* Columna central */}
           <div className="flex flex-col gap-8">
-            {perfil && (
+            <div className="flex flex-col gap-4">
+              <h2 className="text-xl font-semibold text-neutral-900">
+                Mi disponibilidad
+              </h2>
+
               <div className="flex flex-col gap-4">
-                <h2 className="text-xl font-semibold text-neutral-900">
-                  Mi disponibilidad
-                </h2>
+                {DIAS_SEMANA.map((dia) => {
+                  const tramosDia = (disponibilidad ?? []).filter(
+                    (tramo) => tramo.dia_semana === dia.value
+                  );
+                  if (tramosDia.length === 0) return null;
 
-                <div className="flex flex-col gap-4">
-                  {DIAS_SEMANA.map((dia) => {
-                    const tramosDia = (disponibilidad ?? []).filter(
-                      (tramo) => tramo.dia_semana === dia.value
-                    );
-                    if (tramosDia.length === 0) return null;
+                  return (
+                    <div key={dia.value}>
+                      <p className="text-sm font-medium text-neutral-900">
+                        {dia.label}
+                      </p>
+                      <ul className="mt-1 flex flex-col gap-1">
+                        {tramosDia.map((tramo) => (
+                          <li key={tramo.id}>
+                            <Card className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                              <span className="text-neutral-600">
+                                {tramo.hora_inicio.slice(0, 5)} – {tramo.hora_fin.slice(0, 5)}
+                              </span>
+                              <form action={borrarTramoDisponibilidad}>
+                                <input type="hidden" name="id" value={tramo.id} />
+                                <Button type="submit" variant="danger" size="xs">
+                                  Borrar
+                                </Button>
+                              </form>
+                            </Card>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
 
-                    return (
-                      <div key={dia.value}>
-                        <p className="text-sm font-medium text-neutral-900">
-                          {dia.label}
-                        </p>
-                        <ul className="mt-1 flex flex-col gap-1">
-                          {tramosDia.map((tramo) => (
-                            <li key={tramo.id}>
-                              <Card className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                                <span className="text-neutral-600">
-                                  {tramo.hora_inicio.slice(0, 5)} – {tramo.hora_fin.slice(0, 5)}
-                                </span>
-                                <form action={borrarTramoDisponibilidad}>
-                                  <input type="hidden" name="id" value={tramo.id} />
-                                  <Button type="submit" variant="danger" size="xs">
-                                    Borrar
-                                  </Button>
-                                </form>
-                              </Card>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })}
-
-                  {(disponibilidad ?? []).length === 0 && (
-                    <p className="text-sm text-neutral-600">
-                      Todavía no has añadido ningún tramo de disponibilidad.
-                    </p>
-                  )}
-                </div>
-
-                <DisponibilidadForm />
+                {(disponibilidad ?? []).length === 0 && (
+                  <p className="text-sm text-neutral-600">
+                    Todavía no has añadido ningún tramo de disponibilidad.
+                  </p>
+                )}
               </div>
-            )}
+
+              <DisponibilidadForm />
+            </div>
 
             {perfil && (
               <div className="flex flex-col gap-4">

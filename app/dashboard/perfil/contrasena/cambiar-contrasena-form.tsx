@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { cambiarContrasena } from "@/app/actions/cuenta";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 
 export function CambiarContrasenaForm() {
@@ -14,17 +14,17 @@ export function CambiarContrasenaForm() {
     <form action={action} className="flex max-w-md flex-col gap-4">
       <div className="flex flex-col gap-1">
         <Label htmlFor="contrasena_actual">Contraseña actual</Label>
-        <Input id="contrasena_actual" name="contrasena_actual" type="password" required />
+        <PasswordInput id="contrasena_actual" name="contrasena_actual" required />
       </div>
 
       <div className="flex flex-col gap-1">
         <Label htmlFor="contrasena_nueva">Nueva contraseña</Label>
-        <Input id="contrasena_nueva" name="contrasena_nueva" type="password" required minLength={8} />
+        <PasswordInput id="contrasena_nueva" name="contrasena_nueva" required minLength={8} />
       </div>
 
       <div className="flex flex-col gap-1">
         <Label htmlFor="confirmar_contrasena">Confirma la nueva contraseña</Label>
-        <Input id="confirmar_contrasena" name="confirmar_contrasena" type="password" required minLength={8} />
+        <PasswordInput id="confirmar_contrasena" name="confirmar_contrasena" required minLength={8} />
       </div>
 
       {state?.error && <p className="text-sm text-red-600">{state.error}</p>}

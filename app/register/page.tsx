@@ -6,9 +6,6 @@ export default async function RegisterPage(props: PageProps<"/register">) {
   const redirectParam = searchParams.redirect;
   const redirectTo = typeof redirectParam === "string" ? redirectParam : undefined;
 
-  const roleParam = searchParams.role;
-  const roleInicial = roleParam === "profesional" ? "profesional" : "cliente";
-
   return (
     <div className="grid flex-1 lg:grid-cols-2">
       <div className="hidden items-center justify-center bg-primary-50 px-8 py-16 lg:flex">
@@ -31,7 +28,7 @@ export default async function RegisterPage(props: PageProps<"/register">) {
           priority
           className="lg:hidden"
         />
-        <RegisterForm redirectTo={redirectTo} roleInicial={roleInicial} />
+        <RegisterForm redirectTo={redirectTo} />
       </div>
     </div>
   );

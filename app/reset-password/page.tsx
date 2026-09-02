@@ -5,7 +5,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button, buttonClassName } from "@/components/ui/button";
 
 type Estado = "comprobando" | "listo" | "caducado" | "guardado";
@@ -130,9 +130,8 @@ export default function ResetPasswordPage() {
 
             <div className="flex flex-col gap-1">
               <Label htmlFor="password">Nueva contraseña</Label>
-              <Input
+              <PasswordInput
                 id="password"
-                type="password"
                 required
                 minLength={8}
                 value={password}
@@ -142,9 +141,8 @@ export default function ResetPasswordPage() {
 
             <div className="flex flex-col gap-1">
               <Label htmlFor="confirmacion">Repite la contraseña</Label>
-              <Input
+              <PasswordInput
                 id="confirmacion"
-                type="password"
                 required
                 minLength={8}
                 value={confirmacion}

@@ -127,6 +127,41 @@ export async function obtenerConexionGoogleCalendar(
   };
 }
 
+/**
+ * ¿Toca ofrecerle a este profesional conectar Google Calendar? Solo si
+ * nunca se le ha enseñado ya la pantalla de consentimiento
+ * ("calendario_google_ofrecido") y todavía no tiene una conexión guardada.
+ * La usan tanto el login (app/auth/callback/route.ts) como el primer
+ * guardado de perfil (app/actions/profesionales.ts) para disparar el
+ * auto-conectar una única vez en la vida del profesional.
+ */
+export async function debeOfrecerseConectarGoogleCalendar(profesionalId: string): Promise<boolean> {
+  const supabaseAdmin = createAdminSupabaseClient();
+  const { data } = await supabaseAdmin
+    .from("profesionales")
+    .select("calendario_google_ofrecido")
+    .eq("id", profesionalId)
+    .maybeSingle<{ calendario_google_ofrecido: boolean }>();
+
+  if (!data || data.calendario_google_ofrecido) return false;
+
+  const conexion = await obtenerConexionGoogleCalendar(profesionalId);
+  return conexion === null;
+}
+
+/**
+ * Marca que ya se le ha enseñado a este profesional la pantalla de
+ * consentimiento de Google Calendar (la haya completado o cancelado), para
+ * que el auto-conectar del login/primer perfil no vuelva a insistir.
+ */
+export async function marcarCalendarioGoogleOfrecido(profesionalId: string): Promise<void> {
+  const supabaseAdmin = createAdminSupabaseClient();
+  await supabaseAdmin
+    .from("profesionales")
+    .update({ calendario_google_ofrecido: true })
+    .eq("id", profesionalId);
+}
+
 /** Upsert por profesional_id: se usa tanto al conectar por primera vez como al reconectar. */
 export async function guardarConexionGoogleCalendar(
   profesionalId: string,
@@ -221,4 +256,57 @@ export async function buscarAlertasBusquedaCoincidentes(solicitud: {
         (alerta.modo_tiempo === null || alerta.modo_tiempo === solicitud.modoTiempo)
     )
     .map((alerta) => ({ profesionalId: alerta.profesional_id, userId: alerta.profesionales!.user_id }));
+}
+
+/**
+ * Crea (o recupera, si el email ya existía) una cuenta de cliente
+ * passwordless y devuelve un token de un solo uso para iniciarle sesión al
+ * momento. "generateLink" con type "magiclink" crea el usuario si no
+ * existe (confirmado en el propio SDK de Supabase), así que sirve tanto
+ * para el primer contacto de un email nuevo como para uno que ya tenía
+ * cuenta de cliente de una solicitud anterior.
+ */
+export async function crearOAccederClientePasswordless(datos: {
+  email: string;
+  nombre: string;
+  telefono: string;
+}): Promise<{ userId: string; hashedToken: string } | null> {
+  const supabaseAdmin = createAdminSupabaseClient();
+  const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+    type: "magiclink",
+    email: datos.email,
+    options: {
+      data: { role: "cliente", full_name: datos.nombre, telefono: datos.telefono },
+    },
+  });
+
+  if (error || !data.user || !data.properties) {
+    console.error("No se pudo crear/recuperar la cuenta de cliente passwordless", datos.email, error);
+    return null;
+  }
+
+  return { userId: data.user.id, hashedToken: data.properties.hashed_token };
+}
+
+/**
+ * Genera un token de acceso nuevo para un cliente que ya tiene cuenta,
+ * para el email de "vuelve cuando quieras" (justo tras crear la solicitud,
+ * o desde "reenviar acceso" en el login). Independiente del token que
+ * inicia sesión al momento en crearOAccederClientePasswordless: ese ya se
+ * consume ahí mismo con verifyOtp, hace falta uno nuevo sin usar para el
+ * enlace que se manda por email.
+ */
+export async function generarTokenAccesoCliente(email: string): Promise<string | null> {
+  const supabaseAdmin = createAdminSupabaseClient();
+  const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+  });
+
+  if (error || !data.properties) {
+    console.error("No se pudo generar el enlace de acceso del cliente", email, error);
+    return null;
+  }
+
+  return data.properties.hashed_token;
 }

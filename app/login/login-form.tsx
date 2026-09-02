@@ -6,6 +6,7 @@ import { signIn } from "@/app/actions/auth";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { OAuthButtons } from "@/components/oauth-buttons";
 
@@ -53,7 +54,7 @@ export function LoginForm({
 
         <div className="flex flex-col gap-1">
           <Label htmlFor="password">Contraseña</Label>
-          <Input id="password" name="password" type="password" required />
+          <PasswordInput id="password" name="password" required />
           <Link
             href="/forgot-password"
             className="mt-1 self-end text-xs font-medium text-primary-600 hover:underline"
@@ -71,12 +72,22 @@ export function LoginForm({
         </Button>
 
         <p className="text-sm text-neutral-600">
-          ¿No tienes cuenta?{" "}
+          ¿Eres profesional y no tienes cuenta?{" "}
           <Link
             href={redirectTo ? `/register?redirect=${encodeURIComponent(redirectTo)}` : "/register"}
             className="font-medium text-primary-600 hover:underline"
           >
             Regístrate
+          </Link>
+        </p>
+
+        {/* Los clientes no tienen contraseña (cuenta passwordless creada al
+            contactar a un profesional): este es su acceso, no el genérico
+            de arriba. */}
+        <p className="text-sm text-neutral-600">
+          ¿Ya solicitaste un servicio?{" "}
+          <Link href="/acceso-cliente" className="font-medium text-primary-600 hover:underline">
+            Accede aquí
           </Link>
         </p>
       </form>

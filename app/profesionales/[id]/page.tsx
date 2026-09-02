@@ -4,7 +4,6 @@ import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
 import { isProvincia } from "@/lib/provincias";
 import { Card } from "@/components/ui/card";
-import { buttonClassName } from "@/components/ui/button";
 import { VerificadoBadge } from "@/components/ui/verificado-badge";
 import { ContactarForm } from "./contactar-form";
 
@@ -124,21 +123,22 @@ export default async function ProfesionalDetallePage(
       </Card>
 
       <div className="w-full max-w-2xl">
-        {!user ? (
-          <Link
-            href={`/register?redirect=${encodeURIComponent(`/profesionales/${profesional.id}`)}`}
-            className={buttonClassName()}
-          >
-            Contactar
-          </Link>
-        ) : rol === "cliente" ? (
+        {!user || rol === "cliente" ? (
           <ContactarForm
             profesionalId={profesional.id}
-            categoriasProfesional={profesional.categorias}
             fechaElegida={fechaElegida}
             horaInicioElegida={horaInicioElegida}
             modoElegido={modoElegido}
             provinciaElegida={provinciaElegida}
+            clientePrecargado={
+              user
+                ? {
+                    nombre: (user.user_metadata?.full_name as string | undefined) ?? "",
+                    email: user.email ?? "",
+                    telefono: (user.user_metadata?.telefono as string | undefined) ?? "",
+                  }
+                : undefined
+            }
           />
         ) : (
           <p className="text-sm text-neutral-500">

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { esRutaInternaSegura, destinoTrasLogin } from "@/lib/rutas";
+import { propioProfesionalId } from "@/app/actions/citas";
+import { debeOfrecerseConectarGoogleCalendar } from "@/lib/supabase-admin";
 
 /**
  * Vuelta del login OAuth (Google/Facebook vía signInWithOAuth). Supabase
@@ -42,11 +44,37 @@ export async function GET(request: Request) {
   // tiene "role" en sus metadatos, así que se fija aquí una única vez. En
   // logins posteriores el role ya existe y no se vuelve a tocar, aunque la
   // URL llevara un "role" distinto.
+  //
+  // Por defecto "profesional", no "cliente": /register siempre manda
+  // role=profesional explícito, y los clientes ya no pasan por este flujo
+  // en absoluto (se registran con el enlace mágico del formulario de
+  // contacto, que fija su role directamente, sin tocar esta ruta). El
+  // único caso real que llega aquí sin "role" en la URL es alguien nuevo
+  // entrando por Google/Facebook desde /login en vez de /register —hoy
+  // eso solo puede ser un profesional despistado, no un cliente.
   let role: string | undefined = data.user?.user_metadata?.role;
   if (data.user && !role) {
-    role = roleParam === "profesional" ? "profesional" : "cliente";
+    role = roleParam === "cliente" ? "cliente" : "profesional";
     await supabase.auth.updateUser({ data: { role } });
   }
 
-  return NextResponse.redirect(new URL(next ?? destinoTrasLogin(role), url.origin));
+  const destino = next ?? destinoTrasLogin(role);
+
+  // Profesionales: se aprovecha este mismo login para ofrecer conectar
+  // Google Calendar, en vez de dejarlo para un paso aparte en ajustes (ver
+  // app/api/google-calendar/conectar/route.ts). Solo se dispara si ya
+  // existe perfil (un alta recién hecha todavía no tiene fila en
+  // "profesionales"; para ese caso el disparo equivalente está en
+  // guardarPerfilProfesional, app/actions/profesionales.ts) y si no se le
+  // ha ofrecido ya antes.
+  if (role === "profesional" && data.user) {
+    const profesionalId = await propioProfesionalId(supabase, data.user.id);
+    if (profesionalId && (await debeOfrecerseConectarGoogleCalendar(profesionalId))) {
+      return NextResponse.redirect(
+        new URL(`/api/google-calendar/conectar?next=${encodeURIComponent(destino)}`, url.origin)
+      );
+    }
+  }
+
+  return NextResponse.redirect(new URL(destino, url.origin));
 }

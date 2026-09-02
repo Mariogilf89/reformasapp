@@ -10,6 +10,7 @@ import {
 import { guardarConexionGoogleCalendar } from "@/lib/supabase-admin";
 
 const STATE_COOKIE = "google_calendar_oauth_state";
+const NEXT_COOKIE = "google_calendar_oauth_next";
 const DESTINO = "/dashboard/perfil/calendario-google";
 
 export async function GET(request: Request) {
@@ -21,9 +22,20 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const stateCookie = cookieStore.get(STATE_COOKIE)?.value;
   cookieStore.delete(STATE_COOKIE);
+  const nextCookie = cookieStore.get(NEXT_COOKIE)?.value;
+  cookieStore.delete(NEXT_COOKIE);
 
+  // Si este flujo se auto-disparó (login o primer perfil, ver
+  // app/api/google-calendar/conectar/route.ts), cualquier cancelación o
+  // fallo vuelve en silencio al destino original en vez de mostrar un
+  // error: el profesional no pidió esto explícitamente, así que rechazarlo
+  // es una opción válida, no un fallo que deba interrumpirle.
   const conError = (mensaje: string) =>
-    NextResponse.redirect(new URL(`${DESTINO}?error=${encodeURIComponent(mensaje)}`, url.origin));
+    nextCookie
+      ? NextResponse.redirect(new URL(nextCookie, url.origin))
+      : NextResponse.redirect(
+          new URL(`${DESTINO}?error=${encodeURIComponent(mensaje)}`, url.origin)
+        );
 
   if (errorParam) {
     return conError("Has cancelado la conexión con Google Calendar.");
@@ -72,5 +84,7 @@ export async function GET(request: Request) {
     return conError("No se pudo completar la conexión con Google Calendar.");
   }
 
-  return NextResponse.redirect(new URL(`${DESTINO}?conectado=1`, url.origin));
+  const destinoFinal = new URL(nextCookie ?? DESTINO, url.origin);
+  destinoFinal.searchParams.set("conectado", "1");
+  return NextResponse.redirect(destinoFinal);
 }

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import {
   DOCUMENTOS_IDENTIDAD_BUCKET,
@@ -47,6 +48,12 @@ export async function guardarPerfilProfesional(
 
   const nombre = nombreForm || user.user_metadata?.full_name || user.email || "Profesional";
 
+  const { data: existente } = await supabase
+    .from("profesionales")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle<{ id: string }>();
+
   const { error } = await supabase.from("profesionales").upsert(
     {
       user_id: user.id,
@@ -65,6 +72,17 @@ export async function guardarPerfilProfesional(
   }
 
   revalidatePath("/dashboard/perfil");
+
+  // Primer perfil creado: se aprovecha para ofrecer conectar Google
+  // Calendar, igual que se hace en el login para quien vuelve a entrar con
+  // perfil ya existente (ver app/auth/callback/route.ts). No hace falta
+  // comprobar debeOfrecerseConectarGoogleCalendar aquí: esa columna solo
+  // puede existir una vez creada la fila, así que un alta nueva nunca la
+  // tiene ya marcada.
+  if (!existente) {
+    redirect("/api/google-calendar/conectar?next=/dashboard");
+  }
+
   return { success: true };
 }
 

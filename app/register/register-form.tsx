@@ -1,65 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { signUp } from "@/app/actions/auth";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { OAuthButtons } from "@/components/oauth-buttons";
 
-export function RegisterForm({
-  redirectTo,
-  roleInicial = "cliente",
-}: {
-  redirectTo?: string;
-  roleInicial?: "cliente" | "profesional";
-}) {
+export function RegisterForm({ redirectTo }: { redirectTo?: string }) {
   const [state, action, pending] = useActionState(signUp, undefined);
-  // Controlado (no solo defaultChecked) porque los botones de Google/
-  // Facebook necesitan saber qué tipo de cuenta está elegido ahora mismo,
-  // no solo el valor inicial.
-  const [role, setRole] = useState<"cliente" | "profesional">(roleInicial);
 
   return (
     <Card className="w-full max-w-sm p-6">
       <form action={action} className="flex flex-col gap-4">
         <input type="hidden" name="redirect" value={redirectTo ?? ""} />
+        {/* Este formulario solo registra profesionales: los clientes no
+            eligen tipo de cuenta aquí. */}
+        <input type="hidden" name="role" value="profesional" />
 
         <h1 className="text-2xl font-semibold text-neutral-900">
           Crear cuenta
         </h1>
 
-        <fieldset className="flex flex-col gap-2">
-          <legend className="mb-1 text-sm font-medium text-neutral-900">
-            Tipo de cuenta
-          </legend>
-          <label className="flex items-center gap-2 text-sm text-neutral-700">
-            <input
-              type="radio"
-              name="role"
-              value="cliente"
-              checked={role === "cliente"}
-              onChange={() => setRole("cliente")}
-              className="accent-primary-600"
-            />
-            Cliente
-          </label>
-          <label className="flex items-center gap-2 text-sm text-neutral-700">
-            <input
-              type="radio"
-              name="role"
-              value="profesional"
-              checked={role === "profesional"}
-              onChange={() => setRole("profesional")}
-              className="accent-primary-600"
-            />
-            Profesional
-          </label>
-        </fieldset>
-
-        <OAuthButtons redirectTo={redirectTo} role={role} />
+        <OAuthButtons redirectTo={redirectTo} role="profesional" />
 
         <div className="flex items-center gap-3 text-xs text-neutral-500">
           <span className="h-px flex-1 bg-neutral-200" />
@@ -79,7 +45,7 @@ export function RegisterForm({
 
         <div className="flex flex-col gap-1">
           <Label htmlFor="password">Contraseña</Label>
-          <Input id="password" name="password" type="password" required minLength={8} />
+          <PasswordInput id="password" name="password" required minLength={8} />
         </div>
 
         <label className="flex items-start gap-2 text-sm text-neutral-700">

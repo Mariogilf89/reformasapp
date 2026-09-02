@@ -7,7 +7,14 @@ import { isCategoria, type Categoria } from "@/lib/profesionales";
 import { isProvincia } from "@/lib/provincias";
 import { crearCitaPendiente, obtenerUserIdProfesional } from "@/app/actions/citas";
 import { notificarAlertasBusquedaTrabajos } from "@/app/actions/alertas-busqueda";
-import { crearNotificacion } from "@/lib/supabase-admin";
+import {
+  crearNotificacion,
+  crearOAccederClientePasswordless,
+  generarTokenAccesoCliente,
+} from "@/lib/supabase-admin";
+import { enviarEmail, construirCuerpoEnlaceAccesoHtml } from "@/lib/email";
+import { obtenerOrigenPeticion } from "@/lib/rutas";
+import { buscarMunicipioPorCp } from "@/lib/codigos-postales";
 
 function esModoTiempoValido(value: string): value is "lo_antes_posible" | "indiferente" | "dia_hora" {
   return value === "lo_antes_posible" || value === "indiferente" || value === "dia_hora";
@@ -71,6 +78,14 @@ export type ContactarProfesionalFormState = { error?: string } | undefined;
  * Crea una solicitud desde el perfil público de un profesional y redirige
  * al hilo de esa solicitud con "contactar" ya apuntando a él, reutilizando
  * el flujo de mensaje + cita que ya existe en /dashboard/solicitudes/[id].
+ *
+ * Ya no exige tener sesión de cliente previa: si no la hay, crea (o
+ * recupera, si el email ya existía) una cuenta de cliente passwordless al
+ * vuelo e inicia sesión con ella en esta misma respuesta, antes de insertar
+ * la solicitud — así la RLS normal ("auth.uid() = cliente_id") se cumple
+ * sin tener que saltársela con el cliente de service role. Si ya había
+ * sesión de cliente activa (solicitud anterior en este mismo navegador), se
+ * reutiliza tal cual, sin volver a pedir nombre/email/teléfono.
  */
 export async function crearSolicitudYContactar(
   _prevState: ContactarProfesionalFormState,
@@ -78,17 +93,16 @@ export async function crearSolicitudYContactar(
 ): Promise<ContactarProfesionalFormState> {
   const supabase = await createServerSupabaseClient();
   const {
-    data: { user },
+    data: { user: usuarioActual },
   } = await supabase.auth.getUser();
 
-  if (!user || user.user_metadata?.role !== "cliente") {
+  if (usuarioActual && usuarioActual.user_metadata?.role !== "cliente") {
     return { error: "No autorizado." };
   }
 
   const profesionalId = formData.get("profesional_id")?.toString();
-  const categoria = formData.get("categoria")?.toString() ?? "";
-  const zona = formData.get("zona")?.toString().trim();
   const descripcion = formData.get("descripcion")?.toString().trim();
+  const codigoPostal = formData.get("codigo_postal")?.toString().trim();
 
   // Solo llegan si ContactarForm venía de una búsqueda en /profesionales con
   // esos datos (ver modoElegido/provinciaElegida en profesionales/[id]); si
@@ -96,19 +110,16 @@ export async function crearSolicitudYContactar(
   const modoRaw = formData.get("modo_tiempo")?.toString() || null;
   const provinciaRaw = formData.get("provincia")?.toString() || null;
   const modoTiempo = modoRaw && esModoTiempoValido(modoRaw) ? modoRaw : null;
-  const provincia = provinciaRaw && isProvincia(provinciaRaw) ? provinciaRaw : null;
+  let provincia = provinciaRaw && isProvincia(provinciaRaw) ? provinciaRaw : null;
 
   if (!profesionalId) {
     return { error: "Profesional no válido." };
   }
-  if (!isCategoria(categoria)) {
-    return { error: "Selecciona una categoría válida." };
-  }
-  if (!zona) {
-    return { error: "Indica la zona." };
-  }
   if (!descripcion) {
     return { error: "Añade una descripción." };
+  }
+  if (!codigoPostal || !/^\d{5}$/.test(codigoPostal)) {
+    return { error: "Indica un código postal válido." };
   }
 
   const { data: profesional } = await supabase
@@ -117,13 +128,86 @@ export async function crearSolicitudYContactar(
     .eq("id", profesionalId)
     .maybeSingle<{ id: string; categorias: Categoria[] }>();
 
-  if (!profesional || !profesional.categorias.includes(categoria)) {
-    return { error: "Ese profesional no ofrece esa categoría." };
+  // Sin selector de categoría en el formulario corto: se usa la primera
+  // que ofrece el profesional, igual que ya hacía por defecto el selector.
+  const categoria = profesional?.categorias[0];
+  if (!profesional || !categoria) {
+    return { error: "Ese profesional no está disponible ahora mismo." };
+  }
+
+  const resuelto = await buscarMunicipioPorCp(supabase, codigoPostal);
+  const zona = resuelto?.municipio ?? codigoPostal;
+  if (!provincia && resuelto?.provincia && isProvincia(resuelto.provincia)) {
+    provincia = resuelto.provincia;
+  }
+
+  let clienteId: string;
+
+  if (usuarioActual) {
+    clienteId = usuarioActual.id;
+  } else {
+    const nombre = formData.get("nombre")?.toString().trim();
+    const email = formData.get("email")?.toString().trim();
+    const telefono = formData.get("telefono")?.toString().trim();
+    const acceptTerms = formData.get("acceptTerms");
+
+    if (!nombre || !email || !telefono) {
+      return { error: "Rellena todos los campos." };
+    }
+    if (acceptTerms !== "on") {
+      return { error: "Debes aceptar los Términos y la Política de Privacidad." };
+    }
+
+    const cuenta = await crearOAccederClientePasswordless({ email, nombre, telefono });
+    if (!cuenta) {
+      return { error: "No se pudo procesar tu solicitud. Inténtalo de nuevo." };
+    }
+
+    // "email" (no "magiclink"): generateLink devuelve verification_type
+    // "signup" para un email nuevo y "magiclink" para uno ya existente —
+    // "email" es el tipo que verifyOtp acepta para ambos casos por igual
+    // (comprobado directamente contra la API; usar "magiclink" a secas
+    // falla con "Email link is invalid or has expired" en el caso nuevo).
+    const { error: errorSesion } = await supabase.auth.verifyOtp({
+      token_hash: cuenta.hashedToken,
+      type: "email",
+    });
+    if (errorSesion) {
+      return { error: "No se pudo procesar tu solicitud. Inténtalo de nuevo." };
+    }
+
+    clienteId = cuenta.userId;
+
+    // El token de arriba ya se ha consumido con verifyOtp (un solo uso):
+    // hace falta uno nuevo, sin usar, para el enlace que se manda por
+    // email y permite volver desde otro dispositivo/navegador.
+    const tokenAcceso = await generarTokenAccesoCliente(email);
+    if (tokenAcceso) {
+      const origen = await obtenerOrigenPeticion();
+      const enlace = `${origen}/auth/entrar-cliente?token_hash=${encodeURIComponent(tokenAcceso)}`;
+      try {
+        await enviarEmail(
+          email,
+          "Hemos recibido tu solicitud en Faenia",
+          construirCuerpoEnlaceAccesoHtml(enlace)
+        );
+      } catch (error) {
+        console.error("No se pudo enviar el email de acceso al nuevo cliente:", email, error);
+      }
+    }
   }
 
   const { data: solicitud, error } = await supabase
     .from("solicitudes")
-    .insert({ cliente_id: user.id, categoria, zona, descripcion, modo_tiempo: modoTiempo, provincia })
+    .insert({
+      cliente_id: clienteId,
+      categoria,
+      zona,
+      descripcion,
+      codigo_postal: codigoPostal,
+      modo_tiempo: modoTiempo,
+      provincia,
+    })
     .select("id")
     .single<{ id: string }>();
 
@@ -155,7 +239,7 @@ export async function crearSolicitudYContactar(
     await crearCitaPendiente(supabase, {
       solicitudId: solicitud.id,
       profesionalId,
-      clienteId: user.id,
+      clienteId,
       tipo: "visita",
       fecha,
       horaInicio,

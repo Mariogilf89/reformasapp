@@ -6,3 +6,12 @@
 export function esRutaInternaSegura(ruta: string): boolean {
   return ruta.startsWith("/") && !ruta.startsWith("//") && !ruta.startsWith("/\\");
 }
+
+// Destino por defecto tras iniciar sesión cuando no hay un "redirect"/"next"
+// explícito: el cliente entra buscando profesionales, así que se queda en
+// el home; el profesional sigue yendo a su dashboard. La usan tanto el login
+// por contraseña (app/actions/auth.ts) como el route handler de vuelta del
+// login OAuth (app/auth/callback/route.ts).
+export function destinoTrasLogin(role: string | undefined): string {
+  return role === "cliente" ? "/" : "/dashboard";
+}

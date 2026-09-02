@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
-import { esRutaInternaSegura } from "@/lib/rutas";
+import { esRutaInternaSegura, destinoTrasLogin } from "@/lib/rutas";
 
 export type UserRole = "profesional" | "cliente" | "admin";
 
@@ -77,7 +77,7 @@ export async function signIn(
 
   const supabase = await createServerSupabaseClient();
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
@@ -87,7 +87,10 @@ export async function signIn(
   }
 
   const redirectTo = formData.get("redirect")?.toString();
-  redirect(redirectTo && esRutaInternaSegura(redirectTo) ? redirectTo : "/dashboard");
+  if (redirectTo && esRutaInternaSegura(redirectTo)) {
+    redirect(redirectTo);
+  }
+  redirect(destinoTrasLogin(data.user?.user_metadata?.role));
 }
 
 export async function signOut() {

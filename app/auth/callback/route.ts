@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase";
-import { esRutaInternaSegura } from "@/lib/rutas";
+import { esRutaInternaSegura, destinoTrasLogin } from "@/lib/rutas";
 
 /**
  * Vuelta del login OAuth (Google/Facebook vía signInWithOAuth). Supabase
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const nextParam = url.searchParams.get("next");
-  const next = nextParam && esRutaInternaSegura(nextParam) ? nextParam : "/dashboard";
+  const next = nextParam && esRutaInternaSegura(nextParam) ? nextParam : null;
   const roleParam = url.searchParams.get("role");
 
   if (!code) {
@@ -42,10 +42,11 @@ export async function GET(request: Request) {
   // tiene "role" en sus metadatos, así que se fija aquí una única vez. En
   // logins posteriores el role ya existe y no se vuelve a tocar, aunque la
   // URL llevara un "role" distinto.
-  if (data.user && !data.user.user_metadata?.role) {
-    const role = roleParam === "profesional" ? "profesional" : "cliente";
+  let role: string | undefined = data.user?.user_metadata?.role;
+  if (data.user && !role) {
+    role = roleParam === "profesional" ? "profesional" : "cliente";
     await supabase.auth.updateUser({ data: { role } });
   }
 
-  return NextResponse.redirect(new URL(next, url.origin));
+  return NextResponse.redirect(new URL(next ?? destinoTrasLogin(role), url.origin));
 }

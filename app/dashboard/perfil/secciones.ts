@@ -33,6 +33,12 @@ export const SECCIONES_PERFIL: SeccionPerfil[] = [
     breadcrumb: "Notificaciones",
   },
   {
+    href: "/dashboard/perfil/calendario-google",
+    label: "Google Calendar",
+    breadcrumb: "Google Calendar",
+    descripcion: "Exporta tus citas confirmadas a tu Google Calendar",
+  },
+  {
     href: "/dashboard/perfil/trabajos",
     label: "Mis trabajos",
     breadcrumb: "Mis trabajos",

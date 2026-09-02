@@ -86,6 +86,99 @@ export async function crearNotificacion(
   }
 }
 
+export type ConexionGoogleCalendar = {
+  refreshToken: string;
+  accessToken: string | null;
+  accessTokenExpiraEn: string | null;
+  googleCalendarId: string;
+  googleEmail: string | null;
+};
+
+/**
+ * Lee la conexión de Google Calendar de un profesional. Usa la service role
+ * porque la tabla "google_calendar_conexiones" no tiene ninguna policy RLS
+ * para authenticated/anon a propósito: el refresh_token nunca debe ser
+ * legible desde el cliente normal.
+ */
+export async function obtenerConexionGoogleCalendar(
+  profesionalId: string
+): Promise<ConexionGoogleCalendar | null> {
+  const supabaseAdmin = createAdminSupabaseClient();
+  const { data } = await supabaseAdmin
+    .from("google_calendar_conexiones")
+    .select("refresh_token, access_token, access_token_expira_en, google_calendar_id, google_email")
+    .eq("profesional_id", profesionalId)
+    .maybeSingle<{
+      refresh_token: string;
+      access_token: string | null;
+      access_token_expira_en: string | null;
+      google_calendar_id: string;
+      google_email: string | null;
+    }>();
+
+  if (!data) return null;
+
+  return {
+    refreshToken: data.refresh_token,
+    accessToken: data.access_token,
+    accessTokenExpiraEn: data.access_token_expira_en,
+    googleCalendarId: data.google_calendar_id,
+    googleEmail: data.google_email,
+  };
+}
+
+/** Upsert por profesional_id: se usa tanto al conectar por primera vez como al reconectar. */
+export async function guardarConexionGoogleCalendar(
+  profesionalId: string,
+  datos: {
+    refreshToken: string;
+    accessToken: string;
+    accessTokenExpiraEn: string;
+    googleCalendarId: string;
+    googleEmail: string | null;
+  }
+): Promise<void> {
+  const supabaseAdmin = createAdminSupabaseClient();
+  const { error } = await supabaseAdmin.from("google_calendar_conexiones").upsert(
+    {
+      profesional_id: profesionalId,
+      refresh_token: datos.refreshToken,
+      access_token: datos.accessToken,
+      access_token_expira_en: datos.accessTokenExpiraEn,
+      google_calendar_id: datos.googleCalendarId,
+      google_email: datos.googleEmail,
+      actualizado_en: new Date().toISOString(),
+    },
+    { onConflict: "profesional_id" }
+  );
+
+  if (error) {
+    console.error("No se pudo guardar la conexión de Google Calendar", profesionalId, error);
+  }
+}
+
+/** Cachea el access_token de corta duración para no refrescarlo en cada sincronización. */
+export async function actualizarAccessTokenGoogleCalendar(
+  profesionalId: string,
+  accessToken: string,
+  expiraEn: string
+): Promise<void> {
+  const supabaseAdmin = createAdminSupabaseClient();
+  await supabaseAdmin
+    .from("google_calendar_conexiones")
+    .update({
+      access_token: accessToken,
+      access_token_expira_en: expiraEn,
+      actualizado_en: new Date().toISOString(),
+    })
+    .eq("profesional_id", profesionalId);
+}
+
+export async function eliminarConexionGoogleCalendar(profesionalId: string): Promise<void> {
+  const supabaseAdmin = createAdminSupabaseClient();
+  await supabaseAdmin.from("google_calendar_conexiones").delete().eq("profesional_id", profesionalId);
+}
+
 export type AlertaBusquedaCoincidente = { profesionalId: string; userId: string };
 
 /**

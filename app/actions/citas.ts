@@ -10,6 +10,7 @@ import {
 } from "@/lib/supabase-admin";
 import { enviarEmail } from "@/lib/email";
 import { fechaLocal, sumarDias } from "@/lib/fechas";
+import { sincronizarCitaGoogleCalendar, eliminarEventoGoogleDeCita } from "@/lib/google-calendar-sync";
 
 export type Supabase = Awaited<ReturnType<typeof createServerSupabaseClient>>;
 
@@ -235,7 +236,7 @@ export async function caducarCitasPendientes(supabase: Supabase) {
     .lt("fecha", hoy);
 }
 
-async function propioProfesionalId(supabase: Supabase, userId: string) {
+export async function propioProfesionalId(supabase: Supabase, userId: string) {
   const { data } = await supabase
     .from("profesionales")
     .select("id")
@@ -474,7 +475,7 @@ export async function aceptarCitaProfesional(
 
   const { data: cita } = await supabase
     .from("citas")
-    .select("id, profesional_id, cliente_id, fecha, hora_inicio, tipo, estado")
+    .select("id, profesional_id, cliente_id, fecha, hora_inicio, tipo, estado, localidad, calle")
     .eq("id", citaId)
     .maybeSingle<{
       id: string;
@@ -484,6 +485,8 @@ export async function aceptarCitaProfesional(
       hora_inicio: string;
       tipo: string;
       estado: string;
+      localidad: string | null;
+      calle: string | null;
     }>();
 
   if (!cita || cita.profesional_id !== profesionalId) {
@@ -517,6 +520,25 @@ export async function aceptarCitaProfesional(
   if (error) {
     return { error: error.message };
   }
+
+  const contactoCliente = await obtenerContactoTelefonicoUsuario(cita.cliente_id);
+  await sincronizarCitaGoogleCalendar(supabase, {
+    id: cita.id,
+    profesionalId,
+    fecha: cita.fecha,
+    horaInicio: cita.hora_inicio,
+    horaFin,
+    tipo: cita.tipo as TipoCita,
+    origenExterno: false,
+    tituloExterno: null,
+    localidad: cita.localidad,
+    calle: cita.calle,
+    nombreCliente: contactoCliente.nombre,
+    contactoNombre: null,
+    contactoTelefono: null,
+    comentario: null,
+    googleEventId: null,
+  });
 
   const emailCliente = await obtenerEmailUsuario(cita.cliente_id);
   const cuerpo = construirCuerpoCitaHtml({
@@ -730,7 +752,7 @@ export async function aceptarCitaCliente(formData: FormData) {
     .eq("cliente_id", user.id)
     .eq("estado", "pendiente")
     .eq("propuesto_por", "profesional")
-    .select("id, profesional_id, fecha, hora_inicio, hora_fin, tipo")
+    .select("id, profesional_id, fecha, hora_inicio, hora_fin, tipo, localidad, calle")
     .maybeSingle<{
       id: string;
       profesional_id: string;
@@ -738,6 +760,8 @@ export async function aceptarCitaCliente(formData: FormData) {
       hora_inicio: string;
       hora_fin: string | null;
       tipo: string;
+      localidad: string | null;
+      calle: string | null;
     }>();
 
   revalidatePath("/dashboard/citas");
@@ -745,6 +769,24 @@ export async function aceptarCitaCliente(formData: FormData) {
   if (!cita) {
     return;
   }
+
+  await sincronizarCitaGoogleCalendar(supabase, {
+    id: cita.id,
+    profesionalId: cita.profesional_id,
+    fecha: cita.fecha,
+    horaInicio: cita.hora_inicio,
+    horaFin: cita.hora_fin!,
+    tipo: cita.tipo as TipoCita,
+    origenExterno: false,
+    tituloExterno: null,
+    localidad: cita.localidad,
+    calle: cita.calle,
+    nombreCliente: (user.user_metadata?.full_name as string | undefined) ?? null,
+    contactoNombre: null,
+    contactoTelefono: null,
+    comentario: null,
+    googleEventId: null,
+  });
 
   const profesionalUserId = await obtenerUserIdProfesional(supabase, cita.profesional_id);
   if (profesionalUserId) {
@@ -1165,30 +1207,59 @@ export async function crearCitaExterna(
     // serie" en editarCitaExterna/cancelarCitaExterna).
     const serieId = crypto.randomUUID();
 
-    const { error } = await supabase.from("citas").insert(
-      fechasGeneradas.map((fechaOcurrencia) => ({
-        profesional_id: profesionalId,
-        cliente_id: null,
-        solicitud_id: null,
-        tipo: null,
-        fecha: fechaOcurrencia,
-        hora_inicio: horaInicio,
-        hora_fin: horaFin,
-        fecha_fin: null,
-        estado: "confirmada",
-        origen_externo: true,
-        titulo_externo: titulo,
-        localidad,
-        calle,
-        contacto_nombre: contactoNombre,
-        contacto_telefono: contactoTelefono,
-        serie_id: serieId,
-      }))
-    );
+    const { data: filasInsertadas, error } = await supabase
+      .from("citas")
+      .insert(
+        fechasGeneradas.map((fechaOcurrencia) => ({
+          profesional_id: profesionalId,
+          cliente_id: null,
+          solicitud_id: null,
+          tipo: null,
+          fecha: fechaOcurrencia,
+          hora_inicio: horaInicio,
+          hora_fin: horaFin,
+          fecha_fin: null,
+          estado: "confirmada",
+          origen_externo: true,
+          titulo_externo: titulo,
+          localidad,
+          calle,
+          contacto_nombre: contactoNombre,
+          contacto_telefono: contactoTelefono,
+          serie_id: serieId,
+        }))
+      )
+      .select("id")
+      .returns<{ id: string }[]>();
 
     if (error) {
       return { error: error.message };
     }
+
+    // El orden de las filas devueltas coincide con el de fechasGeneradas: se
+    // inserta en un único insert con el array en ese orden y Postgres/PostgREST
+    // preserva el orden de inserción en la respuesta.
+    await Promise.all(
+      (filasInsertadas ?? []).map((fila, indice) =>
+        sincronizarCitaGoogleCalendar(supabase, {
+          id: fila.id,
+          profesionalId,
+          fecha: fechasGeneradas[indice],
+          horaInicio: horaInicio!,
+          horaFin: horaFin!,
+          tipo: null,
+          origenExterno: true,
+          tituloExterno: titulo,
+          localidad,
+          calle,
+          nombreCliente: null,
+          contactoNombre,
+          contactoTelefono,
+          comentario: null,
+          googleEventId: null,
+        })
+      )
+    );
 
     revalidatePath("/dashboard");
     return undefined;
@@ -1220,27 +1291,49 @@ export async function crearCitaExterna(
     }
   }
 
-  const { error } = await supabase.from("citas").insert({
-    profesional_id: profesionalId,
-    cliente_id: null,
-    solicitud_id: null,
-    tipo: null,
-    fecha,
-    hora_inicio: horaInicio,
-    hora_fin: horaFin,
-    fecha_fin: fechaFinEfectiva,
-    estado: "confirmada",
-    origen_externo: true,
-    titulo_externo: titulo,
-    localidad,
-    calle,
-    contacto_nombre: contactoNombre,
-    contacto_telefono: contactoTelefono,
-  });
+  const { data: citaCreada, error } = await supabase
+    .from("citas")
+    .insert({
+      profesional_id: profesionalId,
+      cliente_id: null,
+      solicitud_id: null,
+      tipo: null,
+      fecha,
+      hora_inicio: horaInicio,
+      hora_fin: horaFin,
+      fecha_fin: fechaFinEfectiva,
+      estado: "confirmada",
+      origen_externo: true,
+      titulo_externo: titulo,
+      localidad,
+      calle,
+      contacto_nombre: contactoNombre,
+      contacto_telefono: contactoTelefono,
+    })
+    .select("id")
+    .single<{ id: string }>();
 
   if (error) {
     return { error: error.message };
   }
+
+  await sincronizarCitaGoogleCalendar(supabase, {
+    id: citaCreada.id,
+    profesionalId,
+    fecha: fecha!,
+    horaInicio: horaInicio!,
+    horaFin: horaFin!,
+    tipo: null,
+    origenExterno: true,
+    tituloExterno: titulo,
+    localidad,
+    calle,
+    nombreCliente: null,
+    contactoNombre,
+    contactoTelefono,
+    comentario: null,
+    googleEventId: null,
+  });
 
   revalidatePath("/dashboard");
   return undefined;
@@ -1309,9 +1402,15 @@ export async function editarCitaExterna(
 
   const { data: cita } = await supabase
     .from("citas")
-    .select("id, profesional_id, origen_externo, serie_id")
+    .select("id, profesional_id, origen_externo, serie_id, google_event_id")
     .eq("id", citaId)
-    .maybeSingle<{ id: string; profesional_id: string; origen_externo: boolean; serie_id: string | null }>();
+    .maybeSingle<{
+      id: string;
+      profesional_id: string;
+      origen_externo: boolean;
+      serie_id: string | null;
+      google_event_id: string | null;
+    }>();
 
   if (!cita || cita.profesional_id !== profesionalId) {
     return { error: "No autorizado." };
@@ -1342,6 +1441,8 @@ export async function editarCitaExterna(
       return { error: error.message };
     }
 
+    await eliminarEventoGoogleDeCita(supabase, profesionalId, citaId, cita.google_event_id);
+
     revalidatePath("/dashboard");
     return undefined;
   }
@@ -1356,14 +1457,14 @@ export async function editarCitaExterna(
   if (alcance === "serie" && cita.serie_id) {
     const { data: filasSerie } = await supabase
       .from("citas")
-      .select("id, fecha")
+      .select("id, fecha, google_event_id")
       .eq("serie_id", cita.serie_id)
       .eq("profesional_id", profesionalId)
       .neq("estado", "cancelada")
-      .returns<{ id: string; fecha: string | null }[]>();
+      .returns<{ id: string; fecha: string | null; google_event_id: string | null }[]>();
 
     const ocurrencias = (filasSerie ?? []).filter(
-      (fila): fila is { id: string; fecha: string } => Boolean(fila.fecha)
+      (fila): fila is { id: string; fecha: string; google_event_id: string | null } => Boolean(fila.fecha)
     );
 
     for (const ocurrencia of ocurrencias) {
@@ -1404,6 +1505,28 @@ export async function editarCitaExterna(
       return { error: errorSerie.message };
     }
 
+    await Promise.all(
+      ocurrencias.map((ocurrencia) =>
+        sincronizarCitaGoogleCalendar(supabase, {
+          id: ocurrencia.id,
+          profesionalId,
+          fecha: ocurrencia.fecha,
+          horaInicio: horaInicio!,
+          horaFin: horaFin!,
+          tipo: null,
+          origenExterno: true,
+          tituloExterno: titulo,
+          localidad,
+          calle,
+          nombreCliente: null,
+          contactoNombre,
+          contactoTelefono,
+          comentario: null,
+          googleEventId: ocurrencia.google_event_id,
+        })
+      )
+    );
+
     revalidatePath("/dashboard");
     return undefined;
   }
@@ -1443,6 +1566,24 @@ export async function editarCitaExterna(
   if (error) {
     return { error: error.message };
   }
+
+  await sincronizarCitaGoogleCalendar(supabase, {
+    id: citaId,
+    profesionalId,
+    fecha: fecha!,
+    horaInicio: horaInicio!,
+    horaFin: horaFin!,
+    tipo: null,
+    origenExterno: true,
+    tituloExterno: titulo,
+    localidad,
+    calle,
+    nombreCliente: null,
+    contactoNombre,
+    contactoTelefono,
+    comentario: null,
+    googleEventId: cita.google_event_id,
+  });
 
   revalidatePath("/dashboard");
   return undefined;
@@ -1495,9 +1636,21 @@ export async function moverCitaExterna(
 
   const { data: cita } = await supabase
     .from("citas")
-    .select("id, profesional_id, origen_externo")
+    .select(
+      "id, profesional_id, origen_externo, titulo_externo, localidad, calle, contacto_nombre, contacto_telefono, google_event_id"
+    )
     .eq("id", citaId)
-    .maybeSingle<{ id: string; profesional_id: string; origen_externo: boolean }>();
+    .maybeSingle<{
+      id: string;
+      profesional_id: string;
+      origen_externo: boolean;
+      titulo_externo: string | null;
+      localidad: string | null;
+      calle: string | null;
+      contacto_nombre: string | null;
+      contacto_telefono: string | null;
+      google_event_id: string | null;
+    }>();
 
   if (!cita || cita.profesional_id !== profesionalId) {
     return { error: "No autorizado." };
@@ -1533,6 +1686,24 @@ export async function moverCitaExterna(
   if (error) {
     return { error: error.message };
   }
+
+  await sincronizarCitaGoogleCalendar(supabase, {
+    id: citaId,
+    profesionalId,
+    fecha,
+    horaInicio,
+    horaFin,
+    tipo: null,
+    origenExterno: true,
+    tituloExterno: cita.titulo_externo,
+    localidad: cita.localidad,
+    calle: cita.calle,
+    nombreCliente: null,
+    contactoNombre: cita.contacto_nombre,
+    contactoTelefono: cita.contacto_telefono,
+    comentario: null,
+    googleEventId: cita.google_event_id,
+  });
 
   revalidatePath("/dashboard");
   return undefined;
@@ -1579,7 +1750,7 @@ export async function proponerCambioCitaConfirmada(
 
   const { data: cita } = await supabase
     .from("citas")
-    .select("id, profesional_id, cliente_id, tipo, estado, origen_externo")
+    .select("id, profesional_id, cliente_id, tipo, estado, origen_externo, google_event_id")
     .eq("id", citaId)
     .maybeSingle<{
       id: string;
@@ -1588,6 +1759,7 @@ export async function proponerCambioCitaConfirmada(
       tipo: string;
       estado: string;
       origen_externo: boolean;
+      google_event_id: string | null;
     }>();
 
   if (!cita || cita.profesional_id !== profesionalId || cita.origen_externo) {
@@ -1626,6 +1798,8 @@ export async function proponerCambioCitaConfirmada(
   if (error) {
     return { error: error.message };
   }
+
+  await eliminarEventoGoogleDeCita(supabase, profesionalId, citaId, cita.google_event_id);
 
   const emailCliente = await obtenerEmailUsuario(cita.cliente_id);
   const cuerpo = construirCuerpoCitaHtml({
@@ -1676,7 +1850,7 @@ export async function cancelarCitaExterna(
 
   const { data: cita } = await supabase
     .from("citas")
-    .select("id, profesional_id, origen_externo, estado, serie_id")
+    .select("id, profesional_id, origen_externo, estado, serie_id, google_event_id")
     .eq("id", citaId)
     .maybeSingle<{
       id: string;
@@ -1684,6 +1858,7 @@ export async function cancelarCitaExterna(
       origen_externo: boolean;
       estado: string;
       serie_id: string | null;
+      google_event_id: string | null;
     }>();
 
   if (!cita || cita.profesional_id !== profesionalId) {
@@ -1694,6 +1869,14 @@ export async function cancelarCitaExterna(
   }
 
   if (alcance === "serie" && cita.serie_id) {
+    const { data: filasABorrar } = await supabase
+      .from("citas")
+      .select("id, google_event_id")
+      .eq("serie_id", cita.serie_id)
+      .eq("profesional_id", profesionalId)
+      .neq("estado", "cancelada")
+      .returns<{ id: string; google_event_id: string | null }[]>();
+
     const { error } = await supabase
       .from("citas")
       .update({ estado: "cancelada" })
@@ -1704,6 +1887,12 @@ export async function cancelarCitaExterna(
     if (error) {
       return { error: error.message };
     }
+
+    await Promise.all(
+      (filasABorrar ?? []).map((fila) =>
+        eliminarEventoGoogleDeCita(supabase, profesionalId, fila.id, fila.google_event_id)
+      )
+    );
 
     revalidatePath("/dashboard");
     return undefined;
@@ -1717,6 +1906,8 @@ export async function cancelarCitaExterna(
   if (error) {
     return { error: error.message };
   }
+
+  await eliminarEventoGoogleDeCita(supabase, profesionalId, citaId, cita.google_event_id);
 
   revalidatePath("/dashboard");
   return undefined;

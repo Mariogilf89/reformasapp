@@ -173,7 +173,7 @@ export function CitaExternaCampos({
       </div>
 
       {!citaExistente && (
-        <div className="flex flex-col gap-2">
+        <div data-tour="repetir-checkbox" className="flex flex-col gap-2">
           <label className="flex items-center gap-2 text-sm text-neutral-700">
             <input
               type="checkbox"

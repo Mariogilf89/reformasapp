@@ -1,0 +1,75 @@
+/* Reestilo del tour guiado del calendario (driver.js) para que encaje con
+   el diseño de Faenia (Card redondeada, botón primario verde, tipografía
+   Inter) en vez del aspecto genérico por defecto de la librería. Se apoya
+   en los tokens de color de app/globals.css (--color-primary-*,
+   --color-neutral-*) para no duplicar la paleta. */
+
+.faenia-tour-popover.driver-popover {
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-neutral-200);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.12);
+  padding: 1.25rem;
+  max-width: 320px;
+}
+
+.faenia-tour-popover .driver-popover-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-neutral-900);
+}
+
+.faenia-tour-popover .driver-popover-description {
+  font-size: 0.875rem;
+  color: var(--color-neutral-600);
+}
+
+.faenia-tour-popover .driver-popover-progress-text {
+  color: var(--color-neutral-500);
+}
+
+.faenia-tour-popover .driver-popover-footer-btn {
+  border-radius: 9999px;
+  border: 1px solid var(--color-neutral-300);
+  color: var(--color-neutral-900);
+  padding: 0.375rem 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.faenia-tour-popover .driver-popover-footer-btn:hover {
+  background-color: var(--color-neutral-100);
+}
+
+.faenia-tour-popover .driver-popover-next-btn,
+.faenia-tour-popover .driver-popover-done-btn {
+  background-color: var(--color-primary-600);
+  border-color: var(--color-primary-600);
+  color: #fff;
+}
+
+.faenia-tour-popover .driver-popover-next-btn:hover,
+.faenia-tour-popover .driver-popover-done-btn:hover {
+  background-color: var(--color-primary-700);
+  border-color: var(--color-primary-700);
+}
+
+.faenia-tour-popover .driver-popover-close-btn {
+  color: var(--color-neutral-400);
+}
+
+.faenia-tour-popover .driver-popover-close-btn:hover {
+  color: var(--color-neutral-900);
+}
+
+.faenia-tour-popover .driver-popover-arrow-side-top {
+  border-bottom-color: #fff;
+}
+.faenia-tour-popover .driver-popover-arrow-side-bottom {
+  border-top-color: #fff;
+}
+.faenia-tour-popover .driver-popover-arrow-side-left {
+  border-right-color: #fff;
+}
+.faenia-tour-popover .driver-popover-arrow-side-right {
+  border-left-color: #fff;
+}

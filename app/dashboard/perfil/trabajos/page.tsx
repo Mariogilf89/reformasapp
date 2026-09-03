@@ -58,7 +58,10 @@ export default async function TrabajosPage() {
 
       <div className="flex flex-col gap-4">
         {(trabajos ?? []).length === 0 && (
-          <p className="text-sm text-neutral-600">Todavía no has añadido ningún trabajo.</p>
+          <p className="text-sm text-neutral-600">
+            Sube fotos de trabajos anteriores para que los clientes vean ejemplos de tu trabajo
+            antes de contactarte.
+          </p>
         )}
 
         {(trabajos ?? []).map((trabajo) => (

@@ -74,7 +74,7 @@ export function FotoPrincipalForm({
           onClick={() => inputRef.current?.click()}
           disabled={subiendo}
           aria-label={foto ? "Cambiar foto principal" : "Subir foto principal"}
-          className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
+          className="flex h-24 w-24 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-neutral-200 bg-neutral-100 transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {foto ? (
             // eslint-disable-next-line @next/next/no-img-element

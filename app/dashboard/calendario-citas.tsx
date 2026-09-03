@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition, type PointerEvent as ReactPointerEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   obtenerCitasCalendario,
@@ -36,6 +37,7 @@ import { VistaMes } from "./vista-mes";
 import { PanelPendientesSinFecha } from "./panel-pendientes-sin-fecha";
 import { DetalleCitaModal } from "./detalle-cita-modal";
 import { CitaExternaForm } from "./cita-externa-form";
+import { useCalendarioTour } from "./use-calendario-tour";
 
 const NOMBRES_MES = [
   "enero",
@@ -120,6 +122,7 @@ export function CalendarioCitas({
   horaFinInicial,
   diaInicioInicial,
   diaFinInicial,
+  tourVistoInicial,
 }: {
   citasIniciales: CitaCalendario[];
   citasPendientesIniciales: CitaCalendario[];
@@ -129,6 +132,7 @@ export function CalendarioCitas({
   horaFinInicial: number;
   diaInicioInicial: number;
   diaFinInicial: number;
+  tourVistoInicial: boolean;
 }) {
   const router = useRouter();
   const [vista, setVista] = useState<Vista>("dia");
@@ -138,6 +142,12 @@ export function CalendarioCitas({
   const [citaSeleccionadaId, setCitaSeleccionadaId] = useState<string | null>(null);
   const [mostrarFormExterna, setMostrarFormExterna] = useState(false);
   const [cargando, startTransition] = useTransition();
+
+  const { lanzarTour } = useCalendarioTour({
+    tourVistoInicial,
+    onAbrirFormExterna: () => setMostrarFormExterna(true),
+    onCerrarFormExterna: () => setMostrarFormExterna(false),
+  });
 
   // Al llegar desde el enlace de una notificación (?citaId=...) mientras
   // CalendarioCitas ya está montado (p.ej. la campana está en el layout, que
@@ -708,7 +718,10 @@ export function CalendarioCitas({
             </button>
           </div>
 
-          <div className="flex overflow-hidden rounded-full border border-neutral-300">
+          <div
+            data-tour="selector-vista"
+            className="flex overflow-hidden rounded-full border border-neutral-300"
+          >
             <button
               type="button"
               onClick={() => navegar(anchor, "dia")}
@@ -743,6 +756,23 @@ export function CalendarioCitas({
               Mes
             </button>
           </div>
+
+          <Link
+            href="/dashboard/perfil/calendario-google"
+            data-tour="conectar-google-calendar"
+            className="rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100"
+          >
+            Google Calendar
+          </Link>
+
+          <button
+            type="button"
+            data-tour="como-funciona"
+            onClick={lanzarTour}
+            className="rounded-full border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-700 hover:bg-neutral-100"
+          >
+            ¿Cómo funciona?
+          </button>
         </div>
       </div>
 
@@ -750,7 +780,7 @@ export function CalendarioCitas({
       {errorRangoDias && <p className="text-sm text-red-600">{errorRangoDias}</p>}
       {errorArrastre && <p className="text-sm text-red-600">{errorArrastre}</p>}
 
-      <div className="relative w-full">
+      <div data-tour="calendario-grid" className="relative w-full">
         {cargando && (
           <div
             role="status"

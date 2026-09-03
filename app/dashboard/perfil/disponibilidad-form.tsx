@@ -37,7 +37,7 @@ function SelectorHora({
           className="w-16 px-2"
         >
           <option value="" disabled>
-            HH
+            -
           </option>
           {HORAS_DIA.map((h) => (
             <option key={h} value={h}>
@@ -55,7 +55,7 @@ function SelectorHora({
           className="w-16 px-2"
         >
           <option value="" disabled>
-            MM
+            -
           </option>
           {MINUTOS_TRAMO.map((m) => (
             <option key={m} value={m}>

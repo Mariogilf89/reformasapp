@@ -145,7 +145,8 @@ export default async function PerfilProfesionalPage() {
 
                 {(disponibilidad ?? []).length === 0 && (
                   <p className="text-sm text-neutral-600">
-                    Todavía no has añadido ningún tramo de disponibilidad.
+                    Marca los días y horas en los que quieres recibir citas. Los clientes solo
+                    verán horarios dentro de lo que configures aquí.
                   </p>
                 )}
               </div>

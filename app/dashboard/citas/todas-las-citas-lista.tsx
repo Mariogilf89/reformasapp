@@ -87,7 +87,13 @@ export function TodasLasCitasLista({ citas }: { citas: CitaTodas[] }) {
       </div>
 
       {ordenadas.length === 0 ? (
-        <p className="text-neutral-600">No tienes ninguna cita.</p>
+        <p className="text-neutral-600">
+          Aquí verás tus citas confirmadas y las que crees manualmente. Empieza{" "}
+          <Link href="/dashboard" className="font-medium text-primary-700 hover:underline">
+            creando una cita externa
+          </Link>
+          .
+        </p>
       ) : (
         <div className="flex flex-col gap-4">
           {ordenadas.map((cita) => {

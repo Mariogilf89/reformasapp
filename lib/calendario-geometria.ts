@@ -6,12 +6,14 @@ export const ALTURA_HORA_PX = 60;
 export const INTERVALO_SNAP_MIN = 15;
 export const UMBRAL_ARRASTRE_PX = 6;
 
-// Niveles de zoom de la vista semanal (px por hora) y de la vista mensual
-// (px por celda de día). El índice inicial de cada uno corresponde al
-// tamaño que tenía el calendario antes de existir el zoom, para no cambiar
-// el aspecto por defecto.
+// Niveles de zoom de la vista semanal/diaria (px por hora) y de la vista
+// mensual (px por celda de día). El calendario siempre abre en vista Día
+// (ver useState<Vista>("dia") en CalendarioCitas), así que el zoom inicial
+// se fija al nivel más alejado (índice 0) para que el día completo quepa
+// sin scroll, sobre todo en móvil, donde calendario-citas.tsx además
+// recalcula ese mismo índice 0 para ajustarlo al alto visible real.
 export const NIVELES_ZOOM_SEMANA_PX = [40, 60, 90, 130] as const;
-export const ZOOM_SEMANA_INICIAL = 1;
+export const ZOOM_SEMANA_INICIAL = 0;
 
 export const NIVELES_ZOOM_MES_PX = [72, 100, 136, 180] as const;
 export const ZOOM_MES_INICIAL = 1;

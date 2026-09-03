@@ -28,7 +28,7 @@ export function PanelPendientesSinFecha({
         <h2 className="text-sm font-semibold text-neutral-900">
           Citas externas
         </h2>
-        <Button type="button" size="xs" onClick={onAbrirFormulario}>
+        <Button type="button" size="xs" data-tour="anadir-cita-externa" onClick={onAbrirFormulario}>
           Añadir
         </Button>
       </div>

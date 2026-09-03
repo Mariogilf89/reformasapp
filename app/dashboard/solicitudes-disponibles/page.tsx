@@ -2,12 +2,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, isCategoria, type Categoria } from "@/lib/profesionales";
-import { isProvincia } from "@/lib/provincias";
+import { PROVINCIAS, isProvincia } from "@/lib/provincias";
 import { obtenerHuecosDisponibles } from "@/app/actions/citas";
 import { fechaISO, sumarDias } from "@/lib/fechas";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { IconCampana } from "@/components/ui/icon-campana";
+import { IconUbicacion } from "@/components/ui/icon-ubicacion";
 import { FiltrosSolicitudesDisponibles } from "./filtros-form";
+import { GuardarAlertaBoton } from "./guardar-alerta-boton";
 
 type SolicitudDisponible = {
   id: string;
@@ -18,6 +21,16 @@ type SolicitudDisponible = {
   modo_tiempo: "lo_antes_posible" | "indiferente" | "dia_hora" | null;
   creado_en: string;
 };
+
+const ETIQUETAS_MODO_TIEMPO: Record<string, string> = {
+  lo_antes_posible: "Lo antes posible",
+  dia_hora: "Fecha y hora concreta",
+  indiferente: "Disponibilidad total",
+};
+
+function formatearFechaCorta(fecha: string) {
+  return new Date(fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+}
 
 const DIAS_VENTANA_ENCAJE = 14;
 
@@ -90,9 +103,9 @@ export default async function SolicitudesDisponiblesPage(
 
   const { data: profesional } = await supabase
     .from("profesionales")
-    .select("id, categorias")
+    .select("id, categorias, provincias")
     .eq("user_id", user.id)
-    .maybeSingle<{ id: string; categorias: Categoria[] }>();
+    .maybeSingle<{ id: string; categorias: Categoria[]; provincias: string[] }>();
 
   const categoriaParam = typeof searchParams.categoria === "string" ? searchParams.categoria : "";
   const categoria = categoriaParam && isCategoria(categoriaParam) ? categoriaParam : "";
@@ -116,57 +129,63 @@ export default async function SolicitudesDisponiblesPage(
     ? searchParams.ocultar_contactadas === "1"
     : true;
 
-  // No se busca nada hasta que el profesional pulse "Filtrar" al menos una
-  // vez (formularioEnviado): la primera visita a la página no debe mostrar
-  // todas las solicitudes por defecto.
   let solicitudes: SolicitudDisponible[] = [];
   const contactadas = new Set<string>();
 
+  // RLS ya limita el resultado a solicitudes abiertas que coinciden con
+  // alguna de las categorías del perfil del profesional autenticado, así
+  // que la búsqueda se ejecuta siempre (incluida la primera visita, para
+  // cumplir el "que coinciden con tus categorías" del subtítulo desde el
+  // primer render). En la primera visita, antes de que el profesional
+  // pulse "Filtrar" y mande su propio criterio de provincia, se acota
+  // además a sus provincias de cobertura (RLS no cubre eso); en cuanto hay
+  // un filtro explícito de provincia, manda ese.
+  let query = supabase
+    .from("solicitudes")
+    .select("id, categoria, zona, descripcion, provincia, modo_tiempo, creado_en")
+    .eq("estado", "abierta");
+
+  if (categoria) query = query.eq("categoria", categoria);
+  if (modo) query = query.eq("modo_tiempo", modo);
+
   if (formularioEnviado) {
-    // RLS ya limita el resultado a solicitudes abiertas que coinciden con
-    // alguna de las categorías del perfil del profesional autenticado.
-    let query = supabase
-      .from("solicitudes")
-      .select("id, categoria, zona, descripcion, provincia, modo_tiempo, creado_en")
-      .eq("estado", "abierta");
-
-    if (categoria) query = query.eq("categoria", categoria);
     if (provincia) query = query.eq("provincia", provincia);
-    if (modo) query = query.eq("modo_tiempo", modo);
+  } else if (profesional?.provincias?.length) {
+    query = query.in("provincia", profesional.provincias);
+  }
 
-    const { data } = await query
-      .order("creado_en", { ascending: false })
-      .returns<SolicitudDisponible[]>();
+  const { data } = await query
+    .order("creado_en", { ascending: false })
+    .returns<SolicitudDisponible[]>();
 
-    solicitudes = data ?? [];
+  solicitudes = data ?? [];
 
-    // Solicitudes que este profesional ya ha contactado: al menos un mensaje
-    // propio (remitente_id = yo) en esa solicitud.
-    const solicitudIds = solicitudes.map((s) => s.id);
-    const { data: mensajesPropios } = solicitudIds.length
-      ? await supabase
-          .from("mensajes")
-          .select("solicitud_id")
-          .eq("remitente_id", user.id)
-          .in("solicitud_id", solicitudIds)
-          .returns<{ solicitud_id: string }[]>()
-      : { data: [] as { solicitud_id: string }[] };
+  // Solicitudes que este profesional ya ha contactado: al menos un mensaje
+  // propio (remitente_id = yo) en esa solicitud.
+  const solicitudIds = solicitudes.map((s) => s.id);
+  const { data: mensajesPropios } = solicitudIds.length
+    ? await supabase
+        .from("mensajes")
+        .select("solicitud_id")
+        .eq("remitente_id", user.id)
+        .in("solicitud_id", solicitudIds)
+        .returns<{ solicitud_id: string }[]>()
+    : { data: [] as { solicitud_id: string }[] };
 
-    (mensajesPropios ?? []).forEach((m) => contactadas.add(m.solicitud_id));
+  (mensajesPropios ?? []).forEach((m) => contactadas.add(m.solicitud_id));
 
-    if (ocultarContactadas) {
-      solicitudes = solicitudes.filter((s) => !contactadas.has(s.id));
-    }
+  if (ocultarContactadas) {
+    solicitudes = solicitudes.filter((s) => !contactadas.has(s.id));
+  }
 
-    if (orden === "encaje" && profesional) {
-      const huecosProximos = await tieneHuecosProximos(profesional.id);
-      if (huecosProximos) {
-        solicitudes = [...solicitudes].sort((a, b) => {
-          const diff = prioridadModoTiempo(a.modo_tiempo) - prioridadModoTiempo(b.modo_tiempo);
-          if (diff !== 0) return diff;
-          return b.creado_en.localeCompare(a.creado_en);
-        });
-      }
+  if (orden === "encaje" && profesional) {
+    const huecosProximos = await tieneHuecosProximos(profesional.id);
+    if (huecosProximos) {
+      solicitudes = [...solicitudes].sort((a, b) => {
+        const diff = prioridadModoTiempo(a.modo_tiempo) - prioridadModoTiempo(b.modo_tiempo);
+        if (diff !== 0) return diff;
+        return b.creado_en.localeCompare(a.creado_en);
+      });
     }
   }
 
@@ -191,33 +210,54 @@ export default async function SolicitudesDisponiblesPage(
       />
 
       <div className="w-full max-w-lg flex flex-col gap-4">
-        {!formularioEnviado && (
-          <p className="text-neutral-600">
-            Usa los filtros para buscar solicitudes.
-          </p>
-        )}
-
-        {formularioEnviado && solicitudes.length === 0 && (
-          <p className="text-neutral-600">
-            No hay solicitudes disponibles con estos filtros por ahora.
-          </p>
+        {solicitudes.length === 0 && (
+          <Card className="flex flex-col items-center gap-3 p-10 text-center">
+            <IconCampana className="h-9 w-9 text-neutral-300" />
+            <div>
+              <p className="font-medium text-neutral-900">
+                No hay solicitudes que coincidan ahora mismo
+              </p>
+              <p className="mt-1 text-sm text-neutral-600">
+                Guarda esta búsqueda y te avisamos por email en cuanto entre una que encaje.
+              </p>
+            </div>
+            <GuardarAlertaBoton categoria={categoria} provincia={provincia} modo={modo} />
+          </Card>
         )}
 
         {solicitudes.map((solicitud) => (
           <Link key={solicitud.id} href={`/dashboard/solicitudes/${solicitud.id}`}>
-            <Card className="flex flex-col gap-2 p-6 transition-colors hover:border-primary-300">
+            <Card className="flex flex-col gap-3 p-6 transition-colors hover:border-primary-300">
               <div className="flex items-start justify-between gap-3">
-                <p className="font-medium text-neutral-900">
+                <p className="font-semibold text-neutral-900">
                   {CATEGORIAS.find((c) => c.value === solicitud.categoria)?.label ??
                     solicitud.categoria}
-                  {" · "}
-                  {solicitud.zona}
                 </p>
                 {contactadas.has(solicitud.id) && <Badge status="cerrada">Ya contactada</Badge>}
               </div>
-              <p className="text-sm text-neutral-600">
-                {solicitud.descripcion}
+
+              <p className="flex items-center gap-1.5 text-sm text-neutral-600">
+                <IconUbicacion className="h-4 w-4 shrink-0 text-neutral-400" />
+                {solicitud.zona}
+                {solicitud.provincia && (
+                  <>
+                    {" · "}
+                    {PROVINCIAS.find((p) => p.value === solicitud.provincia)?.label ??
+                      solicitud.provincia}
+                  </>
+                )}
               </p>
+
+              <p className="text-sm text-neutral-600">{solicitud.descripcion}</p>
+
+              <div className="flex items-center justify-between gap-3 border-t border-neutral-100 pt-3 text-xs text-neutral-500">
+                <span>
+                  {solicitud.modo_tiempo
+                    ? ETIQUETAS_MODO_TIEMPO[solicitud.modo_tiempo]
+                    : "Cualquier momento"}
+                </span>
+                <span>{formatearFechaCorta(solicitud.creado_en)}</span>
+              </div>
             </Card>
           </Link>
         ))}

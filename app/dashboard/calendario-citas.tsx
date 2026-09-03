@@ -38,6 +38,7 @@ import { PanelPendientesSinFecha } from "./panel-pendientes-sin-fecha";
 import { DetalleCitaModal } from "./detalle-cita-modal";
 import { CitaExternaForm } from "./cita-externa-form";
 import { useCalendarioTour } from "./use-calendario-tour";
+import { PopupBienvenida } from "./popup-bienvenida";
 
 const NOMBRES_MES = [
   "enero",
@@ -123,6 +124,7 @@ export function CalendarioCitas({
   diaInicioInicial,
   diaFinInicial,
   tourVistoInicial,
+  popupBienvenidaVistoInicial,
 }: {
   citasIniciales: CitaCalendario[];
   citasPendientesIniciales: CitaCalendario[];
@@ -133,6 +135,7 @@ export function CalendarioCitas({
   diaInicioInicial: number;
   diaFinInicial: number;
   tourVistoInicial: boolean;
+  popupBienvenidaVistoInicial: boolean;
 }) {
   const router = useRouter();
   const [vista, setVista] = useState<Vista>("dia");
@@ -143,11 +146,24 @@ export function CalendarioCitas({
   const [mostrarFormExterna, setMostrarFormExterna] = useState(false);
   const [cargando, startTransition] = useTransition();
 
+  // El pop-up de bienvenida y el tour del calendario se encadenan en vez
+  // de mostrarse a la vez: mientras el pop-up siga pendiente de verse, se
+  // le pasa tourVistoInicial=true al hook para que no se autolance solo;
+  // en su lugar, lanzarTour() se llama a mano al cerrar el pop-up (ver
+  // handleCerrarPopup más abajo). Si el pop-up ya estaba visto de antes,
+  // el tour se autolanza exactamente igual que siempre.
+  const [popupAbierto, setPopupAbierto] = useState(!popupBienvenidaVistoInicial);
+
   const { lanzarTour } = useCalendarioTour({
-    tourVistoInicial,
+    tourVistoInicial: tourVistoInicial || popupAbierto,
     onAbrirFormExterna: () => setMostrarFormExterna(true),
     onCerrarFormExterna: () => setMostrarFormExterna(false),
   });
+
+  function handleCerrarPopup() {
+    setPopupAbierto(false);
+    if (!tourVistoInicial) lanzarTour();
+  }
 
   // Al llegar desde el enlace de una notificación (?citaId=...) mientras
   // CalendarioCitas ya está montado (p.ej. la campana está en el layout, que
@@ -847,6 +863,8 @@ export function CalendarioCitas({
       {mostrarFormExterna && (
         <CitaExternaForm onClose={() => setMostrarFormExterna(false)} onExito={trasCrearExterna} />
       )}
+
+      {popupAbierto && <PopupBienvenida onClose={handleCerrarPopup} />}
     </div>
   );
 }

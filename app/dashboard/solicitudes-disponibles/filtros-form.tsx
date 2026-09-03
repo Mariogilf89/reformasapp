@@ -13,7 +13,6 @@ const MODOS_FILTRO = [
   { value: "", label: "Cualquier momento" },
   { value: "lo_antes_posible", label: "Lo antes posible" },
   { value: "dia_hora", label: "Fecha y hora concreta" },
-  { value: "indiferente", label: "Disponibilidad total" },
 ] as const;
 
 const ORDEN = [

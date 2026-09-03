@@ -56,7 +56,7 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
   const { data: perfil } = await supabase
     .from("profesionales")
     .select(
-      "id, nombre, categorias, zona, verificado, calendario_hora_inicio, calendario_hora_fin, calendario_dia_inicio, calendario_dia_fin, calendario_tour_visto"
+      "id, nombre, categorias, zona, verificado, calendario_hora_inicio, calendario_hora_fin, calendario_dia_inicio, calendario_dia_fin, calendario_tour_visto, popup_bienvenida_visto"
     )
     .eq("user_id", user.id)
     .maybeSingle<{
@@ -70,24 +70,11 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
       calendario_dia_inicio: number;
       calendario_dia_fin: number;
       calendario_tour_visto: boolean;
+      popup_bienvenida_visto: boolean;
     }>();
 
   if (!perfil) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 py-16 text-center">
-        <Card className="flex flex-col items-center gap-3 px-10 py-8">
-          <h1 className="text-2xl font-semibold text-neutral-900">
-            Completa tu perfil profesional
-          </h1>
-          <p className="text-neutral-600">
-            Necesitas rellenar tu perfil antes de ver tu panel y calendario.
-          </p>
-          <Link href="/dashboard/perfil" className={buttonClassName()}>
-            Ir a mi perfil
-          </Link>
-        </Card>
-      </div>
-    );
+    redirect("/dashboard/perfil");
   }
 
   const telefono = (user.user_metadata?.telefono as string | undefined) ?? null;
@@ -135,6 +122,7 @@ export default async function DashboardPage(props: PageProps<"/dashboard">) {
           diaInicioInicial={perfil.calendario_dia_inicio}
           diaFinInicial={perfil.calendario_dia_fin}
           tourVistoInicial={perfil.calendario_tour_visto}
+          popupBienvenidaVistoInicial={perfil.popup_bienvenida_visto}
         />
       </div>
     </div>

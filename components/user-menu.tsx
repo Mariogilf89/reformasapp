@@ -39,19 +39,24 @@ export async function UserMenu() {
     }
   }
 
+  // "Perfil" va antes que "Panel" (solo afecta al orden del desplegable:
+  // el destino tras hacer login sigue siendo /dashboard, ver
+  // destinoTrasLogin en lib/rutas.ts, sin relación con este menú).
   const navLinks = [
-    { href: "/dashboard", label: "Panel" },
     ...(role === "profesional"
       ? [{ href: "/dashboard/perfil", label: "Perfil" }]
       : []),
+    { href: "/dashboard", label: "Panel" },
     ...(role === "cliente"
       ? [{ href: "/dashboard/solicitudes", label: "Mis solicitudes" }]
       : []),
     { href: "/dashboard/citas", label: "Mis citas" },
-    {
-      href: "/dashboard/verificar-telefono",
-      label: role === "profesional" ? "Verificar teléfono" : "Añade tu teléfono",
-    },
+    // Para profesionales no se repite aquí: ya está en Perfil > Verificar
+    // usuario (ver SECCIONES_PERFIL). Los clientes no tienen sección
+    // "Perfil" con subnavegación, así que este es su único acceso.
+    ...(role === "cliente"
+      ? [{ href: "/dashboard/verificar-telefono", label: "Añade tu teléfono" }]
+      : []),
     ...(role === "profesional"
       ? [
           { href: "/dashboard/solicitudes-disponibles", label: "Solicitudes disponibles" },

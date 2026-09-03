@@ -1,0 +1,24 @@
+/* Animación en bucle de CalendarioMockup (diapositiva 2 del pop-up de
+   bienvenida): una de las citas de ejemplo se desplaza suavemente a otro
+   hueco y vuelve, simulando un arrastre, sin necesidad de lógica de
+   puntero real. El desplazamiento en sí (--mockup-dx/--mockup-dy) lo fija
+   el componente en línea según su propia geometría fija, para no acoplar
+   este fichero a los números concretos de la rejilla. */
+@keyframes calendario-mockup-mover-cita {
+  0%,
+  14% {
+    transform: translate(0, 0);
+  }
+  38%,
+  62% {
+    transform: translate(var(--mockup-dx), var(--mockup-dy));
+  }
+  86%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+.calendario-mockup-cita-animada {
+  animation: calendario-mockup-mover-cita 7s ease-in-out infinite;
+}

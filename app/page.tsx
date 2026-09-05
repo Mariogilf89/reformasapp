@@ -7,6 +7,7 @@ import { PublicHeader } from "@/components/public-header";
 import { IconUbicacion } from "@/components/ui/icon-ubicacion";
 import { ListaEsperaCTA } from "@/components/lista-espera-cta";
 import { BuscadorHero } from "./buscador-hero";
+import { BuscadorHeroMovil } from "./buscador-hero-movil";
 import { BusquedasPopulares } from "./busquedas-populares";
 
 function IconPintura(props: SVGProps<SVGSVGElement>) {
@@ -207,7 +208,7 @@ export default function Home() {
         {/* Hero */}
         <section className="px-4 py-16 sm:py-20">
           <div className="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-14">
-            <div className="relative order-1 aspect-[4/3] w-full lg:aspect-square">
+            <div className="relative order-1 hidden w-full lg:block lg:aspect-square">
               <Image
                 src="/images/logo-completo.png"
                 alt="Faenia — Profesionales. Citas. Sin complicaciones."
@@ -230,7 +231,12 @@ export default function Home() {
                 necesitas y compara propuestas reales antes de decidir.
               </p>
 
-              <BuscadorHero />
+              <div className="hidden lg:block">
+                <BuscadorHero />
+              </div>
+              <div className="w-full lg:hidden">
+                <BuscadorHeroMovil />
+              </div>
 
               <BusquedasPopulares />
             </div>

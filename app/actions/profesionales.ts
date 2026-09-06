@@ -72,6 +72,7 @@ export async function guardarPerfilProfesional(
   }
 
   revalidatePath("/dashboard/perfil");
+  revalidatePath("/dashboard", "layout");
 
   // Primer perfil creado: se aprovecha para ofrecer conectar Google
   // Calendar, igual que se hace en el login para quien vuelve a entrar con

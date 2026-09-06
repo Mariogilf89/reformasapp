@@ -7,9 +7,11 @@ import { PROVINCIAS } from "@/lib/provincias";
 import { Card } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { SelectorFechaHora } from "@/app/profesionales/selector-fecha-hora";
 
 const CUANDO_OPCIONES = [
   { value: "lo_antes_posible", label: "Lo antes posible" },
+  { value: "dia_hora", label: "Elegir día y hora" },
   { value: "indiferente", label: "Cuando sea" },
 ] as const;
 
@@ -44,6 +46,9 @@ export function BuscadorHeroMovil() {
   const [categoria, setCategoria] = useState<string | undefined>(undefined);
   const [provincia, setProvincia] = useState("");
   const [cuando, setCuando] = useState<string>("indiferente");
+  const [fecha, setFecha] = useState("");
+  const [horaInicio, setHoraInicio] = useState("");
+  const [horaFin, setHoraFin] = useState("");
   const [buscado, setBuscado] = useState(false);
 
   function handleBuscarInicial(e: FormEvent) {
@@ -62,6 +67,11 @@ export function BuscadorHeroMovil() {
     if (categoria) params.set("categoria", categoria);
     if (provincia) params.set("provincia", provincia);
     params.set("modo", cuando);
+    if (cuando === "dia_hora") {
+      params.set("fecha", fecha);
+      params.set("hora_inicio", horaInicio);
+      params.set("hora_fin", horaFin);
+    }
     router.push(`/profesionales?${params.toString()}`);
   }
 
@@ -110,7 +120,24 @@ export function BuscadorHeroMovil() {
             </Select>
           </div>
 
-          <Button type="submit" className="whitespace-nowrap">
+          {cuando === "dia_hora" && (
+            <div className="rounded-lg border border-neutral-200 p-4">
+              <SelectorFechaHora
+                fecha={fecha}
+                horaInicio={horaInicio}
+                horaFin={horaFin}
+                onSeleccionarFecha={setFecha}
+                onSeleccionarHoraInicio={setHoraInicio}
+                onSeleccionarHoraFin={setHoraFin}
+              />
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="whitespace-nowrap"
+            disabled={cuando === "dia_hora" && (!fecha || !horaInicio || !horaFin)}
+          >
             Buscar profesionales
           </Button>
         </form>

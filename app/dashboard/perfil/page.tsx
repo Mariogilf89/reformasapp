@@ -84,6 +84,12 @@ export default async function PerfilProfesionalPage() {
       <PerfilResetProvider>
         <AvisoCambiosSinGuardar />
 
+        {!perfil && (
+          <div className="w-full max-w-6xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Completa tu perfil para acceder al panel.
+          </div>
+        )}
+
         <div className="flex w-full max-w-6xl items-center gap-3">
           <h1 className="text-2xl font-semibold text-neutral-900">
             Mi perfil profesional

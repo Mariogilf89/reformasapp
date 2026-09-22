@@ -19,6 +19,40 @@ export function construirCuerpoEnlaceAccesoHtml(enlace: string) {
   `;
 }
 
+function escaparHtml(texto: string) {
+  return texto
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * Cuerpo del email de aviso que recibe Mario cuando un cliente envía un
+ * reporte desde "¿Algo fue mal? Cuéntanoslo" (ver app/actions/reportes.ts).
+ * contacto/mensaje son texto libre de un usuario no siempre autenticado, así
+ * que se escapan antes de meterlos en el HTML del email.
+ */
+export function construirCuerpoReporteHtml(datos: {
+  contacto: string;
+  mensaje: string;
+  profesionalNombre: string | null;
+}) {
+  const contacto = escaparHtml(datos.contacto);
+  const mensaje = escaparHtml(datos.mensaje).replace(/\n/g, "<br>");
+  const profesionalNombre = datos.profesionalNombre ? escaparHtml(datos.profesionalNombre) : null;
+
+  return `
+    <div style="font-family: sans-serif; line-height: 1.5; color: #1a1a1a;">
+      <h2>Nuevo reporte en Faenia</h2>
+      ${profesionalNombre ? `<p><strong>Profesional:</strong> ${profesionalNombre}</p>` : ""}
+      <p><strong>Contacto de quien reporta:</strong> ${contacto}</p>
+      <p><strong>Mensaje:</strong></p>
+      <p>${mensaje}</p>
+    </div>
+  `;
+}
+
 export async function enviarEmail(destinatario: string, asunto: string, cuerpoHtml: string) {
   const resend = new Resend(process.env.RESEND_API_KEY);
 

@@ -12,6 +12,7 @@ import type { FotoTrabajo } from "@/app/actions/trabajos";
 import { calcularTiempoRespuestaProfesional, contarCitasCompletadasPorProfesionales } from "@/lib/supabase-admin";
 import { formatearTiempoRespuesta } from "@/lib/tiempo-respuesta";
 import { calcularNivelProfesional } from "@/lib/niveles-profesional";
+import { ReportarProblema } from "@/components/reportar-problema";
 import { ContactarForm } from "./contactar-form";
 
 type ProfesionalPublico = {
@@ -304,6 +305,13 @@ export default async function ProfesionalDetallePage(
             </ul>
           </>
         )}
+      </div>
+
+      <div className="w-full max-w-2xl">
+        <ReportarProblema
+          profesionalId={profesional.id}
+          profesionalNombre={profesional.nombre}
+        />
       </div>
 
       <Link

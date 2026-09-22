@@ -22,9 +22,24 @@ type ProfesionalPublico = {
 
 type ValoracionPublica = {
   puntuacion: number;
+  puntualidad: number;
+  calidad: number;
+  precio: number;
+  comunicacion: number;
   comentario: string | null;
   creado_en: string;
 };
+
+const CRITERIOS_VALORACION = [
+  { key: "puntualidad", label: "Puntualidad" },
+  { key: "calidad", label: "Calidad" },
+  { key: "precio", label: "Precio" },
+  { key: "comunicacion", label: "Comunicación" },
+] as const;
+
+function promedio(valores: number[]): number {
+  return valores.reduce((suma, v) => suma + v, 0) / valores.length;
+}
 
 type TrabajoPublico = {
   id: string;
@@ -68,7 +83,7 @@ export default async function ProfesionalDetallePage(
 
   const { data: valoraciones } = await supabase
     .from("valoraciones")
-    .select("puntuacion, comentario, creado_en")
+    .select("puntuacion, puntualidad, calidad, precio, comunicacion, comentario, creado_en")
     .eq("profesional_id", profesional.id)
     .order("creado_en", { ascending: false })
     .returns<ValoracionPublica[]>();
@@ -87,6 +102,13 @@ export default async function ProfesionalDetallePage(
   const media =
     listaValoraciones.length > 0
       ? listaValoraciones.reduce((suma, v) => suma + v.puntuacion, 0) / listaValoraciones.length
+      : null;
+  const mediasPorCriterio =
+    listaValoraciones.length > 0
+      ? CRITERIOS_VALORACION.map((criterio) => ({
+          ...criterio,
+          valor: promedio(listaValoraciones.map((v) => v[criterio.key])),
+        }))
       : null;
 
   return (
@@ -215,23 +237,46 @@ export default async function ProfesionalDetallePage(
             Todavía no hay valoraciones para este profesional.
           </p>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {listaValoraciones.map((valoracion, index) => (
-              <li key={index}>
-                <Card className="p-4 text-sm">
-                  <p className="font-medium text-neutral-900">
-                    {valoracion.puntuacion}{" "}
-                    {valoracion.puntuacion === 1 ? "estrella" : "estrellas"}
-                  </p>
-                  {valoracion.comentario && (
-                    <p className="mt-1 text-neutral-600">
-                      {valoracion.comentario}
+          <>
+            {mediasPorCriterio && (
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+                {mediasPorCriterio.map((criterio) => (
+                  <div key={criterio.key} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between text-xs text-neutral-600">
+                      <span>{criterio.label}</span>
+                      <span className="font-medium text-neutral-900">
+                        {criterio.valor.toFixed(1)}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
+                      <div
+                        className="h-full rounded-full bg-primary-600"
+                        style={{ width: `${(criterio.valor / 5) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <ul className="flex flex-col gap-3">
+              {listaValoraciones.map((valoracion, index) => (
+                <li key={index}>
+                  <Card className="p-4 text-sm">
+                    <p className="font-medium text-neutral-900">
+                      {valoracion.puntuacion}{" "}
+                      {valoracion.puntuacion === 1 ? "estrella" : "estrellas"}
                     </p>
-                  )}
-                </Card>
-              </li>
-            ))}
-          </ul>
+                    {valoracion.comentario && (
+                      <p className="mt-1 text-neutral-600">
+                        {valoracion.comentario}
+                      </p>
+                    )}
+                  </Card>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
 

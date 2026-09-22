@@ -5,6 +5,7 @@ import { crearValoracion } from "@/app/actions/valoraciones";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { StarRatingInput } from "@/components/ui/star-rating-input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
@@ -41,18 +42,11 @@ export function ValoracionForm({
           </Select>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <Label htmlFor="puntuacion">Puntuación</Label>
-          <Select id="puntuacion" name="puntuacion" required defaultValue="">
-            <option value="" disabled>
-              Selecciona una puntuación
-            </option>
-            {[5, 4, 3, 2, 1].map((valor) => (
-              <option key={valor} value={valor}>
-                {valor} {valor === 1 ? "estrella" : "estrellas"}
-              </option>
-            ))}
-          </Select>
+        <div className="grid grid-cols-2 gap-4">
+          <StarRatingInput name="puntualidad" label="Puntualidad" />
+          <StarRatingInput name="calidad" label="Calidad" />
+          <StarRatingInput name="precio" label="Precio" />
+          <StarRatingInput name="comunicacion" label="Comunicación" />
         </div>
 
         <div className="flex flex-col gap-1">

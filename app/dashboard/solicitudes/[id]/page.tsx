@@ -35,6 +35,10 @@ type ProfesionalContacto = {
 
 type ValoracionDetalle = {
   puntuacion: number;
+  puntualidad: number;
+  calidad: number;
+  precio: number;
+  comunicacion: number;
   comentario: string | null;
   profesionales: { nombre: string } | null;
 };
@@ -136,7 +140,7 @@ export default async function SolicitudDetallePage(
     esClienteDueno && solicitud.estado === "cerrada"
       ? await supabase
           .from("valoraciones")
-          .select("puntuacion, comentario, profesionales(nombre)")
+          .select("puntuacion, puntualidad, calidad, precio, comunicacion, comentario, profesionales(nombre)")
           .eq("solicitud_id", id)
           .maybeSingle<ValoracionDetalle>()
       : { data: null as ValoracionDetalle | null };
@@ -277,8 +281,26 @@ export default async function SolicitudDetallePage(
                 {" · "}
                 {valoracion.puntuacion} {valoracion.puntuacion === 1 ? "estrella" : "estrellas"}
               </p>
+              <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-neutral-600">
+                <div className="flex justify-between gap-2">
+                  <dt>Puntualidad</dt>
+                  <dd className="font-medium text-neutral-900">{valoracion.puntualidad}</dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt>Calidad</dt>
+                  <dd className="font-medium text-neutral-900">{valoracion.calidad}</dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt>Precio</dt>
+                  <dd className="font-medium text-neutral-900">{valoracion.precio}</dd>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <dt>Comunicación</dt>
+                  <dd className="font-medium text-neutral-900">{valoracion.comunicacion}</dd>
+                </div>
+              </dl>
               {valoracion.comentario && (
-                <p className="mt-1 text-sm text-neutral-600">
+                <p className="mt-3 text-sm text-neutral-600">
                   {valoracion.comentario}
                 </p>
               )}

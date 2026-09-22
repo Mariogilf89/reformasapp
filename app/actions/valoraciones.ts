@@ -20,8 +20,12 @@ export async function crearValoracion(
 
   const solicitudId = formData.get("solicitud_id")?.toString();
   const profesionalId = formData.get("profesional_id")?.toString();
-  const puntuacion = Number(formData.get("puntuacion"));
   const comentario = formData.get("comentario")?.toString().trim() || null;
+
+  const puntualidad = Number(formData.get("puntualidad"));
+  const calidad = Number(formData.get("calidad"));
+  const precio = Number(formData.get("precio"));
+  const comunicacion = Number(formData.get("comunicacion"));
 
   if (!solicitudId) {
     return { error: "Solicitud inválida." };
@@ -29,14 +33,25 @@ export async function crearValoracion(
   if (!profesionalId) {
     return { error: "Selecciona un profesional." };
   }
-  if (!Number.isInteger(puntuacion) || puntuacion < 1 || puntuacion > 5) {
-    return { error: "La puntuación debe ser de 1 a 5." };
+  for (const valor of [puntualidad, calidad, precio, comunicacion]) {
+    if (!Number.isInteger(valor) || valor < 1 || valor > 5) {
+      return { error: "Puntúa los 4 criterios (puntualidad, calidad, precio, comunicación)." };
+    }
   }
+
+  // La nota general se calcula como la media de los 4 criterios, redondeada
+  // al entero más cercano (la columna puntuacion sigue siendo un entero
+  // 1-5), en vez de pedirla también al cliente por separado.
+  const puntuacion = Math.round((puntualidad + calidad + precio + comunicacion) / 4);
 
   const { error: errorValoracion } = await supabase.from("valoraciones").insert({
     solicitud_id: solicitudId,
     profesional_id: profesionalId,
     puntuacion,
+    puntualidad,
+    calidad,
+    precio,
+    comunicacion,
     comentario,
   });
 

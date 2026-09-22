@@ -296,6 +296,100 @@ export async function crearOAccederClientePasswordless(datos: {
  * consume ahí mismo con verifyOtp, hace falta uno nuevo sin usar para el
  * enlace que se manda por email.
  */
+export type TiempoRespuestaProfesional = { minutosPromedio: number; muestras: number };
+
+const DIAS_VENTANA_TIEMPO_RESPUESTA = 60;
+const MAX_SOLICITUDES_TIEMPO_RESPUESTA = 10;
+const MIN_MUESTRAS_TIEMPO_RESPUESTA = 3;
+
+/**
+ * Tiempo medio (en minutos) que tarda un profesional en enviar su primer
+ * mensaje tras ser contactado por un cliente, sobre sus últimas solicitudes
+ * contactadas (máx. 10, de los últimos 60 días). Devuelve null si no hay
+ * datos suficientes (menos de 3 solicitudes con respuesta): una media sobre
+ * 1-2 datos daría una impresión falsa de fiabilidad.
+ *
+ * Usa la service role porque agrega mensajes de hilos con distintos
+ * clientes, que la RLS normal ("mensajes_select_cliente_dueno" /
+ * "..._profesional_match") solo deja leer a sus participantes — pero este
+ * dato se muestra en el perfil público a cualquier visitante, sea o no
+ * participante de esos hilos.
+ */
+export async function calcularTiempoRespuestaProfesional(
+  profesionalId: string
+): Promise<TiempoRespuestaProfesional | null> {
+  const supabaseAdmin = createAdminSupabaseClient();
+
+  const { data: profesional } = await supabaseAdmin
+    .from("profesionales")
+    .select("user_id")
+    .eq("id", profesionalId)
+    .maybeSingle<{ user_id: string }>();
+
+  if (!profesional) return null;
+
+  const desdeISO = new Date(
+    Date.now() - DIAS_VENTANA_TIEMPO_RESPUESTA * 24 * 60 * 60 * 1000
+  ).toISOString();
+
+  const { data: mensajesRecibidos } = await supabaseAdmin
+    .from("mensajes")
+    .select("solicitud_id, creado_en")
+    .eq("destinatario_id", profesionalId)
+    .gte("creado_en", desdeISO)
+    .order("creado_en", { ascending: true })
+    .returns<{ solicitud_id: string; creado_en: string }[]>();
+
+  if (!mensajesRecibidos || mensajesRecibidos.length === 0) return null;
+
+  // Primer mensaje del cliente a este profesional, por solicitud (el
+  // "momento de contacto" del que se mide la respuesta).
+  const contactoPorSolicitud = new Map<string, string>();
+  for (const mensaje of mensajesRecibidos) {
+    if (!contactoPorSolicitud.has(mensaje.solicitud_id)) {
+      contactoPorSolicitud.set(mensaje.solicitud_id, mensaje.creado_en);
+    }
+  }
+  const solicitudIds = Array.from(contactoPorSolicitud.keys());
+
+  const { data: mensajesEnviados } = await supabaseAdmin
+    .from("mensajes")
+    .select("solicitud_id, creado_en")
+    .eq("remitente_id", profesional.user_id)
+    .in("solicitud_id", solicitudIds)
+    .order("creado_en", { ascending: true })
+    .returns<{ solicitud_id: string; creado_en: string }[]>();
+
+  // Primera respuesta del propio profesional, por solicitud.
+  const respuestaPorSolicitud = new Map<string, string>();
+  for (const mensaje of mensajesEnviados ?? []) {
+    if (!respuestaPorSolicitud.has(mensaje.solicitud_id)) {
+      respuestaPorSolicitud.set(mensaje.solicitud_id, mensaje.creado_en);
+    }
+  }
+
+  const tiemposRespuestaMinutos = solicitudIds
+    .map((solicitudId) => {
+      const contacto = contactoPorSolicitud.get(solicitudId)!;
+      const respuesta = respuestaPorSolicitud.get(solicitudId);
+      if (!respuesta) return null;
+      const minutos =
+        (new Date(respuesta).getTime() - new Date(contacto).getTime()) / 60_000;
+      return minutos > 0 ? { contacto, minutos } : null;
+    })
+    .filter((par): par is { contacto: string; minutos: number } => par !== null)
+    .sort((a, b) => (a.contacto < b.contacto ? 1 : -1))
+    .slice(0, MAX_SOLICITUDES_TIEMPO_RESPUESTA);
+
+  if (tiemposRespuestaMinutos.length < MIN_MUESTRAS_TIEMPO_RESPUESTA) return null;
+
+  const minutosPromedio =
+    tiemposRespuestaMinutos.reduce((suma, par) => suma + par.minutos, 0) /
+    tiemposRespuestaMinutos.length;
+
+  return { minutosPromedio, muestras: tiemposRespuestaMinutos.length };
+}
+
 export async function generarTokenAccesoCliente(email: string): Promise<string | null> {
   const supabaseAdmin = createAdminSupabaseClient();
   const { data, error } = await supabaseAdmin.auth.admin.generateLink({

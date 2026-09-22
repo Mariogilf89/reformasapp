@@ -6,7 +6,10 @@ import { formatearUbicacion, isProvincia, type Provincia } from "@/lib/provincia
 import { Card } from "@/components/ui/card";
 import { VerificadoBadge } from "@/components/ui/verificado-badge";
 import { IconUbicacion } from "@/components/ui/icon-ubicacion";
+import { IconReloj } from "@/components/ui/icon-reloj";
 import type { FotoTrabajo } from "@/app/actions/trabajos";
+import { calcularTiempoRespuestaProfesional } from "@/lib/supabase-admin";
+import { formatearTiempoRespuesta } from "@/lib/tiempo-respuesta";
 import { ContactarForm } from "./contactar-form";
 
 type ProfesionalPublico = {
@@ -81,6 +84,8 @@ export default async function ProfesionalDetallePage(
     notFound();
   }
 
+  const tiempoRespuesta = await calcularTiempoRespuestaProfesional(profesional.id);
+
   const { data: valoraciones } = await supabase
     .from("valoraciones")
     .select("puntuacion, puntualidad, calidad, precio, comunicacion, comentario, creado_en")
@@ -126,6 +131,12 @@ export default async function ProfesionalDetallePage(
               <p className="mt-1 flex items-center gap-1.5 text-sm text-neutral-600">
                 <IconUbicacion className="h-4 w-4 shrink-0 text-neutral-400" />
                 {ubicacion}
+              </p>
+            )}
+            {tiempoRespuesta && (
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-neutral-600">
+                <IconReloj className="h-4 w-4 shrink-0 text-neutral-400" />
+                {formatearTiempoRespuesta(tiempoRespuesta.minutosPromedio)}
               </p>
             )}
           </div>

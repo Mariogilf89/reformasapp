@@ -104,7 +104,7 @@ export function HiloProfesional({
         {horaSeleccionada && <input type="hidden" name="tipo" value={tipo} />}
 
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="font-medium text-neutral-900">{profesionalNombre}</p>
             {profesionalVerificado && <VerificadoBadge />}
           </div>

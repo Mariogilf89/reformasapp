@@ -78,7 +78,7 @@ export default async function ProfesionalDetallePage(
       <Card className="w-full max-w-2xl p-8">
         <div className="flex flex-col gap-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-semibold text-neutral-900">
                 {profesional.nombre}
               </h1>

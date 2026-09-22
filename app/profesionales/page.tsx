@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, isCategoria } from "@/lib/profesionales";
 import { formatearUbicacion, isProvincia } from "@/lib/provincias";
+import { AVISO_PRECIO_ORIENTATIVO, obtenerPrecioOrientativo } from "@/lib/precios-orientativos";
 import {
   obtenerProfesionalesDisponibles,
   type ModoBusquedaDisponibilidad,
@@ -58,6 +59,8 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
     ? resultados.filter((p) => p.zona.toLowerCase().includes(zonaParam.toLowerCase()))
     : resultados;
 
+  const precioOrientativo = categoria ? obtenerPrecioOrientativo(categoria) : null;
+
   const supabase = await createServerSupabaseClient();
   const ids = profesionales.map((profesional) => profesional.id);
   const { data: valoraciones } = ids.length
@@ -99,6 +102,18 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
         horaInicioInicial={horaParam}
         horaFinInicial={horaFinParam}
       />
+
+      {precioOrientativo && (
+        <div className="w-full max-w-5xl rounded-xl border border-neutral-200 bg-neutral-50 p-4 text-sm text-neutral-700">
+          <p>
+            <span className="font-medium text-neutral-900">
+              Precio orientativo para {CATEGORIAS.find((c) => c.value === categoria)?.label ?? categoria}:
+            </span>{" "}
+            {precioOrientativo.texto}
+          </p>
+          <p className="mt-1 text-xs text-neutral-500">{AVISO_PRECIO_ORIENTATIVO}</p>
+        </div>
+      )}
 
       <div className="grid w-full max-w-5xl gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {profesionales.length === 0 && (

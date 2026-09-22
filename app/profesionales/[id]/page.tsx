@@ -6,6 +6,7 @@ import { formatearUbicacion, isProvincia, type Provincia } from "@/lib/provincia
 import { Card } from "@/components/ui/card";
 import { VerificadoBadge } from "@/components/ui/verificado-badge";
 import { IconUbicacion } from "@/components/ui/icon-ubicacion";
+import type { FotoTrabajo } from "@/app/actions/trabajos";
 import { ContactarForm } from "./contactar-form";
 
 type ProfesionalPublico = {
@@ -23,6 +24,13 @@ type ValoracionPublica = {
   puntuacion: number;
   comentario: string | null;
   creado_en: string;
+};
+
+type TrabajoPublico = {
+  id: string;
+  titulo: string;
+  categoria: Categoria;
+  fotos: FotoTrabajo[];
 };
 
 export default async function ProfesionalDetallePage(
@@ -65,7 +73,15 @@ export default async function ProfesionalDetallePage(
     .order("creado_en", { ascending: false })
     .returns<ValoracionPublica[]>();
 
+  const { data: trabajos } = await supabase
+    .from("trabajos")
+    .select("id, titulo, categoria, fotos")
+    .eq("profesional_id", profesional.id)
+    .order("creado_en", { ascending: false })
+    .returns<TrabajoPublico[]>();
+
   const ubicacion = formatearUbicacion(profesional.zona, profesional.provincias);
+  const listaTrabajos = trabajos ?? [];
 
   const listaValoraciones = valoraciones ?? [];
   const media =
@@ -128,6 +144,41 @@ export default async function ProfesionalDetallePage(
           )}
         </div>
       </Card>
+
+      {listaTrabajos.length > 0 && (
+        <div className="flex w-full max-w-2xl flex-col gap-4">
+          <h2 className="text-xl font-semibold text-neutral-900">
+            Trabajos realizados
+          </h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {listaTrabajos.map((trabajo) => {
+              const portada = trabajo.fotos[0];
+              return (
+                <div key={trabajo.id} className="flex flex-col gap-1">
+                  <div className="aspect-square w-full overflow-hidden rounded-lg border border-neutral-200 bg-neutral-100">
+                    {portada && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={portada.url}
+                        alt={trabajo.titulo}
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </div>
+                  <p className="truncate text-sm font-medium text-neutral-900">
+                    {trabajo.titulo}
+                  </p>
+                  {portada?.descripcion && (
+                    <p className="line-clamp-2 text-xs text-neutral-600">
+                      {portada.descripcion}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="w-full max-w-2xl">
         {!user || rol === "cliente" ? (

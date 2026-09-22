@@ -5,11 +5,13 @@ import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
 import { formatearUbicacion, isProvincia, type Provincia } from "@/lib/provincias";
 import { Card } from "@/components/ui/card";
 import { VerificadoBadge } from "@/components/ui/verificado-badge";
+import { NivelBadge } from "@/components/ui/nivel-badge";
 import { IconUbicacion } from "@/components/ui/icon-ubicacion";
 import { IconReloj } from "@/components/ui/icon-reloj";
 import type { FotoTrabajo } from "@/app/actions/trabajos";
-import { calcularTiempoRespuestaProfesional } from "@/lib/supabase-admin";
+import { calcularTiempoRespuestaProfesional, contarCitasCompletadasPorProfesionales } from "@/lib/supabase-admin";
 import { formatearTiempoRespuesta } from "@/lib/tiempo-respuesta";
+import { calcularNivelProfesional } from "@/lib/niveles-profesional";
 import { ContactarForm } from "./contactar-form";
 
 type ProfesionalPublico = {
@@ -116,6 +118,14 @@ export default async function ProfesionalDetallePage(
         }))
       : null;
 
+  const citasCompletadasPorProfesional = await contarCitasCompletadasPorProfesionales([
+    profesional.id,
+  ]);
+  const nivel = calcularNivelProfesional(
+    citasCompletadasPorProfesional.get(profesional.id) ?? 0,
+    media
+  );
+
   return (
     <div className="flex flex-1 flex-col items-center gap-8 px-4 py-16">
       <Card className="w-full max-w-2xl p-8">
@@ -138,6 +148,11 @@ export default async function ProfesionalDetallePage(
                 <IconReloj className="h-4 w-4 shrink-0 text-neutral-400" />
                 {formatearTiempoRespuesta(tiempoRespuesta.minutosPromedio)}
               </p>
+            )}
+            {nivel && (
+              <div className="mt-2">
+                <NivelBadge nivel={nivel} />
+              </div>
             )}
           </div>
 

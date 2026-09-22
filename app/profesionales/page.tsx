@@ -9,8 +9,11 @@ import {
 } from "@/app/actions/profesionales";
 import { Card } from "@/components/ui/card";
 import { VerificadoBadge } from "@/components/ui/verificado-badge";
+import { NivelBadge } from "@/components/ui/nivel-badge";
 import { IconUbicacion } from "@/components/ui/icon-ubicacion";
 import { ListaEsperaForm } from "@/components/lista-espera-form";
+import { contarCitasCompletadasPorProfesionales } from "@/lib/supabase-admin";
+import { calcularNivelProfesional } from "@/lib/niveles-profesional";
 import { FiltroBusqueda } from "./filtro-busqueda";
 
 type ValoracionResumen = { profesional_id: string; puntuacion: number };
@@ -82,6 +85,8 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
     }
   }
 
+  const citasCompletadasPorProfesional = await contarCitasCompletadasPorProfesionales(ids);
+
   return (
     <div className="flex flex-1 flex-col items-center gap-8 px-4 py-16">
       <div className="w-full max-w-5xl">
@@ -133,6 +138,10 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
         {profesionales.map((profesional) => {
           const resumen = resumenPorProfesional.get(profesional.id);
           const ubicacion = formatearUbicacion(profesional.zona, profesional.provincias);
+          const nivel = calcularNivelProfesional(
+            citasCompletadasPorProfesional.get(profesional.id) ?? 0,
+            resumen?.media ?? null
+          );
           // Se pasa el modo/provincia de esta búsqueda al perfil del
           // profesional para que, si el cliente contacta desde ahí, la
           // solicitud creada quede con ese mismo modo_tiempo/provincia.
@@ -165,6 +174,12 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
                   </p>
                   {profesional.verificado && <VerificadoBadge />}
                 </div>
+
+                {nivel && (
+                  <div>
+                    <NivelBadge nivel={nivel} />
+                  </div>
+                )}
 
                 <p className="text-sm text-neutral-600">
                   {profesional.categorias

@@ -390,6 +390,40 @@ export async function calcularTiempoRespuestaProfesional(
   return { minutosPromedio, muestras: tiemposRespuestaMinutos.length };
 }
 
+/**
+ * Nº de "citas completadas" por profesional, para calcularNivelProfesional
+ * (lib/niveles-profesional.ts). La tabla citas no tiene un estado
+ * "completada": se aproxima como citas en estado "confirmada" cuya fecha ya
+ * ha pasado. Usa la service role porque la RLS de citas
+ * ("citas_select_participantes") solo deja leer a sus participantes, pero
+ * el nivel resultante se muestra en el perfil público a cualquier
+ * visitante. Recibe varios ids a la vez para poder calcular el nivel de
+ * toda una página de resultados de /profesionales en una sola consulta.
+ */
+export async function contarCitasCompletadasPorProfesionales(
+  profesionalIds: string[]
+): Promise<Map<string, number>> {
+  const conteo = new Map<string, number>();
+  if (profesionalIds.length === 0) return conteo;
+
+  const supabaseAdmin = createAdminSupabaseClient();
+  const hoyISO = new Date().toISOString().slice(0, 10);
+
+  const { data } = await supabaseAdmin
+    .from("citas")
+    .select("profesional_id")
+    .in("profesional_id", profesionalIds)
+    .eq("estado", "confirmada")
+    .lt("fecha", hoyISO)
+    .returns<{ profesional_id: string }[]>();
+
+  for (const fila of data ?? []) {
+    conteo.set(fila.profesional_id, (conteo.get(fila.profesional_id) ?? 0) + 1);
+  }
+
+  return conteo;
+}
+
 export async function generarTokenAccesoCliente(email: string): Promise<string | null> {
   const supabaseAdmin = createAdminSupabaseClient();
   const { data, error } = await supabaseAdmin.auth.admin.generateLink({

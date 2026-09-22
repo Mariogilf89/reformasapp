@@ -59,3 +59,20 @@ export type Provincia = (typeof PROVINCIAS)[number]["value"];
 export function isProvincia(value: string): value is Provincia {
   return PROVINCIAS.some((provincia) => provincia.value === value);
 }
+
+/**
+ * Texto de ubicación para tarjetas/perfil público: combina la localidad
+ * (texto libre) y las provincias cubiertas en una sola línea ("Vigo ·
+ * Pontevedra"). Omite las partes vacías y devuelve "" si no hay nada que
+ * mostrar, para que el llamante pueda ocultar el bloque entero.
+ */
+export function formatearUbicacion(
+  zona: string | null | undefined,
+  provincias: Provincia[] | null | undefined
+): string {
+  const zonaLimpia = zona?.trim() ?? "";
+  const provinciasTexto = (provincias ?? [])
+    .map((valor) => PROVINCIAS.find((p) => p.value === valor)?.label ?? valor)
+    .join(", ");
+  return [zonaLimpia, provinciasTexto].filter(Boolean).join(" · ");
+}

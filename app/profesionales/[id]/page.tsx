@@ -2,9 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, type Categoria } from "@/lib/profesionales";
-import { isProvincia } from "@/lib/provincias";
+import { formatearUbicacion, isProvincia, type Provincia } from "@/lib/provincias";
 import { Card } from "@/components/ui/card";
 import { VerificadoBadge } from "@/components/ui/verificado-badge";
+import { IconUbicacion } from "@/components/ui/icon-ubicacion";
 import { ContactarForm } from "./contactar-form";
 
 type ProfesionalPublico = {
@@ -12,6 +13,7 @@ type ProfesionalPublico = {
   nombre: string;
   categorias: Categoria[];
   zona: string;
+  provincias: Provincia[];
   descripcion: string;
   fotos: string[];
   verificado: boolean;
@@ -48,7 +50,7 @@ export default async function ProfesionalDetallePage(
 
   const { data: profesional } = await supabase
     .from("profesionales_publico")
-    .select("id, nombre, categorias, zona, descripcion, fotos, verificado")
+    .select("id, nombre, categorias, zona, provincias, descripcion, fotos, verificado")
     .eq("id", id)
     .maybeSingle<ProfesionalPublico>();
 
@@ -62,6 +64,8 @@ export default async function ProfesionalDetallePage(
     .eq("profesional_id", profesional.id)
     .order("creado_en", { ascending: false })
     .returns<ValoracionPublica[]>();
+
+  const ubicacion = formatearUbicacion(profesional.zona, profesional.provincias);
 
   const listaValoraciones = valoraciones ?? [];
   const media =
@@ -80,9 +84,12 @@ export default async function ProfesionalDetallePage(
               </h1>
               {profesional.verificado && <VerificadoBadge />}
             </div>
-            <p className="mt-1 text-sm text-neutral-600">
-              {profesional.zona}
-            </p>
+            {ubicacion && (
+              <p className="mt-1 flex items-center gap-1.5 text-sm text-neutral-600">
+                <IconUbicacion className="h-4 w-4 shrink-0 text-neutral-400" />
+                {ubicacion}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">

@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { CATEGORIAS, isCategoria } from "@/lib/profesionales";
-import { isProvincia } from "@/lib/provincias";
+import { formatearUbicacion, isProvincia } from "@/lib/provincias";
 import {
   obtenerProfesionalesDisponibles,
   type ModoBusquedaDisponibilidad,
 } from "@/app/actions/profesionales";
 import { Card } from "@/components/ui/card";
 import { VerificadoBadge } from "@/components/ui/verificado-badge";
+import { IconUbicacion } from "@/components/ui/icon-ubicacion";
 import { ListaEsperaForm } from "@/components/lista-espera-form";
 import { FiltroBusqueda } from "./filtro-busqueda";
 
@@ -116,6 +117,7 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
 
         {profesionales.map((profesional) => {
           const resumen = resumenPorProfesional.get(profesional.id);
+          const ubicacion = formatearUbicacion(profesional.zona, profesional.provincias);
           // Se pasa el modo/provincia de esta búsqueda al perfil del
           // profesional para que, si el cliente contacta desde ahí, la
           // solicitud creada quede con ese mismo modo_tiempo/provincia.
@@ -154,7 +156,12 @@ export default async function ProfesionalesPage(props: PageProps<"/profesionales
                     .map((cat) => CATEGORIAS.find((c) => c.value === cat)?.label ?? cat)
                     .join(", ")}
                 </p>
-                <p className="text-sm text-neutral-600">{profesional.zona}</p>
+                {ubicacion && (
+                  <p className="flex min-w-0 items-center gap-1.5 text-sm text-neutral-600">
+                    <IconUbicacion className="h-4 w-4 shrink-0 text-neutral-400" />
+                    <span className="truncate">{ubicacion}</span>
+                  </p>
+                )}
 
                 {profesional.primerHueco && (
                   <p className="text-sm font-medium text-primary-700">

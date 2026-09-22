@@ -224,6 +224,7 @@ export type ProfesionalBusqueda = {
   nombre: string;
   categorias: Categoria[];
   zona: string;
+  provincias: Provincia[];
   descripcion: string;
   fotos: string[];
   verificado: boolean;
@@ -291,7 +292,7 @@ export async function obtenerProfesionalesDisponibles(params: {
 
   let query = supabase
     .from("profesionales_publico")
-    .select("id, nombre, categorias, zona, descripcion, fotos, verificado")
+    .select("id, nombre, categorias, zona, provincias, descripcion, fotos, verificado")
     .order("creado_en", { ascending: false });
 
   if (categoria) {

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { createServerSupabaseClient } from "@/lib/supabase";
 import { StickyHeader } from "@/components/sticky-header";
 import { UserMenu } from "@/components/user-menu";
+import { PublicHeaderMenu } from "@/components/public-header-menu";
 
 // El enlace del nombre de la app siempre va a "/" y nunca depende de si hay
 // sesión iniciada ni forma parte del formulario de cerrar sesión: solo el
@@ -23,18 +24,24 @@ export async function PublicHeader() {
           <UserMenu />
         ) : (
           <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-neutral-600 hover:text-primary-700"
-            >
-              Iniciar sesión
-            </Link>
-            <p className="rounded-lg bg-blue-600 px-4 py-2 text-base text-white">
-              Si eres profesional,{" "}
-              <Link href="/register?role=profesional" className="font-bold underline">
-                regístrate aquí
+            {/* Desktop (≥sm): acciones completas en línea, igual que antes.
+                En móvil se ocultan y su lugar lo ocupa PublicHeaderMenu
+                (hamburguesa) para que la cabecera no se desborde. */}
+            <div className="hidden items-center gap-3 sm:flex">
+              <Link
+                href="/login"
+                className="text-sm font-medium text-neutral-600 hover:text-primary-700"
+              >
+                Iniciar sesión
               </Link>
-            </p>
+              <p className="rounded-lg bg-blue-600 px-4 py-2 text-base text-white">
+                Si eres profesional,{" "}
+                <Link href="/register?role=profesional" className="font-bold underline">
+                  regístrate aquí
+                </Link>
+              </p>
+            </div>
+            <PublicHeaderMenu />
           </div>
         )}
       </div>
